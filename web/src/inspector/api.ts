@@ -17,14 +17,37 @@ export interface CatalogClientOptions {
   fetchImpl?: typeof fetch;
 }
 
-async function parseError(resp: Response): Promise<never> {
-  let body: ApiErrorBody;
-  try {
-    body = (await resp.json()) as ApiErrorBody;
-  } catch {
-    body = { code: "upstream_unavailable", message: `Request failed (${resp.status}).` };
+async function readCatalogResponse<T>(response: Response): Promise<T> {
+  const mimeType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+  if (mimeType === "text/html" || mimeType === "application/xhtml+xml") {
+    throw new CatalogApiError({
+      code: "catalog_route_unavailable",
+      message: "The catalog URL returned a web page. Check that /api/catalogs and /api/resolve are routed to the Gaia service.",
+    });
   }
-  throw new CatalogApiError(body);
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new CatalogApiError({
+      code: "upstream_unavailable",
+      message: response.ok
+        ? "The catalog service returned unreadable data."
+        : `Could not reach the catalog service (HTTP ${response.status}).`,
+    });
+  }
+  if (!response.ok) {
+    if (body && typeof body === "object" && "code" in body && "message" in body &&
+        typeof body.code === "string" && typeof body.message === "string") {
+      throw new CatalogApiError({ code: body.code, message: body.message });
+    }
+    throw new CatalogApiError({
+      code: "upstream_unavailable",
+      message: `Catalog request failed (HTTP ${response.status}).`,
+    });
+  }
+  return body as T;
 }
 
 export function createCatalogClient(options: CatalogClientOptions = {}) {
@@ -34,23 +57,17 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
   return {
     async nearby(ra: number, dec: number, radiusArcsec: number): Promise<NearbyResponse> {
       const url = `${baseUrl}/catalogs/nearby?ra=${ra}&dec=${dec}&radiusArcsec=${radiusArcsec}`;
-      const resp = await doFetch(url);
-      if (!resp.ok) return parseError(resp);
-      return (await resp.json()) as NearbyResponse;
+      return readCatalogResponse<NearbyResponse>(await doFetch(url));
     },
 
     async detail(sourceId: string): Promise<GaiaDetail> {
       const url = `${baseUrl}/catalogs/gaia/${encodeURIComponent(sourceId)}`;
-      const resp = await doFetch(url);
-      if (!resp.ok) return parseError(resp);
-      return (await resp.json()) as GaiaDetail;
+      return readCatalogResponse<GaiaDetail>(await doFetch(url));
     },
 
     async resolve(name: string, signal?: AbortSignal): Promise<{ name: string; ra: number; dec: number }> {
       const url = `${baseUrl}/resolve?name=${encodeURIComponent(name)}`;
-      const resp = await doFetch(url, { signal });
-      if (!resp.ok) return parseError(resp);
-      return (await resp.json()) as { name: string; ra: number; dec: number };
+      return readCatalogResponse<{ name: string; ra: number; dec: number }>(await doFetch(url, { signal }));
     },
   };
 }

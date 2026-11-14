@@ -31,7 +31,9 @@ Search requests go to IRSA by default. For an offline integration check, start t
 
 ## Gaia catalog integration
 
-Start the [catalog service](../../../services/catalogs/README.md) on port 8010 in a separate terminal. The Vite development server proxies `/api/resolve` and `/api/catalogs` there. Set `CATALOG_API_TARGET` before running Vite to use a different backend address.
+Start the [catalog service](../../../services/catalogs/README.md) on port 8010 in a separate terminal. From the repository root, run `npm.cmd run dev`, or run `npm.cmd run build` followed by `npm.cmd run preview` to try the built viewer. Both viewer commands proxy `/api/resolve` and `/api/catalogs` to FastAPI. Set `CATALOG_API_TARGET` before starting Vite to use a different address.
+
+Check `http://127.0.0.1:8010/api/health` for the catalog service and `/api/catalogs/nearby?ra=269.4521&dec=4.6933&radiusArcsec=30` on the viewer origin for the proxy. Both should return JSON. When serving the built viewer on another host, route `/api/catalogs/*` and `/api/resolve` to the catalog service before applying the frontend's HTML fallback.
 
 Choose **Inspect map center** on the initial Barnard’s Star view or click a sky position to query Gaia. The inspector lists nearby results and fetches the details for the chosen source. **Mark position** places its Gaia catalog position on the reference sky. The catalog service starts in fixture mode, and the sky map displays DSS2 reference imagery.
 

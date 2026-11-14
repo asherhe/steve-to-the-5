@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite web/src/viewer --strictPort",
+    "preview": "vite preview web/src/viewer --strictPort",
     "check": "tsc --project web/src/viewer/tsconfig.json",
     "generate:archive-types": "openapi-typescript fixtures/archive/openapi.json -o web/src/viewer/archive.generated.ts",
     "build": "npm run check && vite build web/src/viewer"
