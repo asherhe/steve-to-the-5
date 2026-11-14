@@ -49,8 +49,8 @@
     },
     "usableExposureCount": 2,
     "alignmentFailures": [],
-    "processedExposureCount": 2,
     "preparedExposureCount": 2,
+    "processedExposureCount": 2,
     "selectionScope": "all_discovered_exposures",
     "sampledExposures": [
       {

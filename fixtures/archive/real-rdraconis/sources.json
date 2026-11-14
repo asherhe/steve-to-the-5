@@ -1,0 +1,69 @@
+{
+  "evidenceKind": "saved_real_example",
+  "target": "R Draconis",
+  "originalComparisonId": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+  "originalEvidenceKind": "real_archive",
+  "field": {
+    "ra": 248.16750000000002,
+    "dec": 66.75472222222223,
+    "fovArcmin": 6.0
+  },
+  "config": {
+    "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+    "asinhSoftening": 0.1,
+    "attempts": 3,
+    "backgroundPolicy": "subtract_zodi",
+    "backoffBaseSeconds": 0.5,
+    "backoffMaxSeconds": 8.0,
+    "batchSize": 24,
+    "buildDeadlineSeconds": 180.0,
+    "concurrency": 3,
+    "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+    "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+    "cutoutPaddingArcsec": 20.0,
+    "lowerPercentile": 1.0,
+    "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+    "maxCandidates": 1000,
+    "maxCutouts": 120,
+    "maxDownloadBytes": 20000000,
+    "maxFrames": 12,
+    "minCommonValidCoverage": 0.75,
+    "minGeometricCoverage": 0.98,
+    "minValidCoverage": 0.8,
+    "pixelScaleArcsec": 6.2,
+    "resampling": "bilinear_with_full_valid_support",
+    "targetRegionRadiusPixels": 5.0,
+    "timeoutSeconds": 30.0,
+    "upperPercentile": 99.5,
+    "wavelengthToleranceBandwidth": 0.25
+  },
+  "selectionScope": "Only the frames selected by the original build are retained; offline reprocessing sees these inputs alone and is not an archive search.",
+  "visibleChange": "not_assessed",
+  "note": "Built by a live IRSA query on 2026-11-14 (cutouts downloaded the same day; this final build reused the local cutout cache). Visible change not assessed here; see fixtures/archive/verification.json.",
+  "sources": [
+    {
+      "observation": {
+        "detector": 4,
+        "endMjd": 60832.476712,
+        "observationId": "2025W23_2B_0206_2",
+        "release": "dr1",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_2D4_spx_l2b-v27-2026-201.fits",
+        "startMjd": 60832.47538
+      },
+      "sha256": "b3132791f7fd16b9ad660ea0e683a32950d9d243f2a97716fdf71ed0a4265465",
+      "path": "evidence/blobs/b3132791f7fd16b9ad660ea0e683a32950d9d243f2a97716fdf71ed0a4265465"
+    },
+    {
+      "observation": {
+        "detector": 4,
+        "endMjd": 61235.904612,
+        "observationId": "2026W29_1A_0364_1",
+        "release": "qr3",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/4/level2_2026W29_1A_0364_1D4_spx_l2b-v27-2026-276.fits",
+        "startMjd": 61235.90328
+      },
+      "sha256": "3744d11a5968c9d3ca97364cf028758d39294679a726e32b32c63ca4d48298b9",
+      "path": "evidence/blobs/3744d11a5968c9d3ca97364cf028758d39294679a726e32b32c63ca4d48298b9"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "status": "ready",
   "comparison": {
-    "id": "9814be77fa085c885c6fa44f259630954c867462939346c1706400672e341447",
+    "id": "9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b",
     "field": {
       "ra": 10.0,
       "dec": 20.0,
@@ -53,7 +53,7 @@
         "wavelengthUm": 1.25,
         "bandwidthUm": 0.03,
         "release": "dr1",
-        "imageUrl": "/api/comparisons/9814be77fa085c885c6fa44f259630954c867462939346c1706400672e341447/assets/d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d.png",
+        "imageUrl": "/api/comparisons/9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b/assets/d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d.png",
         "sourceUrl": "https://example.invalid/synthetic-0.fits",
         "sourceSha256": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f",
         "processingVersion": "synthetic-v1",
@@ -87,7 +87,7 @@
         "wavelengthUm": 1.25,
         "bandwidthUm": 0.03,
         "release": "dr1",
-        "imageUrl": "/api/comparisons/9814be77fa085c885c6fa44f259630954c867462939346c1706400672e341447/assets/d6d3e47e8f82d4e26e00322739f25da3a709023ffa9fa168fac3d63e3f90d7b6.png",
+        "imageUrl": "/api/comparisons/9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b/assets/d6d3e47e8f82d4e26e00322739f25da3a709023ffa9fa168fac3d63e3f90d7b6.png",
         "sourceUrl": "https://example.invalid/synthetic-2.fits",
         "sourceSha256": "34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972",
         "processingVersion": "synthetic-v1",
@@ -145,7 +145,7 @@
     "provenance": {
       "schemaVersion": 2,
       "implementation": {
-        "sourceSha256": "b7a0c0f4b1f5a9d1f783dcf634d3ca07c7f710580e51e34abf17fd0ae29ffd81",
+        "sourceSha256": "1e1848aaab05827720f34a5ab0bf99ee11db7cbdb777522c3d058efaec171e2b",
         "python": "3.13.14",
         "packages": {
           "numpy": "2.5.4",
@@ -281,8 +281,8 @@
     "candidatePairCount": 1,
     "candidatePairsTried": 1,
     "notSelectedExposures": [],
-    "processedExposureCount": 2,
     "preparedExposureCount": 2,
+    "processedExposureCount": 2,
     "selectionScope": "discovered_exposures_minus_failed_retrievals",
     "sampledExposures": [
       {

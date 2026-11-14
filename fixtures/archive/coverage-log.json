@@ -1,9 +1,39 @@
 {
   "evidenceKind": "live_archive_check",
+  "schemaVersion": 2,
+  "config": {
+    "pixelScaleArcsec": 6.2,
+    "minGeometricCoverage": 0.98,
+    "minValidCoverage": 0.8,
+    "minCommonValidCoverage": 0.75,
+    "targetRegionRadiusPixels": 5.0,
+    "wavelengthToleranceBandwidth": 0.25,
+    "maxFrames": 12,
+    "maxCandidates": 1000,
+    "maxCutouts": 120,
+    "batchSize": 24,
+    "maxDownloadBytes": 20000000,
+    "timeoutSeconds": 30.0,
+    "attempts": 3,
+    "backoffBaseSeconds": 0.5,
+    "backoffMaxSeconds": 8.0,
+    "buildDeadlineSeconds": 180.0,
+    "concurrency": 3,
+    "lowerPercentile": 1.0,
+    "upperPercentile": 99.5,
+    "asinhSoftening": 0.1,
+    "cutoutPaddingArcsec": 20.0,
+    "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+    "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+    "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+    "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+    "backgroundPolicy": "subtract_zodi",
+    "resampling": "bilinear_with_full_valid_support"
+  },
   "targets": [
     {
       "target": "Barnard's Star",
-      "checkedAtUtc": "2026-11-14T19:32:10.447768+00:00",
+      "checkedAtUtc": "2026-11-14T20:21:58.654209+00:00",
       "coordinateProvenance": "Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field.",
       "visibleChange": "not_assessed",
       "field": {
@@ -11,18 +41,663 @@
         "dec": 4.693333333333333,
         "fovArcmin": 6.0
       },
-      "status": "upstream_unavailable",
+      "status": "request_failed",
+      "code": "PROCESSING_LIMIT",
+      "message": "No pair found within cutout budget; archive search is not exhaustive",
+      "limit": "cutout_budget",
       "diagnostics": {
-        "code": "UPSTREAM_ERROR",
-        "message": "IRSA request failed after bounded retries",
-        "complete": false
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "sampling",
+          "cutout_budget"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 387,
+          "byRelease": {
+            "dr1": 259,
+            "qr3": 128
+          },
+          "byDetector": {
+            "D1": 63,
+            "D2": 69,
+            "D3": 62,
+            "D4": 61,
+            "D5": 70,
+            "D6": 62
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 44,
+            "dr1:D2": 43,
+            "dr1:D3": 43,
+            "dr1:D4": 42,
+            "dr1:D5": 44,
+            "dr1:D6": 43,
+            "qr3:D1": 19,
+            "qr3:D2": 26,
+            "qr3:D3": 19,
+            "qr3:D4": 19,
+            "qr3:D5": 26,
+            "qr3:D6": 19
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-08-15T20:45:11.376000Z",
+              "end": "2026-05-05T02:01:23.865600Z"
+            },
+            "qr3": {
+              "start": "2026-08-16T15:08:22.156800Z",
+              "end": "2026-09-22T15:06:16.099200Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 387,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 120,
+          "succeededCutouts": 120,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 267
+        },
+        "invalidCutouts": [
+          {
+            "observationId": "2025W34_1B_0557_1",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_1: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_1",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_1: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_2",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_2: ValueError"
+          },
+          {
+            "observationId": "2026W35_2A_0126_2",
+            "detector": 2,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W35_2A_0126_2: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_2",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_2: ValueError"
+          },
+          {
+            "observationId": "2026W35_2A_0126_2",
+            "detector": 5,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W35_2A_0126_2: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_3",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_3: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_3",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_3: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_4",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_4: ValueError"
+          },
+          {
+            "observationId": "2025W34_1B_0557_4",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_1B_0557_4: ValueError"
+          },
+          {
+            "observationId": "2025W34_2B_0247_1",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_2B_0247_1: ValueError"
+          },
+          {
+            "observationId": "2025W33_2C_0404_1",
+            "detector": 3,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W33_2C_0404_1: ValueError"
+          },
+          {
+            "observationId": "2025W34_2B_0247_1",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W34_2B_0247_1: ValueError"
+          },
+          {
+            "observationId": "2025W33_2C_0404_1",
+            "detector": 6,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W33_2C_0404_1: ValueError"
+          },
+          {
+            "observationId": "2025W35_2A_0432_1",
+            "detector": 1,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W35_2A_0432_1: ValueError"
+          }
+        ],
+        "rejectedObservations": [
+          {
+            "observationId": "2026W38_2A_0562_1",
+            "detector": 3,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.3803504740017236
+          },
+          {
+            "observationId": "2025W35_1A_0432_4",
+            "detector": 4,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.3125538638322321
+          },
+          {
+            "observationId": "2025W33_2C_0386_3",
+            "detector": 3,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.5136455041654697,
+            "validFraction": 0.5033036483769032
+          },
+          {
+            "observationId": "2025W33_2C_0386_3",
+            "detector": 6,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.7184717035334673,
+            "validFraction": 0.6782533754668199
+          },
+          {
+            "observationId": "2025W34_2B_0090_4",
+            "detector": 2,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.8919850617638609,
+            "validFraction": 0.8695777075553002
+          },
+          {
+            "observationId": "2026W35_1A_0575_1",
+            "detector": 1,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.8509049123814996,
+            "validFraction": 0.7986210858948578
+          },
+          {
+            "observationId": "2026W35_1A_0575_1",
+            "detector": 4,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.6877334099396725,
+            "validFraction": 0.6808388394139615
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 3989,
+          "wavelength_mismatch": 763,
+          "insufficient_common_coverage": 1
+        },
+        "usableExposureCount": 98,
+        "alignmentFailures": [],
+        "preparedExposureCount": 105,
+        "processedExposureCount": 120,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W35_1A_0432_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W36_1A_0510_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W39_1A_0371_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W33_2C_0321_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_2A_0562_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_1A_0432_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W36_1A_0510_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W39_1A_0371_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W33_2C_0321_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_2A_0562_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_1A_0658_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_2A_0412_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W33_2C_0321_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_2A_0081_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_1A_0658_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_2A_0412_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W33_2C_0321_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_2A_0081_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_1A_0658_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_2A_0412_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_2A_0126_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W33_2C_0321_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0431_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_1A_0658_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_2A_0412_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_2A_0126_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W33_2C_0321_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0431_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_1A_0658_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_2A_0412_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_1A_0092_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W33_2C_0386_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0431_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_1A_0658_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_2A_0412_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0092_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W33_2C_0386_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0431_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_1A_0658_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_2A_0412_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W34_2B_0090_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W35_1A_0038_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W33_2C_0386_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0431_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_1A_0658_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_2A_0412_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W34_2B_0090_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W35_1A_0038_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W33_2C_0386_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0431_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_2A_0233_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_1A_0575_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W34_2A_0264_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W34_1A_0431_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_2A_0233_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0575_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W34_2A_0264_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W34_1A_0431_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_2A_0233_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_1A_0375_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W34_2B_0557_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W34_2A_0264_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W34_1B_0164_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0308_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_2A_0233_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0375_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W34_2B_0557_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W34_2A_0264_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W34_1B_0164_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0308_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_2A_0233_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_1A_0375_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W34_2B_0557_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W34_2A_0249_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W34_1B_0164_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0308_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_2A_0233_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0375_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W34_2B_0557_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W34_2A_0249_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W34_1B_0164_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0308_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W35_2A_0233_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W35_1A_0375_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W34_2B_0557_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W34_2A_0249_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W34_1B_0164_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0308_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_2A_0233_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0375_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W34_2B_0557_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W34_2A_0249_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W34_2B_0030_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0308_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W35_1A_0375_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W34_2B_0557_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W34_2A_0249_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W34_2B_0030_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_1A_0308_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W35_2A_0474_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W35_1A_0375_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W34_2B_0557_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W34_2A_0249_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W34_2B_0030_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W34_1A_0308_1",
+            "detector": 6
+          }
+        ],
+        "code": "PROCESSING_LIMIT",
+        "message": "No pair found within cutout budget; archive search is not exhaustive"
       },
       "comparisonId": null,
-      "elapsedSeconds": 2.5233479170128703
+      "timings": {
+        "discoverySeconds": 3.942260750103742,
+        "retrievalAndPreparationSeconds": 34.50270083313808
+      },
+      "elapsedSeconds": 38.45765687478706
     },
     {
       "target": "RW Aurigae",
-      "checkedAtUtc": "2026-11-14T19:32:12.974188+00:00",
+      "checkedAtUtc": "2026-11-14T20:22:37.112319+00:00",
       "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
       "visibleChange": "not_assessed",
       "field": {
@@ -30,18 +705,641 @@
         "dec": 30.40138888888889,
         "fovArcmin": 6.0
       },
-      "status": "upstream_unavailable",
+      "status": "request_failed",
+      "code": "PROCESSING_LIMIT",
+      "message": "No pair found within cutout budget; archive search is not exhaustive",
+      "limit": "cutout_budget",
       "diagnostics": {
-        "code": "UPSTREAM_ERROR",
-        "message": "Incomplete retrieval: 5 of 24 cutouts failed",
-        "complete": false
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "sampling",
+          "cutout_budget"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 357,
+          "byRelease": {
+            "dr1": 237,
+            "qr3": 120
+          },
+          "byDetector": {
+            "D1": 63,
+            "D2": 57,
+            "D3": 57,
+            "D4": 61,
+            "D5": 61,
+            "D6": 58
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 43,
+            "dr1:D2": 38,
+            "dr1:D3": 38,
+            "dr1:D4": 42,
+            "dr1:D5": 38,
+            "dr1:D6": 38,
+            "qr3:D1": 20,
+            "qr3:D2": 19,
+            "qr3:D3": 19,
+            "qr3:D4": 19,
+            "qr3:D5": 23,
+            "qr3:D6": 20
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-09-01T10:04:17.500800Z",
+              "end": "2026-03-12T00:04:55.401600Z"
+            },
+            "qr3": {
+              "start": "2026-09-02T02:19:55.401600Z",
+              "end": "2026-09-16T21:32:00.585600Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 357,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 120,
+          "succeededCutouts": 120,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 237
+        },
+        "invalidCutouts": [
+          {
+            "observationId": "2025W37_1A_0069_1",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W37_1A_0069_1: ValueError"
+          },
+          {
+            "observationId": "2025W37_1A_0069_1",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W37_1A_0069_1: ValueError"
+          },
+          {
+            "observationId": "2026W38_1A_0213_2",
+            "detector": 3,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W38_1A_0213_2: ValueError"
+          },
+          {
+            "observationId": "2026W38_1A_0213_2",
+            "detector": 6,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W38_1A_0213_2: ValueError"
+          }
+        ],
+        "rejectedObservations": [
+          {
+            "observationId": "2026W37_1A_0365_4",
+            "detector": 1,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7917265153691468
+          },
+          {
+            "observationId": "2025W38_1A_0538_1",
+            "detector": 3,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.5337546681987935,
+            "validFraction": 0.4932490663602413
+          },
+          {
+            "observationId": "2025W38_1A_0538_1",
+            "detector": 6,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.7592645791439242,
+            "validFraction": 0.7227808101120368
+          },
+          {
+            "observationId": "2025W36_1A_0155_1",
+            "detector": 1,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.8026429187015226,
+            "validFraction": 0.7227808101120368
+          },
+          {
+            "observationId": "2025W36_1A_0155_1",
+            "detector": 4,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.6501005458201666,
+            "validFraction": 0.610744039069233
+          },
+          {
+            "observationId": "2025W36_1A_0233_2",
+            "detector": 4,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7357081298477449
+          },
+          {
+            "observationId": "2025W38_1A_0691_4",
+            "detector": 3,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7819592071243895
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 4949,
+          "wavelength_mismatch": 903,
+          "insufficient_common_coverage": 34
+        },
+        "usableExposureCount": 109,
+        "alignmentFailures": [],
+        "preparedExposureCount": 116,
+        "processedExposureCount": 120,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W36_1A_0095_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0524_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0254_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W37_2A_0051_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0565_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0095_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0524_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0068_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0254_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W37_2A_0051_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0565_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0095_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0365_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0254_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0538_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0435_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0095_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0365_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0068_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0254_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0538_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0435_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0155_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0365_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0254_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0538_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0435_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0155_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0365_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0068_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0254_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0538_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0435_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0233_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0365_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0064_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0538_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0435_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0233_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0365_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0068_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0064_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0538_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0435_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0233_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0365_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W38_1A_0064_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0691_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0435_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0233_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0365_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W38_1A_0064_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0691_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0435_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0446_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0331_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0124_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0064_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0691_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0359_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0446_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0331_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0124_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0064_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0691_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0359_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0446_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0331_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0124_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W38_1A_0064_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0691_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0359_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0446_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0331_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0124_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0064_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0691_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0359_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0446_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0331_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0124_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W37_2A_0630_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0691_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0359_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0446_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0331_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0124_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W37_2A_0630_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0691_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0359_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0446_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0331_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0366_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W37_2A_0630_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0738_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_1A_0359_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0446_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0331_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0366_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W37_2A_0630_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0738_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W38_1A_0359_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W36_1A_0606_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0234_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0366_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W37_2A_0516_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W38_1A_0738_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W36_1A_0606_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0234_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W37_1A_0366_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W37_2A_0516_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W38_1A_0738_2",
+            "detector": 6
+          }
+        ],
+        "code": "PROCESSING_LIMIT",
+        "message": "No pair found within cutout budget; archive search is not exhaustive"
       },
       "comparisonId": null,
-      "elapsedSeconds": 39.91773754218593
+      "timings": {
+        "discoverySeconds": 3.1820204998366535,
+        "retrievalAndPreparationSeconds": 27.68998545780778
+      },
+      "elapsedSeconds": 30.877536250045523
     },
     {
       "target": "Epsilon Indi B",
-      "checkedAtUtc": "2026-11-14T19:32:52.892843+00:00",
+      "checkedAtUtc": "2026-11-14T20:23:07.990511+00:00",
       "coordinateProvenance": "Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry.",
       "visibleChange": "not_assessed",
       "field": {
@@ -49,18 +1347,518 @@
         "dec": -56.782777777777774,
         "fovArcmin": 6.0
       },
-      "status": "upstream_unavailable",
+      "status": "ready",
       "diagnostics": {
-        "code": "UPSTREAM_ERROR",
-        "message": "Incomplete retrieval: 11 of 24 cutouts failed",
-        "complete": false
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 491,
+          "byRelease": {
+            "dr1": 371,
+            "qr3": 120
+          },
+          "byDetector": {
+            "D1": 51,
+            "D2": 100,
+            "D3": 103,
+            "D4": 49,
+            "D5": 89,
+            "D6": 99
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 51,
+            "dr1:D2": 76,
+            "dr1:D3": 67,
+            "dr1:D4": 49,
+            "dr1:D5": 65,
+            "dr1:D6": 63,
+            "qr3:D2": 24,
+            "qr3:D3": 36,
+            "qr3:D5": 24,
+            "qr3:D6": 36
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-04-24T20:31:57.100800Z",
+              "end": "2026-05-04T02:50:19.564800Z"
+            },
+            "qr3": {
+              "start": "2026-09-22T05:26:44.678400Z",
+              "end": "2026-10-02T11:30:20.851200Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 491,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 48,
+          "succeededCutouts": 48,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 443
+        },
+        "invalidCutouts": [
+          {
+            "observationId": "2025W17_4B_0077_2",
+            "detector": 1,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W17_4B_0077_2: ValueError"
+          },
+          {
+            "observationId": "2025W18_1B_0081_1",
+            "detector": 3,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W18_1B_0081_1: ValueError"
+          },
+          {
+            "observationId": "2025W17_4B_0077_2",
+            "detector": 4,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W17_4B_0077_2: ValueError"
+          },
+          {
+            "observationId": "2025W18_1B_0081_1",
+            "detector": 6,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W18_1B_0081_1: ValueError"
+          },
+          {
+            "observationId": "2025W17_4B_0027_2",
+            "detector": 2,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W17_4B_0027_2: ValueError"
+          },
+          {
+            "observationId": "2025W17_4B_0027_2",
+            "detector": 5,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W17_4B_0027_2: ValueError"
+          }
+        ],
+        "rejectedObservations": [
+          {
+            "observationId": "2025W17_4B_0077_3",
+            "detector": 1,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7342717609882218
+          },
+          {
+            "observationId": "2025W17_4B_0077_3",
+            "detector": 4,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.6443550703820741
+          },
+          {
+            "observationId": "2026W18_1A_0032_1",
+            "detector": 4,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7856937661591497
+          },
+          {
+            "observationId": "2025W17_4B_0468_1",
+            "detector": 1,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7319735708129848
+          },
+          {
+            "observationId": "2026W40_2A_0172_2",
+            "detector": 2,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.9620798621085895,
+            "validFraction": 0.9359379488652686
+          },
+          {
+            "observationId": "2026W40_2A_0172_2",
+            "detector": 5,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.8908359666762424,
+            "validFraction": 0.8523412812410227
+          },
+          {
+            "observationId": "2025W17_4B_0468_2",
+            "detector": 1,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7239299051996553
+          },
+          {
+            "observationId": "2026W39_2A_0682_3",
+            "detector": 3,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.7296753806377477
+          },
+          {
+            "observationId": "2026W39_2A_0682_3",
+            "detector": 6,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.6374604998563631
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 452,
+          "wavelength_mismatch": 74,
+          "compatible": 1,
+          "insufficient_common_coverage": 1
+        },
+        "usableExposureCount": 33,
+        "alignmentFailures": [],
+        "preparedExposureCount": 42,
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 1,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W17_4B_0017_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W17_4B_0017_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W17_4B_0017_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W17_4B_0017_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W17_4B_0027_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W17_4B_0027_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W17_4B_0468_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W18_1B_0081_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W18_1B_0081_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W18_1B_0081_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W18_1B_0081_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W18_1B_0081_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W18_1B_0081_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W17_1B_0351_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W17_1B_0351_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W17_1B_0351_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W17_1B_0351_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W18_1A_0032_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W18_2A_0819_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W39_2A_0682_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W39_2A_0682_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W40_1A_0070_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W40_1A_0070_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W40_1A_0070_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W40_1A_0070_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W40_2A_0172_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_2A_0172_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0216_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0216_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_2A_0216_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0216_2",
+            "detector": 2
+          }
+        ],
+        "processedExposureCount": 48,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2026W18_2A_0819_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W17_4B_0017_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_2A_0216_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_1A_0070_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W18_2A_0819_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W17_4B_0017_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0216_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_1A_0070_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W17_4B_0077_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W18_1A_0032_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W17_4B_0017_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_2A_0216_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W18_1B_0081_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W40_1A_0070_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W17_4B_0077_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W18_1A_0032_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W17_4B_0017_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0216_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W18_1B_0081_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W40_1A_0070_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W17_4B_0468_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W17_1B_0351_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W40_2A_0172_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W18_1B_0081_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W39_2A_0682_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W17_4B_0468_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W17_1B_0351_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W40_2A_0172_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W18_1B_0081_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W39_2A_0682_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W17_4B_0468_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W17_1B_0351_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W17_4B_0027_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W40_2A_0172_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W18_1B_0081_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W39_2A_0682_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W17_4B_0468_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W17_1B_0351_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W17_4B_0027_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W40_2A_0172_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W18_1B_0081_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W39_2A_0682_3",
+            "detector": 6
+          }
+        ]
       },
-      "comparisonId": null,
-      "elapsedSeconds": 33.5369326248765
+      "comparisonId": "516ecdf6be6a3a51c918b4359334ea95692c4d6d61e061ad145fafab0acb7c17",
+      "frames": [
+        {
+          "frameId": "b89fd0d16700848a0e5f7d2063e0971b28e3873e51538efb4cc290f79eb8c001",
+          "observationId": "2025W17_4B_0468_1",
+          "detector": 4,
+          "release": "dr1",
+          "observedAtUtc": "2025-04-27T20:12:15.796799Z",
+          "wavelengthUm": 3.626863302305218,
+          "validFraction": 0.935650675093364,
+          "alignment": "reference_frame",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/4/level2_2025W17_4B_0468_1D4_spx_l2b-v27-2026-196.fits"
+        },
+        {
+          "frameId": "2256e3759ef772bcc49b21a997e85d0b528286287d0dcadcc47d5b37431210ac",
+          "observationId": "2026W18_2A_0819_1",
+          "detector": 4,
+          "release": "dr1",
+          "observedAtUtc": "2026-05-03T17:14:22.286399Z",
+          "wavelengthUm": 3.6270157457230927,
+          "validFraction": 0.9465670784257397,
+          "alignment": "verified",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W18_2A/l2b-v27-2026-244/4/level2_2026W18_2A_0819_1D4_spx_l2b-v27-2026-244.fits"
+        }
+      ],
+      "timings": {
+        "discoverySeconds": 3.1392942909151316,
+        "retrievalAndPreparationSeconds": 10.36266945884563,
+        "totalSeconds": 13.584379540989175
+      },
+      "elapsedSeconds": 13.585104124853387
     },
     {
       "target": "WISE 0855",
-      "checkedAtUtc": "2026-11-14T19:33:26.432452+00:00",
+      "checkedAtUtc": "2026-11-14T20:23:21.576097+00:00",
       "coordinateProvenance": "Coordinates supplied by the NASA challenge; epoch unspecified; not propagated.",
       "visibleChange": "not_assessed",
       "field": {
@@ -68,18 +1866,306 @@
         "dec": -7.245147222222222,
         "fovArcmin": 6.0
       },
-      "status": "upstream_unavailable",
+      "status": "ready",
       "diagnostics": {
-        "code": "UPSTREAM_ERROR",
-        "message": "Incomplete retrieval: 3 of 24 cutouts failed",
-        "complete": false
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 297,
+          "byRelease": {
+            "dr1": 297
+          },
+          "byDetector": {
+            "D1": 51,
+            "D2": 50,
+            "D3": 46,
+            "D4": 53,
+            "D5": 51,
+            "D6": 46
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 51,
+            "dr1:D2": 50,
+            "dr1:D3": 46,
+            "dr1:D4": 53,
+            "dr1:D5": 51,
+            "dr1:D6": 46
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-05-05T16:48:02.419200Z",
+              "end": "2026-05-14T06:55:30.720000Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 297,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 24,
+          "succeededCutouts": 24,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 273
+        },
+        "invalidCutouts": [],
+        "rejectedObservations": [
+          {
+            "observationId": "2025W19_1B_0116_2",
+            "detector": 3,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.1775351910370583
+          },
+          {
+            "observationId": "2025W19_1B_0116_2",
+            "detector": 6,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.9635162309681126,
+            "validFraction": 0.8779086469405343
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 201,
+          "wavelength_mismatch": 26,
+          "compatible": 4
+        },
+        "usableExposureCount": 22,
+        "alignmentFailures": [],
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 4,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W19_1B_0116_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W19_1B_0116_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W19_1B_0181_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W19_1B_0241_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W19_1B_0241_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_2A_0952_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W19_2A_0952_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W20_1A_0033_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W20_1A_0033_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W20_1A_0939_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 2
+          }
+        ],
+        "preparedExposureCount": 24,
+        "processedExposureCount": 24,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W19_1B_0116_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W20_1A_0033_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W19_1B_0116_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W20_1A_0033_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W19_1B_0241_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W19_1B_0181_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W20_1A_0939_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W19_1B_0116_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W19_2A_0952_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W19_1B_0241_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W19_1A_0594_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W19_1B_0181_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W20_1A_0939_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W19_1B_0116_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W19_2A_0952_1",
+            "detector": 6
+          }
+        ]
       },
-      "comparisonId": null,
-      "elapsedSeconds": 47.052566833095625
+      "comparisonId": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416",
+      "frames": [
+        {
+          "frameId": "ac876c2d5d9f4bc8a6c88d59c1d802fce6e2ef5b10ff85ffa5cd1e0366c2667c",
+          "observationId": "2025W19_1B_0181_2",
+          "detector": 2,
+          "release": "dr1",
+          "observedAtUtc": "2025-05-06T02:36:36.432000Z",
+          "wavelengthUm": 1.5537267176527214,
+          "validFraction": 0.8902614191324332,
+          "alignment": "reference_frame",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/2/level2_2025W19_1B_0181_2D2_spx_l2b-v27-2026-197.fits"
+        },
+        {
+          "frameId": "e2139338b0f2954a0cfc6f55c92d57f6e97fa2d1fe017abcf9e1e5a32d3666e8",
+          "observationId": "2026W20_1A_0939_1",
+          "detector": 2,
+          "release": "dr1",
+          "observedAtUtc": "2026-05-13T16:14:39.062400Z",
+          "wavelengthUm": 1.5536864251652962,
+          "validFraction": 0.8853777650100546,
+          "alignment": "verified",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/2/level2_2026W20_1A_0939_1D2_spx_l2b-v27-2026-246.fits"
+        }
+      ],
+      "timings": {
+        "discoverySeconds": 3.4054749999195337,
+        "retrievalAndPreparationSeconds": 0.8246268751099706,
+        "totalSeconds": 4.256704916944727
+      },
+      "elapsedSeconds": 4.257406292017549
     },
     {
       "target": "R Draconis",
-      "checkedAtUtc": "2026-11-14T19:34:13.485657+00:00",
+      "checkedAtUtc": "2026-11-14T20:23:25.834071+00:00",
       "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
       "visibleChange": "not_assessed",
       "field": {
@@ -87,14 +2173,700 @@
         "dec": 66.75472222222223,
         "fovArcmin": 6.0
       },
-      "status": "upstream_unavailable",
+      "status": "ready",
       "diagnostics": {
-        "code": "UPSTREAM_ERROR",
-        "message": "Incomplete retrieval: 5 of 24 cutouts failed",
-        "complete": false
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "retrieval",
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 586,
+          "byRelease": {
+            "dr1": 456,
+            "qr3": 130
+          },
+          "byDetector": {
+            "D1": 93,
+            "D2": 97,
+            "D3": 104,
+            "D4": 94,
+            "D5": 94,
+            "D6": 104
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 69,
+            "dr1:D2": 78,
+            "dr1:D3": 83,
+            "dr1:D4": 69,
+            "dr1:D5": 75,
+            "dr1:D6": 82,
+            "qr3:D1": 24,
+            "qr3:D2": 19,
+            "qr3:D3": 21,
+            "qr3:D4": 25,
+            "qr3:D5": 19,
+            "qr3:D6": 22
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-05-16T22:56:23.625600Z",
+              "end": "2026-05-13T05:57:52.041600Z"
+            },
+            "qr3": {
+              "start": "2026-05-16T08:41:38.572800Z",
+              "end": "2026-07-16T20:59:22.502400Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 586,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 72,
+          "succeededCutouts": 71,
+          "failedCutouts": 1,
+          "failureCategories": {
+            "transient_http": 1
+          },
+          "failures": [
+            {
+              "observationId": "2026W26_1A_0274_3",
+              "detector": 2,
+              "release": "qr3",
+              "category": "transient_http",
+              "code": "UPSTREAM_ERROR",
+              "attempts": 3,
+              "httpStatus": 503
+            }
+          ],
+          "notRequestedExposureCount": 514
+        },
+        "invalidCutouts": [
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 4,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W29_2A_0079_3: ValueError"
+          },
+          {
+            "observationId": "2025W27_2A_0331_1",
+            "detector": 4,
+            "release": "dr1",
+            "reason": "Cannot prepare 2025W27_2A_0331_1: ValueError"
+          }
+        ],
+        "rejectedObservations": [
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 1,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.5935076127549554,
+            "validFraction": 0.49583453030738295
+          },
+          {
+            "observationId": "2025W27_2A_0331_1",
+            "detector": 1,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.6805515656420569,
+            "validFraction": 0.5923585176673369
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 1868,
+          "wavelength_mismatch": 323,
+          "insufficient_common_coverage": 18,
+          "compatible": 2
+        },
+        "usableExposureCount": 67,
+        "alignmentFailures": [],
+        "preparedExposureCount": 69,
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 2,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W24_1A_0123_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W24_1A_0123_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W24_1A_0125_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_1A_0125_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W26_1A_0242_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0242_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W29_1A_0015_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_1A_0015_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0364_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 1
+          }
+        ],
+        "processedExposureCount": 71,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0364_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_1A_0364_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0274_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W27_2A_0331_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0015_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W24_1A_0123_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0242_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_1A_0125_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W29_1A_0015_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W24_1A_0123_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0242_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_1A_0125_3",
+            "detector": 6
+          }
+        ]
       },
-      "comparisonId": null,
-      "elapsedSeconds": 48.17721275007352
+      "comparisonId": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+      "frames": [
+        {
+          "frameId": "1ae1fb9260e8792613bfb2820f67769e77fd39958f583af960976c14eddba2d5",
+          "observationId": "2025W23_2B_0206_2",
+          "detector": 4,
+          "release": "dr1",
+          "observedAtUtc": "2025-06-06T11:25:30.374400Z",
+          "wavelengthUm": 3.2557049415562336,
+          "validFraction": 0.8557885665038782,
+          "alignment": "reference_frame",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_2D4_spx_l2b-v27-2026-201.fits"
+        },
+        {
+          "frameId": "a7a5d16f27ab1be64cebe8ae0e849d9c6f85e3380873b70995338492eb174822",
+          "observationId": "2026W29_1A_0364_1",
+          "detector": 4,
+          "release": "qr3",
+          "observedAtUtc": "2026-07-14T21:41:40.934400Z",
+          "wavelengthUm": 3.245933773545258,
+          "validFraction": 0.8825050272910083,
+          "alignment": "wcs_only_not_empirically_verified",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/4/level2_2026W29_1A_0364_1D4_spx_l2b-v27-2026-276.fits"
+        }
+      ],
+      "timings": {
+        "discoverySeconds": 4.326229334110394,
+        "retrievalAndPreparationSeconds": 17.730995082994923,
+        "totalSeconds": 22.127186000114307
+      },
+      "elapsedSeconds": 22.128832374932244
     }
   ]
 }

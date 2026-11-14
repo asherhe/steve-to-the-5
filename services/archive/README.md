@@ -259,7 +259,43 @@ Deployment assumptions:
 
 ## Verified and unverified
 
-RESULTS_PLACEHOLDER
+Records: `fixtures/archive/verification.json`, `fixtures/archive/coverage-log.json`,
+and earlier attempts under `fixtures/archive/history/`.
+
+Run on 2026-11-14:
+
+- Unit and regression tests: 77 passed (baseline before these repairs: 27).
+- Localhost HTTP smoke test against the retained WISE 0855 store: replay, PNG and FITS
+  assets, invalid input, unknown ID, offline rebuild, OpenAPI export.
+- Live five-target check at 6 arcmin with default settings:
+
+| Target | Discovered | Outcome | Frames |
+|---|---|---|---|
+| Barnard's Star | 387 (dr1 259, qr3 128) | HTTP 503 `PROCESSING_LIMIT`: no compatible pair in 120 sampled cutouts | none |
+| RW Aurigae | 357 (dr1 237, qr3 120) | HTTP 503 `PROCESSING_LIMIT`: no compatible pair in 120 sampled cutouts | none |
+| Epsilon Indi B | 491 (dr1 371, qr3 120) | `ready` | D4, 3.63 µm, 2025-04-27 and 2026-05-03, alignment verified |
+| WISE 0855 | 297 (dr1) | `ready` | D2, 1.55 µm, 2025-05-06 and 2026-05-13, alignment verified |
+| R Draconis | 586 (dr1 456, qr3 130) | `ready`, one cutout failed | D4, 3.25 µm, 2025-06-06 (dr1) and 2026-07-14 (qr3), alignment unverified |
+
+What these results do and do not show:
+
+- Three targets give a live comparison; two do not. A comparison for every target is
+  an unmet milestone. For the two failures the sample found only wavelength-mismatched
+  or different-detector pairs; 237 and 267 discovered exposures were never requested,
+  so this is not evidence that no pair exists.
+- The logged run is the third pass of the day and reused cutouts downloaded earlier
+  that day. The first cold pass took 38–121 s for the three successes and hit the 180 s
+  deadline for the other two.
+- No visible change is claimed for any target. R Draconis has its core fully masked in
+  both frames, so the star's brightness cannot be read. WISE 0855 was matched at
+  1.55 µm, where so cold an object is not expected to be detectable. Epsilon Indi B is
+  recorded as ambiguous.
+- The time-ordered sampling is a poor way to find wavelength matches. A sampling order
+  that uses wavelength would probably help Barnard's Star and RW Aurigae; it has not
+  been built or tested.
+
+Not verified: hosted deployment, frontend integration, a 30-arcminute live request,
+behaviour with more than one worker, and bitwise reprocessing on another platform.
 
 ## Sources and attribution
 
