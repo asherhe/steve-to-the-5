@@ -4,6 +4,7 @@ import { CatalogApiError, type SourceInspectorProps, type MarkAction, type Selec
 import { targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { SkyMap } from "./SkyMap";
+import { SearchBox } from "./SearchBox";
 import { archiveFieldLimits, ArchiveRequestError } from "./archive";
 import { ComparisonPlayback } from "./ComparisonPlayback";
 import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
@@ -57,7 +58,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const [focus, setFocus] = useState<Field | null>(null);
   const [panel, setPanel] = useState<Panel | null>(() =>
     (new URLSearchParams(location.search).has("comparison") || new URLSearchParams(location.search).has("finding")) ? "comparison" : null);
-  const panelButtons = useRef<Partial<Record<Panel, HTMLButtonElement>>>({});
+  const panelButtons = useRef<Partial<Record<Panel, HTMLElement>>>({});
   const [mapNotice, setMapNotice] = useState("");
   const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
@@ -175,6 +176,12 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
     setPanel("comparison");
   }
 
+  function resolve(name: string, fovArcmin: number) {
+    setMapNotice("");
+    setRequest({ kind: "name", name, fovArcmin });
+    setPanel("comparison");
+  }
+
   function compareViewport(field: Field) {
     if (!inFieldRange(field.fovArcmin, fieldLimits)) {
       setMapNotice(`Zoom to a field width of ${fieldLimits.min}–${fieldLimits.max} arcmin before comparing.`);
@@ -235,15 +242,19 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       if (event.key === "Escape" && !event.defaultPrevented && panel) closePanel(panel);
     }}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice} />
-      <nav className="panel-buttons" aria-label="Viewer panels">
-          {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
+        onInspect={inspect} onAdvancedSearch={() => setPanel("search")} catalogMark={catalogMark} notice={mapNotice} />
+      <header className="top-bar">
+        <SearchBox fovArcmin={initialField.fovArcmin} onSearch={search} onResolve={resolve}
+          inputRef={(input) => { if (input) panelButtons.current.search = input; }} />
+        <nav className="panel-buttons" aria-label="Viewer panels">
+          {([["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
             <button key={id} type="button" ref={(button) => {
               if (button) panelButtons.current[id] = button;
             }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
               onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
           ))}
-      </nav>
+        </nav>
+      </header>
       <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
         <div className="panel-heading">
           <h2 id="gaia-heading">Gaia source inspector</h2>
@@ -271,15 +282,10 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       </section>
       <section id="search-panel" aria-labelledby="search-heading" className="floating-panel panel-left" hidden={panel !== "search"}>
         <div className="panel-heading">
-          <h2 id="search-heading">Compare a field</h2>
+          <h2 id="search-heading">Advanced search</h2>
           <button type="button" onClick={() => closePanel("search")}>Close</button>
         </div>
-        <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
-          onResolve={(name, fovArcmin) => {
-            setMapNotice("");
-            setRequest({ kind: "name", name, fovArcmin });
-            setPanel("comparison");
-          }} />
+        <FieldSearch field={initialField} limits={fieldLimits} onSearch={search} onResolve={resolve} />
       </section>
       <section id="comparison-panel" aria-labelledby="comparison-heading" className="floating-panel panel-right" hidden={panel !== "comparison"}>
         <div className="panel-heading">

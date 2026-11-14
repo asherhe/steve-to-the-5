@@ -28,7 +28,7 @@ try {
  });
  // Fixture query flags cannot enable development adapters in the public build.
  await page.goto(origin+'/?fixtures=1');
- await page.getByRole('button',{name:'Search',exact:true}).click();
+ await page.getByRole('button',{name:'More map options',exact:true}).click();await page.getByRole('button',{name:'Advanced search',exact:true}).click();
  assert.equal(await page.getByLabel('Archive response').count(),0);assert.equal(calls.length,0);
  await page.getByLabel('Object name',{exact:true}).fill('Contract field');
  await page.getByRole('button',{name:'Resolve and compare'}).click();
@@ -48,7 +48,7 @@ try {
  await page.getByRole('region',{name:'Comparison playback'}).waitFor();
  assert(!calls.slice(before).some(path=>path.startsWith('/api/comparisons?')));
  outage=true;
- await page.getByRole('button',{name:'Search',exact:true}).click();await page.getByRole('button',{name:'Compare coordinates'}).click();
+ await page.getByRole('button',{name:'More map options',exact:true}).click();await page.getByRole('button',{name:'Advanced search',exact:true}).click();await page.getByRole('button',{name:'Compare coordinates'}).click();
  await page.getByText('Archive unavailable',{exact:true}).waitFor();
  assert.equal(await page.getByRole('region',{name:'Comparison playback'}).count(),0);
  await page.getByRole('button',{name:'Retry',exact:true}).waitFor();

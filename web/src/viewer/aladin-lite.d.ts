@@ -1,6 +1,6 @@
 declare module "aladin-lite" {
   interface AladinImageSurvey {
-    setSliceNumber(slice: number): void;
+    setFrequency(frequency: { value: number; unit: "Hz" }): void;
   }
 
   export interface AladinView {
@@ -9,7 +9,12 @@ declare module "aladin-lite" {
     gotoRaDec(ra: number, dec: number): void;
     setFoV(degrees: number): void;
     setProjection(projection: "SIN" | "AIT"): void;
+    setBaseImageLayer(layer: AladinImageSurvey): void;
     on(event: "click", callback: (position: { ra: number; dec: number; isDragging: boolean }) => void): void;
+    on(event: "positionChanged", callback: (position: { ra: number; dec: number; dragging: boolean }) => void): void;
+    on(event: "zoomChanged", callback: (fovDegrees: number) => void): void;
+    on(event: "resizeChanged", callback: (width: number, height: number) => void): void;
+    on(event: "projectionChanged", callback: (projection: string) => void): void;
     addCatalog(catalog: AladinCatalog): void;
   }
 
@@ -20,7 +25,7 @@ declare module "aladin-lite" {
 
   const Aladin: {
     init: Promise<unknown>;
-    HiPS(url: string, options: {
+    HiPS(urlOrId: string, options: {
       name: string;
       successCallback: (survey: AladinImageSurvey) => void;
       errorCallback: (error: unknown) => void;
@@ -31,7 +36,7 @@ declare module "aladin-lite" {
       element: HTMLElement,
       options: {
         cooFrame: "ICRSd";
-        survey: string | AladinImageSurvey;
+        survey?: string | AladinImageSurvey;
         projection: "SIN";
         fov: number;
         showProjectionControl: boolean;

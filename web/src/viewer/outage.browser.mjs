@@ -6,7 +6,7 @@ const browser=await chromium.launch({channel:"chrome",headless:true});
 try{
  const page=await browser.newPage();page.setDefaultTimeout(45000);
  await page.goto(origin);
- await page.getByRole("button",{name:"Search",exact:true}).click();
+ await page.getByRole("button",{name:"More map options",exact:true}).click();await page.getByRole("button",{name:"Advanced search",exact:true}).click();
  await page.getByLabel("Right ascension").fill("133.79512916666664");
  await page.getByLabel("Declination",{exact:true}).fill("-7.245147222222222");
  const result=page.waitForResponse(r=>new URL(r.url()).pathname==="/api/comparisons");

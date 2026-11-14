@@ -1,15 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
-import { findSpherexSurvey, spherexMosaicDoi, spherexMosaicSlice } from "./spherexSurvey";
+import { formatAngularSize, formatDec, formatRa, normalizeRa } from "./coordinates";
+import {
+  blankSpherexSlices, dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, spherexBandChannel,
+  spherexMosaicDoi, spherexMosaicSlice, spherexSliceFrequencyHz, spherexSliceWavelength, spherexSurveyUrl,
+  type SpherexCube,
+} from "./spherexSurvey";
+
+type AladinModule = typeof import("aladin-lite").default;
+type Imagery = "spherex" | "dss";
+type LayerStatus = "loading" | "ready" | "unavailable";
 
 const globeFovDeg = 180;
+const imageryLabels: Record<Imagery, string> = { spherex: "SPHEREx", dss: "DSS" };
 
 export function SkyMap({
   initialCenter,
   focus,
   onCompare,
   onInspect,
+  onAdvancedSearch,
   catalogMark,
   notice,
 }: {
@@ -17,50 +28,57 @@ export function SkyMap({
   focus: Field | null;
   onCompare: (field: Field) => void;
   onInspect: (position: SkyPosition) => void;
+  onAdvancedSearch: () => void;
   catalogMark: SkyPosition | null;
   notice: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
+  const aladin = useRef<AladinModule | null>(null);
   const view = useRef<AladinView | null>(null);
+  const spherexLayer = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
+  const layerToken = useRef(0);
   const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
-  const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
-  const [surveyAttempt, setSurveyAttempt] = useState(0);
-  const [allSky, setAllSky] = useState(false);
+  const menu = useRef<HTMLDivElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
+  const [viewStatus, setViewStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [attempt, setAttempt] = useState(0);
+  const [cube, setCube] = useState<SpherexCube | "unavailable" | null>(null);
+  const [imagery, setImagery] = useState<Imagery>("spherex");
+  const [slice, setSlice] = useState(spherexMosaicSlice);
+  const sliceRef = useRef(slice);
+  sliceRef.current = slice;
+  const [layerStatus, setLayerStatus] = useState<LayerStatus>("loading");
+  const [mapShown, setMapShown] = useState(false);
+  const [allSky, setAllSky] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [readout, setReadout] = useState<{ ra: number; dec: number; width: number; height: number } | null>(null);
+
+  function syncReadout() {
+    const sky = view.current;
+    if (!sky) return;
+    const [ra, dec] = sky.getRaDec();
+    const [width, height] = sky.getFoV();
+    if ([ra, dec, width, height].every(Number.isFinite)) setReadout({ ra: normalizeRa(ra), dec, width, height });
+  }
+
+  // Create the Aladin view once; image layers are applied separately so switching keeps the position.
   useEffect(() => {
     const host = container.current;
     if (!host) return;
-    const controller = new AbortController();
-    setState("loading");
+    let cancelled = false;
+    setViewStatus("loading");
 
     async function initialize(element: HTMLElement) {
       try {
-        const [{ default: Aladin }, survey] = await Promise.all([
-          import("aladin-lite"), findSpherexSurvey(controller.signal),
-        ]);
-        if (controller.signal.aborted) return;
-        if (!survey) {
-          setState("unavailable");
-          return;
-        }
+        const { default: Aladin } = await import("aladin-lite");
         await Aladin.init;
-        if (controller.signal.aborted) return;
-        view.current = Aladin.aladin(element, {
+        if (cancelled) return;
+        const sky = Aladin.aladin(element, {
           cooFrame: "ICRSd",
-          survey: Aladin.HiPS(survey, {
-            name: "SPHEREx DR1 all-sky mosaic",
-            successCallback: (layer) => {
-              if (controller.signal.aborted) return;
-              layer.setSliceNumber(spherexMosaicSlice);
-              setState("ready");
-            },
-            errorCallback: (error) => {
-              if (controller.signal.aborted) return;
-              console.error("Could not load the SPHEREx mosaic", error);
-              setState("unavailable");
-            },
-          }),
+          // Placeholder so Aladin skips its default survey; the layer effect sets the real base layer.
+          survey: spherexSurveyUrl,
           projection: "SIN",
           fov: globeFovDeg,
           showProjectionControl: false,
@@ -72,48 +90,146 @@ export function SkyMap({
           showFov: false,
           showSimbadPointerControl: false,
         });
-        view.current.gotoRaDec(initialCenter.ra, initialCenter.dec);
+        sky.gotoRaDec(initialCenter.ra, initialCenter.dec);
         const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle" });
-        view.current.addCatalog(catalog);
+        sky.addCatalog(catalog);
         markPosition.current = (position) => {
           catalog.clear();
           if (position) catalog.addSources([Aladin.source(position.ra, position.dec)]);
         };
+        sky.on("positionChanged", syncReadout);
+        sky.on("zoomChanged", syncReadout);
+        sky.on("resizeChanged", syncReadout);
+        aladin.current = Aladin;
+        view.current = sky;
+        syncReadout();
+        setViewStatus("ready");
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (cancelled) return;
         console.error("Could not initialize Aladin Lite", error);
-        setState("unavailable");
+        setViewStatus("failed");
       }
     }
 
     void initialize(host);
     return () => {
-      controller.abort();
+      cancelled = true;
       view.current = null;
+      aladin.current = null;
+      spherexLayer.current = null;
       markPosition.current = null;
+      setViewStatus("loading");
     };
-  }, [initialCenter, surveyAttempt]);
+  }, [initialCenter]);
+
+  // Check that the SPHEREx cube is reachable and read its wavelength list.
+  useEffect(() => {
+    const controller = new AbortController();
+    setCube(null);
+    void findSpherexSurvey(controller.signal).then((result) => {
+      if (!controller.signal.aborted) setCube(result ?? "unavailable");
+    });
+    return () => controller.abort();
+  }, [attempt]);
+
+  // Apply the selected imagery as the base layer.
+  useEffect(() => {
+    const sky = view.current;
+    const Aladin = aladin.current;
+    if (viewStatus !== "ready" || !sky || !Aladin) return;
+    const token = ++layerToken.current;
+    const current = () => token === layerToken.current;
+    const failed = (error: unknown) => {
+      if (!current()) return;
+      console.error(`Could not load ${imageryLabels[imagery]} imagery`, error);
+      setLayerStatus("unavailable");
+    };
+    setLayerStatus("loading");
+
+    if (imagery === "dss") {
+      spherexLayer.current = null;
+      const tryMirror = (index: number) => sky.setBaseImageLayer(Aladin.HiPS(dssSurveyUrls[index], {
+        name: "DSS2 colour (optical reference)",
+        successCallback: () => {
+          if (!current()) return;
+          setLayerStatus("ready");
+          setMapShown(true);
+        },
+        errorCallback: (error) => {
+          if (current() && index + 1 < dssSurveyUrls.length) tryMirror(index + 1);
+          else failed(error);
+        },
+      }));
+      tryMirror(0);
+      return;
+    }
+    if (cube === null) return;
+    if (cube === "unavailable") {
+      spherexLayer.current = null;
+      setLayerStatus("unavailable");
+      return;
+    }
+    const layer = Aladin.HiPS(cube.url, {
+      name: "SPHEREx DR1 all-sky mosaic",
+      successCallback: (added) => {
+        if (!current()) return;
+        added.setFrequency({ value: spherexSliceFrequencyHz(cube, sliceRef.current), unit: "Hz" });
+        setLayerStatus("ready");
+        setMapShown(true);
+      },
+      errorCallback: failed,
+    });
+    spherexLayer.current = layer;
+    sky.setBaseImageLayer(layer);
+  }, [imagery, cube, viewStatus, attempt]);
 
   useEffect(() => {
-    if (!focus || state !== "ready" || !view.current) return;
+    if (imagery !== "spherex" || layerStatus !== "ready" || !cube || cube === "unavailable") return;
+    spherexLayer.current?.setFrequency({ value: spherexSliceFrequencyHz(cube, slice), unit: "Hz" });
+  }, [imagery, slice, layerStatus, cube]);
+
+  useEffect(() => {
+    if (!focus || viewStatus !== "ready" || !view.current) return;
     view.current.setProjection("SIN");
     view.current.gotoRaDec(focus.ra, focus.dec);
     view.current.setFoV(focus.fovArcmin / 60);
     setAllSky(false);
-  }, [focus, state]);
+    syncReadout();
+  }, [focus, viewStatus]);
 
   useEffect(() => {
-    if (state !== "ready" || !view.current) return;
+    if (viewStatus !== "ready" || !view.current) return;
     const sky = view.current;
     sky.on("click", ({ ra, dec, isDragging }) => {
       if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) onInspect({ ra, dec });
     });
     return () => sky.on("click", () => {});
-  }, [onInspect, state]);
+  }, [onInspect, viewStatus]);
 
   useEffect(() => {
     markPosition.current?.(catalogMark);
-  }, [catalogMark, state]);
+  }, [catalogMark, viewStatus]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function dismiss(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!menu.current?.contains(target) && !menuButton.current?.contains(target)) setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [menuOpen]);
+
+  const mapUsable = viewStatus === "ready" && mapShown && layerStatus !== "unavailable";
+  const unavailable = viewStatus === "failed" || layerStatus === "unavailable";
+  const wavelengths = cube && cube !== "unavailable" ? cube.wavelengthsUm : [];
+  const wavelength = cube && cube !== "unavailable" ? spherexSliceWavelength(cube, slice) : null;
+  const { band, channel } = spherexBandChannel(slice);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    menuButton.current?.focus();
+  }
 
   function toggleProjection() {
     const sky = view.current;
@@ -122,6 +238,7 @@ export function SkyMap({
     sky.setProjection(allSky ? "SIN" : "AIT");
     sky.setFoV(allSky ? previousGlobeFov.current : 360);
     setAllSky(!allSky);
+    syncReadout();
   }
 
   function compareViewport() {
@@ -129,48 +246,104 @@ export function SkyMap({
     if (!sky) return;
     const [ra, dec] = sky.getRaDec();
     const [width] = sky.getFoV();
-    onCompare({ ra: ((ra % 360) + 360) % 360, dec, fovArcmin: width * 60 });
+    onCompare({ ra: normalizeRa(ra), dec, fovArcmin: width * 60 });
   }
 
   function zoom(factor: number) {
     const sky = view.current;
-    if (sky) sky.setFoV(Math.min(allSky ? 360 : globeFovDeg, sky.getFoV()[0] * factor));
+    if (!sky) return;
+    sky.setFoV(Math.min(allSky ? 360 : globeFovDeg, sky.getFoV()[0] * factor));
+    syncReadout();
   }
+
+  function pickSlice(event: ChangeEvent<HTMLInputElement>) {
+    let next = Number(event.target.value);
+    const step = next >= slice ? 1 : -1;
+    while (blankSpherexSlices.has(next)) next += step;
+    if (next >= 0 && next < wavelengths.length) setSlice(next);
+  }
+
+  const statusText =
+    viewStatus === "failed" ? "The sky map could not start. Search using coordinates or a preset." :
+    layerStatus === "unavailable" ? `${imageryLabels[imagery]} imagery unavailable. Try again, switch imagery, or search using coordinates.` :
+    layerStatus === "loading" || viewStatus === "loading" ? `Loading ${imageryLabels[imagery]} imagery…` : "";
 
   return (
     <section className="sky-section" aria-label="Reference sky map">
       <div className="sky-map">
-        <div ref={container} className="aladin-host" />
-        {state !== "ready" && (
-          <p className="map-status" role="status">
-            {state === "loading" ? "Loading SPHEREx imagery…" : "SPHEREx imagery unavailable. Search using coordinates or a preset."}
-          </p>
-        )}
+        <div ref={container} className="aladin-host" data-hidden={!mapShown || unavailable || undefined} />
+        {statusText && <p className="map-status" role="status">{statusText}</p>}
       </div>
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
+        <p className="sky-readout">
+          {readout && mapUsable ? (
+            <>
+              <span title={`RA ${readout.ra.toFixed(5)}° (ICRS)`}>RA {formatRa(readout.ra)}</span>
+              <span title={`Dec ${readout.dec.toFixed(5)}° (ICRS)`}>Dec {formatDec(readout.dec)}</span>
+              <span title="Field of view, width × height">FoV {formatAngularSize(readout.width)} × {formatAngularSize(readout.height)}</span>
+            </>
+          ) : <span>Map center unavailable</span>}
+        </p>
+        <div className="imagery-row">
+          <div className="segmented" role="group" aria-label="Map imagery">
+            {(["spherex", "dss"] as const).map((option) => (
+              <button key={option} type="button" aria-pressed={imagery === option} disabled={viewStatus !== "ready"}
+                onClick={() => setImagery(option)}>{imageryLabels[option]}</button>
+            ))}
+          </div>
+          {imagery === "spherex" && wavelengths.length > 0 && (
+            <label className="wavelength">
+              <span className="visually-hidden">SPHEREx wavelength</span>
+              <input type="range" min={0} max={wavelengths.length - 1} step={1} value={slice}
+                disabled={layerStatus !== "ready"} onChange={pickSlice}
+                aria-valuetext={`${wavelength?.toFixed(3)} micrometres, band ${band} channel ${channel}`} />
+              <output>{wavelength?.toFixed(3)} µm</output>
+            </label>
+          )}
+        </div>
         <div className="controls">
-          <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={state !== "ready"}>+</button>
-          <button type="button" aria-label="Zoom out" onClick={() => zoom(2)} disabled={state !== "ready"}>−</button>
-          <button type="button" onClick={toggleProjection} disabled={state !== "ready"}>
-            {allSky ? "Globe view" : "All sky"}
-          </button>
-          <button type="button" onClick={compareViewport} disabled={state !== "ready"}>
+          <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={!mapUsable}>+</button>
+          <button type="button" aria-label="Zoom out" onClick={() => zoom(2)} disabled={!mapUsable}>−</button>
+          <button type="button" onClick={compareViewport} disabled={!mapUsable}>
             Compare this field
           </button>
-          <button type="button" disabled={state !== "ready"} onClick={() => {
+          {unavailable && <button type="button" onClick={() => setAttempt((value) => value + 1)}>Retry imagery</button>}
+          <button ref={menuButton} type="button" className="menu-button" aria-label="More map options"
+            aria-expanded={menuOpen} aria-controls="map-menu" onClick={() => setMenuOpen(!menuOpen)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+        </div>
+        <div id="map-menu" ref={menu} className="map-menu" hidden={!menuOpen} onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeMenu();
+          }
+        }}>
+          <button type="button" disabled={!mapUsable} onClick={() => { toggleProjection(); closeMenu(); }}>
+            {allSky ? "Globe view" : "All-sky view"}
+          </button>
+          <button type="button" disabled={!mapUsable} onClick={() => {
             const center = view.current?.getRaDec();
-            if (center) onInspect({ ra: center[0], dec: center[1] });
+            if (center) onInspect({ ra: normalizeRa(center[0]), dec: center[1] });
+            setMenuOpen(false);
           }}>
             Inspect map center
           </button>
+          <button type="button" onClick={() => { setMenuOpen(false); onAdvancedSearch(); }}>Advanced search</button>
         </div>
-        {state === "unavailable" && (
-          <button type="button" onClick={() => setSurveyAttempt((attempt) => attempt + 1)}>Retry imagery</button>
-        )}
-        {state === "ready" && (
-          <small><a href={spherexMosaicDoi}>SPHEREx DR1 all-sky mosaic</a> · 0.771 µm · NASA/SPHEREx · Caltech/IPAC IRSA</small>
-        )}
+        {mapUsable && layerStatus === "ready" && (imagery === "spherex" ? (
+          <small>
+            <a href={spherexMosaicDoi}>SPHEREx DR1 all-sky mosaic</a>
+            {wavelength !== null && <> · {wavelength.toFixed(3)} µm</>} · band {band}, channel {channel}
+            {" "}· combined observations, not dated · NASA/SPHEREx · Caltech/IPAC IRSA
+          </small>
+        ) : (
+          <small>
+            <a href={dssAcknowledgement}>DSS2 colour</a> · optical reference survey, not SPHEREx · STScI · HiPS by CDS
+          </small>
+        ))}
       </div>
     </section>
   );

@@ -23,7 +23,7 @@ try {
  await p.getByRole('button',{name:'Copy link',exact:true}).click();
  const link=await p.evaluate(()=>navigator.clipboard.readText());
  assert.equal(new URL(link).searchParams.get('finding'),'fixture-finding');
- await p.getByRole('button',{name:'Search',exact:true}).click();
+ await p.getByRole('button',{name:'More map options',exact:true}).click();await p.getByRole('button',{name:'Advanced search',exact:true}).click();
  await p.getByLabel('Right ascension').fill('42');await p.getByLabel('Declination',{exact:true}).fill('-20');await p.getByLabel('Field width (arcmin)').fill('12');
  await p.getByRole('button',{name:'Compare coordinates'}).click();
  await p.getByLabel('Archive response').selectOption('single_epoch');
