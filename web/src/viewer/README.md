@@ -166,3 +166,97 @@ Checkpoint 6 verification used local contract fixtures and mocked HTTP in Chrome
 it did not contact the archive, Gaia, auth or a deployed origin. Live services,
 five-target coverage, posting and cross-session auth remain checkpoint 7 work.
 The production build still reports the existing large Aladin bundle warning.
+
+## Checkpoint 7: local live integration (partial)
+
+Per the user's local-only scope, checks used a local Vite production preview with
+same-origin FastAPI proxies. See `verification/checkpoint7-local.json` for executed
+results and the distinction between fresh checks and reviewed owner logs.
+
+Verified on November 14, 2026:
+
+- A cold real WISE 0855 search, using an empty temporary archive cache, returned a
+  matched pair in 24.3 s. Source observation dates were May 6, 2025 and May 13, 2026.
+- Chrome decoded and played both real 59×59 frames. A second anonymous browser
+  context restored the identical manifest and SHA-256 image bytes without searching.
+- The live Gaia service returned 15 sources near the separate catalog test position
+  in 3.2 s. Cutout inspection returned four sources; actual source detail/provenance
+  loaded, and a predicted Gaia marker appeared only on its recorded image frame.
+- Four points on the real rendered grid agreed with Astropy to better than 1e-8 deg
+  and 1e-6 pixel. This validates this grid transform, not a new empirical alignment
+  or detection-significance claim.
+- An isolated backend with an unreachable upstream proxy produced the real archive
+  failure response through the same viewer origin. The UI showed failure and retry,
+  no unrelated frames, and successfully opened the labeled saved real tutorial pair.
+  Browser APIs were not mocked. The working service was restored afterward.
+
+The cold-request comparison and original FITS assets were also published unchanged,
+with conflict/integrity checks, to the normal local archive store. While the usual
+local stack is running, replay it at:
+
+`http://localhost:5173/?comparison=e618fdf2cf94dcb0d5321b4fabc3852e3a5d9e0449dad96b4a160ee08f2ad61f`
+
+The local evidence store is ignored runtime data, not a new bundled fixture. Keep
+`services/archive/.local-data/evidence` intact to retain this link. The temporary test
+cache is not the sole retained copy of this pair.
+
+### Repeat the live checks
+
+Use the existing archive command on port 8000, and start Gaia in **live** mode on a
+separate port rather than silently relying on its default fixture mode:
+
+```sh
+cd services/catalogs
+CATALOGS_LIVE=1 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8011
+```
+
+From the repository root, serve the built app with that catalog target:
+
+```sh
+CATALOG_API_TARGET=http://127.0.0.1:8011 npm run preview -- --port 5177
+PLAYWRIGHT_MODULE="$test_tools/node_modules/playwright/index.mjs" COMPARISON_ID=e618fdf2cf94dcb0d5321b4fabc3852e3a5d9e0449dad96b4a160ee08f2ad61f node web/src/viewer/live.browser.mjs
+```
+
+`VIEWER_TEST_URL`, `COMPARISON_ID` and optional `REPORT_FILE` configure the browser
+check. It requires a saved real comparison and running real services. It asserts
+Gaia's source-detail link when sources are returned. If your Python installation
+cannot validate the service certificates, configure `SSL_CERT_FILE` and
+`REQUESTS_CA_BUNDLE` to a bundle from your trusted system roots. Do not disable TLS
+verification. This run used such a bundle without changing repository dependencies
+or system trust settings. No keys or authentication tokens are needed for archive
+or public Gaia reads.
+
+To check WCS, save a comparison response JSON, then run:
+
+```sh
+RESPONSE_FILE=/path/to/response.json node web/src/viewer/verify-wcs.mjs
+```
+
+This uses the archive environment's Astropy. Set `ARCHIVE_PYTHON` to another declared
+archive interpreter when needed (including Windows).
+
+`outage.browser.mjs` is a separate check for a deliberately unavailable upstream.
+Run it **only against an isolated test archive instance**, not the working local
+stack. For example, start the archive on port 8002 with a separate storage directory
+and `HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9 ALL_PROXY=http://127.0.0.1:9`.
+Point a separate preview at port 8002 with `ARCHIVE_API_TARGET`, run the script with
+`VIEWER_TEST_URL` set to that preview, then stop the isolated failure instance. Saved
+real example replay should still work because the local backend remains available.
+
+### Five targets and pending findings/auth
+
+The checked-in archive coverage log records five earlier upstream failures. The
+archive owner's newer local `coverage-run3.json` records real pairs for Epsilon Indi B,
+WISE 0855 and R Draconis, and `PROCESSING_LIMIT` for Barnard's Star and RW Aurigae.
+The report retains their exact coordinates, IDs, timestamps and configuration.
+Those reviewed results use older finding centers (especially Epsilon Indi B); they
+are not a new run of all current viewer presets or proof of missing coverage for
+failed requests. No visible change or discovery was claimed.
+
+The user is merging Supabase development from `main`. Findings/auth integration is
+pending that merge. Delivered remote findings branches were inspected without
+merging or copying cross-owner source files. After the merge, wire the actual
+findings component/client and browser session through the app shell, mount/proxy its
+same-origin routes, and use two distinct sessions to test post, public replay,
+signed-out write denial and a signed-in reply. Checkpoint 7 is not complete until
+those checks pass. Deployment checks do not apply to this local-only app.

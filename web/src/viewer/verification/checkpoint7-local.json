@@ -1,0 +1,214 @@
+{
+  "checkedAtUtc": "2026-11-14T22:05:17.457713+00:00",
+  "checkpoint": "7",
+  "status": "partial_pending_findings_auth_merge",
+  "scope": "localhost only, per user instruction",
+  "liveBrowser": {
+    "kind": "executed_local_real_services",
+    "origin": "http://127.0.0.1:5177",
+    "comparisonId": "e618fdf2cf94dcb0d5321b4fabc3852e3a5d9e0449dad96b4a160ee08f2ad61f",
+    "evidenceKind": "real_archive",
+    "dimensions": [
+      59,
+      59
+    ],
+    "wavelengthRangeUm": [
+      1.5346771169993776,
+      1.5727389205331392
+    ],
+    "stretch": {
+      "lower": -0.0020993436055899623,
+      "softening": 0.1,
+      "type": "asinh",
+      "unit": "MJy/sr",
+      "upper": 1.3899087567605404
+    },
+    "frames": [
+      {
+        "id": "ac876c2d5d9f4bc8a6c88d59c1d802fce6e2ef5b10ff85ffa5cd1e0366c2667c",
+        "observedAtUtc": "2025-05-06T02:36:36.432000Z",
+        "alignment": "reference_frame",
+        "imageSha256": "364c1187865dddfdd91fa819de4c3be20945e84c044b166472a3386f110603d9"
+      },
+      {
+        "id": "e2139338b0f2954a0cfc6f55c92d57f6e97fa2d1fe017abcf9e1e5a32d3666e8",
+        "observedAtUtc": "2026-05-13T16:14:39.062400Z",
+        "alignment": "verified",
+        "imageSha256": "a5b921b2311647b021c2e4f17d446ab8d1ddc29cb11264282154d96c9103056c"
+      }
+    ],
+    "gaiaSourcesNearSelectedCutout": 4,
+    "checks": [
+      "real_archive_images_decoded_stepped_and_played",
+      "live_gaia_inspector_and_frame_specific_prediction_mark",
+      "fresh_anonymous_session_replays_identical_manifest_and_image_bytes_without_search"
+    ],
+    "limitations": [
+      "No findings/auth check before their integration lands.",
+      "No claim of a significant motion or variability detection.",
+      "Local origin only; not deployed."
+    ]
+  },
+  "coldRequest": {
+    "httpStatus": 200,
+    "elapsedSeconds": 24.275068,
+    "cacheInitiallyEmpty": true,
+    "field": {
+      "ra": 133.79512916666664,
+      "dec": -7.245147222222222,
+      "fovArcmin": 6
+    },
+    "maxFrames": 2,
+    "deadlineSeconds": 180,
+    "status": "ready",
+    "persistentLocalEvidence": "services/archive/.local-data/evidence",
+    "localReplayOrigin": "http://127.0.0.1:5173",
+    "preservedManifestUnchanged": true
+  },
+  "gaiaConeCheck": {
+    "httpStatus": 200,
+    "elapsedSeconds": 3.19702,
+    "ra": 269.45207,
+    "dec": 4.66829,
+    "radiusArcsec": 30,
+    "sourceCount": 15,
+    "liveMode": true
+  },
+  "wcsAgainstAstropy": {
+    "gridComparisonId": "e618fdf2cf94dcb0d5321b4fabc3852e3a5d9e0449dad96b4a160ee08f2ad61f",
+    "pointCount": 4,
+    "maxSkyErrorDeg": 8.881784197001252e-15,
+    "maxPixelError": 1.2178702490928117e-11,
+    "skyToleranceDeg": 1e-08,
+    "pixelTolerance": 1e-06
+  },
+  "outage": {
+    "kind": "executed_local_upstream_outage",
+    "origin": "http://127.0.0.1:5177",
+    "status": "upstream_unavailable",
+    "diagnosticCode": "UPSTREAM_ERROR",
+    "checks": [
+      "archive_upstream_failure_reaches_viewer_without_browser_mocks",
+      "no_unrelated_frames_on_failure",
+      "retry_available",
+      "saved_real_example_replays_during_upstream_outage"
+    ],
+    "simulation": "Isolated archive process uses an unreachable local HTTPS proxy; TLS verification stays enabled."
+  },
+  "reviewedCoverage": {
+    "kind": "review_of_existing_owner_log_not_new_five_target_run",
+    "source": "services/archive/.local-data/coverage-run3.json",
+    "config": {
+      "pixelScaleArcsec": 6.2,
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "targetRegionRadiusPixels": 5.0,
+      "wavelengthToleranceBandwidth": 0.25,
+      "maxFrames": 12,
+      "maxCandidates": 1000,
+      "maxCutouts": 120,
+      "batchSize": 24,
+      "maxDownloadBytes": 20000000,
+      "timeoutSeconds": 30.0,
+      "attempts": 3,
+      "backoffBaseSeconds": 0.5,
+      "backoffMaxSeconds": 8.0,
+      "buildDeadlineSeconds": 180.0,
+      "concurrency": 3,
+      "lowerPercentile": 1.0,
+      "upperPercentile": 99.5,
+      "asinhSoftening": 0.1,
+      "cutoutPaddingArcsec": 20.0,
+      "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+      "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+      "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+      "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+      "backgroundPolicy": "subtract_zodi",
+      "resampling": "bilinear_with_full_valid_support"
+    },
+    "targets": [
+      {
+        "target": "Barnard's Star",
+        "checkedAtUtc": "2026-11-14T20:21:58.654209+00:00",
+        "field": {
+          "ra": 269.4520833333333,
+          "dec": 4.693333333333333,
+          "fovArcmin": 6.0
+        },
+        "status": "request_failed",
+        "code": "PROCESSING_LIMIT",
+        "message": "No pair found within cutout budget; archive search is not exhaustive",
+        "comparisonId": null,
+        "elapsedSeconds": 38.45765687478706
+      },
+      {
+        "target": "RW Aurigae",
+        "checkedAtUtc": "2026-11-14T20:22:37.112319+00:00",
+        "field": {
+          "ra": 76.95666666666665,
+          "dec": 30.40138888888889,
+          "fovArcmin": 6.0
+        },
+        "status": "request_failed",
+        "code": "PROCESSING_LIMIT",
+        "message": "No pair found within cutout budget; archive search is not exhaustive",
+        "comparisonId": null,
+        "elapsedSeconds": 30.877536250045523
+      },
+      {
+        "target": "Epsilon Indi B",
+        "checkedAtUtc": "2026-11-14T20:23:07.990511+00:00",
+        "field": {
+          "ra": 331.04375,
+          "dec": -56.782777777777774,
+          "fovArcmin": 6.0
+        },
+        "status": "ready",
+        "code": null,
+        "message": null,
+        "comparisonId": "516ecdf6be6a3a51c918b4359334ea95692c4d6d61e061ad145fafab0acb7c17",
+        "elapsedSeconds": 13.585104124853387
+      },
+      {
+        "target": "WISE 0855",
+        "checkedAtUtc": "2026-11-14T20:23:21.576097+00:00",
+        "field": {
+          "ra": 133.79512916666664,
+          "dec": -7.245147222222222,
+          "fovArcmin": 6.0
+        },
+        "status": "ready",
+        "code": null,
+        "message": null,
+        "comparisonId": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416",
+        "elapsedSeconds": 4.257406292017549
+      },
+      {
+        "target": "R Draconis",
+        "checkedAtUtc": "2026-11-14T20:23:25.834071+00:00",
+        "field": {
+          "ra": 248.16750000000002,
+          "dec": 66.75472222222223,
+          "fovArcmin": 6.0
+        },
+        "status": "ready",
+        "code": null,
+        "message": null,
+        "comparisonId": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+        "elapsedSeconds": 22.128832374932244
+      }
+    ],
+    "caveats": [
+      "Tracked fixtures/archive/coverage-log.json is older and records upstream failures for all five targets.",
+      "The reviewed local log uses older finding centers; Epsilon Indi B in particular differs from the current viewer preset. This is not a fresh check of all current presets.",
+      "PROCESSING_LIMIT does not establish missing sky coverage. Visible change was not assessed."
+    ]
+  },
+  "trustConfiguration": "Python initially failed certificate validation. Retried with a temporary bundle combining certifi and public certificates from the existing macOS system trust store. TLS verification remained enabled. No certificate or machine-specific setting was committed.",
+  "pending": [
+    "User is merging Supabase/findings development from main. No merge was performed by the viewer task.",
+    "Findings UI/service wiring, posting, anonymous finding evidence replay, signed-out write denial and a signed-in reply from a second account remain unverified."
+  ],
+  "deployment": "Not applicable: user specified local-only operation."
+}
