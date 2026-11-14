@@ -71,6 +71,16 @@ class DatabaseFlowTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(response.status_code, 404)
                     response = await client.get("/api/findings", params={"ra": 0, "dec": 0, "radiusDeg": 2, "zoom": 10})
                     self.assertEqual(response.json(), {"items": []})
+
+                    for ra in (359.9, 0.1):
+                        response = await client.post("/api/findings", json={
+                            "comparisonId": comparison["id"], "ra": ra, "dec": 0,
+                            "title": "RA wrap", "note": "Cluster center regression",
+                        }, headers={"Authorization": "Bearer first"})
+                        self.assertEqual(response.status_code, 201)
+                    response = await client.get("/api/findings", params={"ra": 0, "dec": 0, "radiusDeg": 1, "zoom": 2})
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.json(), {"items": [{"ra": 0, "dec": 0, "count": 2, "zoomTo": 8}]})
         finally:
             db.stdin.close()
             try:

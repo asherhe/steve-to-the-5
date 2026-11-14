@@ -28,8 +28,9 @@ Apply these migrations to the team's Supabase project, in order:
 
 1. `supabase/migrations/20261114190000_findings.sql`
 2. `supabase/migrations/20261114200000_findings_viewport_roundoff.sql`
+3. `supabase/migrations/20261114210000_findings_cluster_ra.sql`
 
-If the first migration is already applied, apply only the second. It fixes antipodal full-sky query roundoff without changing saved evidence or access permissions.
+Apply any pending migrations in order. The second fixes antipodal full-sky query roundoff. The third keeps cluster centers in the valid right ascension range when wrapping around 0°.
 
 This service uses server-only access to the two tables and SQL functions. The public API returns display names and evidence. Supabase Auth verifies sessions before writes, and the API derives author identity from the authenticated user. Keep the server key out of the browser and use the publishable key for sign-in. Optional auth display names fall back to **Sky observer**.
 
