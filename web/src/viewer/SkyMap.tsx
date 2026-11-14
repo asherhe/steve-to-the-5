@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
-import { findDssSurvey } from "./dssSurvey";
+import { findSpherexSurvey, spherexMosaicDoi, spherexMosaicSlice } from "./spherexSurvey";
 
 const globeFovDeg = 180;
 
@@ -37,7 +37,7 @@ export function SkyMap({
     async function initialize(element: HTMLElement) {
       try {
         const [{ default: Aladin }, survey] = await Promise.all([
-          import("aladin-lite"), findDssSurvey(controller.signal),
+          import("aladin-lite"), findSpherexSurvey(controller.signal),
         ]);
         if (controller.signal.aborted) return;
         if (!survey) {
@@ -48,7 +48,19 @@ export function SkyMap({
         if (controller.signal.aborted) return;
         view.current = Aladin.aladin(element, {
           cooFrame: "ICRSd",
-          survey,
+          survey: Aladin.HiPS(survey, {
+            name: "SPHEREx DR1 all-sky mosaic",
+            successCallback: (layer) => {
+              if (controller.signal.aborted) return;
+              layer.setSliceNumber(spherexMosaicSlice);
+              setState("ready");
+            },
+            errorCallback: (error) => {
+              if (controller.signal.aborted) return;
+              console.error("Could not load the SPHEREx mosaic", error);
+              setState("unavailable");
+            },
+          }),
           projection: "SIN",
           fov: globeFovDeg,
           showProjectionControl: false,
@@ -67,7 +79,6 @@ export function SkyMap({
           catalog.clear();
           if (position) catalog.addSources([Aladin.source(position.ra, position.dec)]);
         };
-        setState("ready");
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error("Could not initialize Aladin Lite", error);
@@ -132,7 +143,7 @@ export function SkyMap({
         <div ref={container} className="aladin-host" />
         {state !== "ready" && (
           <p className="map-status" role="status">
-            {state === "loading" ? "Loading DSS2 imagery…" : "Sky map unavailable. Search using coordinates or a preset."}
+            {state === "loading" ? "Loading SPHEREx imagery…" : "SPHEREx imagery unavailable. Search using coordinates or a preset."}
           </p>
         )}
       </div>
@@ -157,7 +168,9 @@ export function SkyMap({
         {state === "unavailable" && (
           <button type="button" onClick={() => setSurveyAttempt((attempt) => attempt + 1)}>Retry imagery</button>
         )}
-        {state === "ready" && <small>DSS2 reference imagery · STScI/NASA and CDS</small>}
+        {state === "ready" && (
+          <small><a href={spherexMosaicDoi}>SPHEREx DR1 all-sky mosaic</a> · 0.771 µm · NASA/SPHEREx · Caltech/IPAC IRSA</small>
+        )}
       </div>
     </section>
   );

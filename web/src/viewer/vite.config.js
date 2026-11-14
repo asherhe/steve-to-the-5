@@ -15,6 +15,7 @@ const proxy = {
 export default defineConfig({
   resolve: { dedupe: ["react", "react-dom"] },
   server: {
+    port: Number(process.env.VIEWER_PORT ?? 5173),
     fs: { allow: [fileURLToPath(new URL("../../../", import.meta.url))] },
     proxy,
   },

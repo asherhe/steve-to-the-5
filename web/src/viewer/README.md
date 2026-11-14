@@ -1,13 +1,25 @@
-# SPHEREx viewer fixture harness
+# SPHEREx viewer
 
-Run these commands from the repository root with Node.js 20.19+ or 22.12+.
+From the repository root, use Node.js 20.19+ or 22.12+ and set up the two Python
+environments once.
 
 ```powershell
 npm.cmd ci
+python -m venv services/catalogs/.venv
+.\services\catalogs\.venv\Scripts\python.exe -m pip install -r services/catalogs/requirements.txt
+python -m venv services/archive/.venv
+.\services\archive\.venv\Scripts\python.exe -m pip install -r services/archive/requirements.lock
 npm.cmd run dev
 ```
 
-Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. **All sky** shows a 360° Hammer–Aitoff overview. DSS2 HiPS tiles come from the [CDS-listed mirrors](https://aladin.cds.unistra.fr/) and are credited to STScI/NASA and CDS. If the mirrors are unavailable, select **Retry imagery** or use Search to look up coordinates or a preset.
+`npm run dev` starts the viewer on port 5173, Gaia on 8010, and the SPHEREx archive
+on 8000. Ctrl+C stops the stack. On macOS or Linux, use `npm` in place of `npm.cmd`
+and `services/<service>/.venv/bin/python` for each service's Python.
+Use `npm run dev:viewer`, `npm run dev:gaia`, or `npm run dev:spherex` to start an
+individual process. Stop any earlier React-only server before starting the stack,
+or set `VIEWER_PORT` to use another viewer port.
+
+Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. **All sky** shows a 360° Hammer–Aitoff overview. The reference sky uses the 0.771 µm layer of the [SPHEREx DR1 all-sky mosaic](https://doi.org/10.26131/IRSA679) from Caltech/IPAC IRSA. The mosaic combines observations, and the comparison panel loads dated spectral images separately. If the mosaic is unavailable, select **Retry imagery** or use Search to look up coordinates or a preset.
 
 The sky fills the viewport. Open **Search**, **Comparison**, or **Gaia** in the top bar to show its panel. The panels become bottom sheets on narrow screens. Use **Close** or Escape to return to the sky. Closing the comparison panel pauses playback and keeps your place.
 
@@ -19,25 +31,17 @@ Open `/?fixtures=1` in development to exercise the browser-only fixture controls
 
 ## SPHEREx archive integration
 
-Run the archive service in a separate terminal from the repository root.
-
-```powershell
-python -m venv services/archive/.venv
-.\services\archive\.venv\Scripts\python.exe -m pip install -r services/archive/requirements.lock
-.\services\archive\.venv\Scripts\python.exe -m services.archive serve
-```
-
 Vite proxies `/api/comparisons` and its asset paths to port 8000. Set `ARCHIVE_API_TARGET` before starting Vite to change the target. In deployment route the same paths to a single archive worker with persistent storage and a proxy timeout above the build deadline.
 
 Search requests go to IRSA by default. For an offline integration check, start the archive with `-m services.archive --synthetic serve` and search RA 10°, Dec 20° at 6 arcmin. **Open saved real example** replays the bundled IRSA tutorial pair by its immutable ID in either mode. **Copy comparison link** opens the exact saved comparison on the same service. Regenerate the frontend archive types with `npm.cmd run generate:archive-types` after a schema update.
 
 ## Gaia catalog integration
 
-Start the [catalog service](../../../services/catalogs/README.md) on port 8010 in a separate terminal. From the repository root, run `npm.cmd run dev`, or run `npm.cmd run build` followed by `npm.cmd run preview` to try the built viewer. Both viewer commands proxy `/api/resolve` and `/api/catalogs` to FastAPI. Set `CATALOG_API_TARGET` before starting Vite to use a different address.
+Vite proxies `/api/resolve` and `/api/catalogs` to the [catalog service](../../../services/catalogs/README.md) on port 8010. Set `CATALOG_API_TARGET` before starting Vite to use a different address. To try the built viewer, run `npm.cmd run build` followed by `npm.cmd run preview` while the two backend processes are running.
 
 Check `http://127.0.0.1:8010/api/health` for the catalog service and `/api/catalogs/nearby?ra=269.4521&dec=4.6933&radiusArcsec=30` on the viewer origin for the proxy. Both should return JSON. When serving the built viewer on another host, route `/api/catalogs/*` and `/api/resolve` to the catalog service before applying the frontend's HTML fallback.
 
-Choose **Inspect map center** on the initial Barnard’s Star view or click a sky position to query Gaia. The inspector lists nearby results and fetches the details for the chosen source. **Mark position** places its Gaia catalog position on the reference sky. The catalog service starts in fixture mode, and the sky map displays DSS2 reference imagery.
+Choose **Inspect map center** on the initial Barnard’s Star view or click a sky position to query Gaia. The inspector lists nearby results and fetches the details for the chosen source. **Mark position** places its Gaia catalog position on the reference sky. The catalog service starts in fixture mode.
 
 ## Coordinator handoff
 

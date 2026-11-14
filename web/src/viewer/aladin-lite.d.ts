@@ -1,4 +1,8 @@
 declare module "aladin-lite" {
+  interface AladinImageSurvey {
+    setSliceNumber(slice: number): void;
+  }
+
   export interface AladinView {
     getRaDec(): [ra: number, dec: number];
     getFoV(): [width: number, height: number];
@@ -16,13 +20,18 @@ declare module "aladin-lite" {
 
   const Aladin: {
     init: Promise<unknown>;
+    HiPS(url: string, options: {
+      name: string;
+      successCallback: (survey: AladinImageSurvey) => void;
+      errorCallback: (error: unknown) => void;
+    }): AladinImageSurvey;
     catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" }): AladinCatalog;
     source(ra: number, dec: number): unknown;
     aladin(
       element: HTMLElement,
       options: {
         cooFrame: "ICRSd";
-        survey: string;
+        survey: string | AladinImageSurvey;
         projection: "SIN";
         fov: number;
         showProjectionControl: boolean;
