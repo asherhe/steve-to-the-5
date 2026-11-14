@@ -1,0 +1,39 @@
+{
+  "_scenario": "ambiguous",
+  "_description": "Several comparably close Gaia DR3 sources near the WISE 0855 supplied position, so no single source is an unambiguous match. Synthetic values for UI/selection testing; not a dated live query.",
+  "sources": [
+    {
+      "sourceId": "5726817071037876736",
+      "ra": 133.79530,
+      "dec": -7.24498,
+      "refEpoch": 2016.0,
+      "pmRaCosDecMasYr": -3.214,
+      "pmDecMasYr": 2.771,
+      "parallaxMas": 1.482,
+      "gMag": 18.431,
+      "separationArcsec": 1.11
+    },
+    {
+      "sourceId": "5726817071037880448",
+      "ra": 133.79488,
+      "dec": -7.24552,
+      "refEpoch": 2016.0,
+      "pmRaCosDecMasYr": 1.902,
+      "pmDecMasYr": -0.556,
+      "parallaxMas": 0.733,
+      "gMag": 19.004,
+      "separationArcsec": 1.63
+    },
+    {
+      "sourceId": "5726817066742913024",
+      "ra": 133.79561,
+      "dec": -7.24470,
+      "refEpoch": 2016.0,
+      "pmRaCosDecMasYr": -0.118,
+      "pmDecMasYr": 4.009,
+      "parallaxMas": null,
+      "gMag": 20.117,
+      "separationArcsec": 2.04
+    }
+  ]
+}

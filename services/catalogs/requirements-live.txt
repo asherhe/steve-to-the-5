@@ -1,0 +1,3 @@
+# Additional dependency for live Gaia DR3 TAP access (CATALOGS_LIVE=1).
+-r requirements.txt
+astroquery>=0.4.7

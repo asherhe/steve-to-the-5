@@ -1,0 +1,17 @@
+{
+  "_scenario": "known",
+  "_description": "A single clean Gaia DR3 match near Barnard's Star. Synthetic values approximating the real high-proper-motion star; not a dated live query.",
+  "sources": [
+    {
+      "sourceId": "4472832130942575872",
+      "ra": 269.45207,
+      "dec": 4.66829,
+      "refEpoch": 2016.0,
+      "pmRaCosDecMasYr": -802.803,
+      "pmDecMasYr": 10362.542,
+      "parallaxMas": 546.976,
+      "gMag": 8.194,
+      "separationArcsec": 0.42
+    }
+  ]
+}
