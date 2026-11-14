@@ -1,0 +1,6 @@
+{
+  "_scenario": "unavailable",
+  "_description": "The error body returned when the catalog backend itself fails (network, timeout, server error). Produced by the service, not stored data. Shown here as the contract shape the inspector must handle.",
+  "code": "upstream_unavailable",
+  "message": "Gaia catalog service is unavailable."
+}

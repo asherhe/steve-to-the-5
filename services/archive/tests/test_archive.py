@@ -35,6 +35,23 @@ def make_pipeline(tmp_path, config, cutouts=None):
     return Pipeline(FixtureClient(cutouts), LocalStore(tmp_path), config)
 
 
+def test_bundled_example_replays_through_default_app(tmp_path, monkeypatch):
+    monkeypatch.setenv("SPHEREX_STORAGE_DIR", str(tmp_path))
+    example = Path(__file__).resolve().parents[3] / "fixtures" / "archive" / "real"
+    response = json.loads((example / "response.json").read_bytes())
+    comparison = response["comparison"]
+    with TestClient(create_app()) as client:
+        saved = client.get(f"/api/comparisons/{comparison['id']}")
+        assert saved.status_code == 200
+        assert saved.json() == response
+        for frame in comparison["frames"]:
+            image = client.get(frame["imageUrl"])
+            assert image.status_code == 200
+            assert image.headers["content-type"] == "image/png"
+            assert Image.open(BytesIO(image.content)).size == (
+                comparison["grid"]["width"], comparison["grid"]["height"])
+
+
 def prepared(field, config, cutout):
     grid,wcs=make_grid(field,config)
     observation=FixtureClient([cutout]).discover(field).observations[0]

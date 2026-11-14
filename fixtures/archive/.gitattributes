@@ -1,0 +1,3 @@
+**/evidence/blobs/* binary
+**/evidence/manifests/*.json text eol=lf
+history/*.json text eol=lf

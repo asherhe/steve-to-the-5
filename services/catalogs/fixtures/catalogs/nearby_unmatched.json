@@ -1,0 +1,5 @@
+{
+  "_scenario": "unmatched",
+  "_description": "No Gaia DR3 source within the search radius. A valid, successful empty result: distinct from a service error.",
+  "sources": []
+}

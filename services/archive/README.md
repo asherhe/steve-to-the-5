@@ -68,7 +68,8 @@ services/archive/.venv/bin/python -m services.archive --storage fixtures/archive
 
 The ID is `originalComparisonId` in each `sources.json` (for the tutorial example, the
 `id` in `response.json`). `GET /api/comparisons/{id}` returns the stored response
-unchanged.
+unchanged. The default server also reads the bundled tutorial pair from its fixture
+store on replay, so **Open saved real example** works alongside live field search.
 
 Reprocess the retained WISE 0855 cutouts offline:
 
