@@ -8,6 +8,7 @@
     "build": "npm run check && vite build web/src/viewer"
   },
   "dependencies": {
+    "aladin-lite": "3.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

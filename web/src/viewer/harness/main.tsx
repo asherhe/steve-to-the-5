@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { Comparison, ComparisonResult } from "../comparison";
+import type { Comparison, ComparisonResult, Field } from "../comparison";
+import { targetPresets } from "../coordinates";
+import { FieldSearch, inFieldRange } from "../FieldSearch";
+import { SkyMap } from "../SkyMap";
 import { fixtureDataSource, fixtureField, savedFixtureId, type Scenario } from "./fixtures";
 import "./styles.css";
 
@@ -12,17 +15,33 @@ const scenarios: Record<Scenario, string> = {
   upstream_unavailable: "Archive unavailable",
 };
 
+const initialCenter = targetPresets[0];
+const initialField = { ...initialCenter, fovArcmin: fixtureField.fovArcmin };
+const fieldLimits = { min: 1, max: 30 };
+
+type Request =
+  | { kind: "field"; field: Field }
+  | { kind: "name"; name: string; fovArcmin: number }
+  | { kind: "saved"; id: string };
+
 type Preview =
-  | { kind: "loading" | "missing" | "error" }
-  | { kind: "search"; result: ComparisonResult }
+  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "error" }
+  | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison };
 
 function Harness() {
   const [scenario, setScenario] = useState<Scenario>("ready");
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<Preview>({ kind: "loading" });
+  const [request, setRequest] = useState<Request | null>(null);
+  const [focus, setFocus] = useState<Field | null>(null);
+  const [mapNotice, setMapNotice] = useState("");
+  const [preview, setPreview] = useState<Preview>({ kind: "idle" });
 
   useEffect(() => {
+    if (!request) {
+      setPreview({ kind: "idle" });
+      return;
+    }
+    const current = request;
     const controller = new AbortController();
     const source = fixtureDataSource(scenario);
     const signal = controller.signal;
@@ -30,15 +49,30 @@ function Harness() {
     async function load() {
       setPreview({ kind: "loading" });
       try {
-        if (savedId === null) {
-          const result = await source.search(fixtureField, signal);
-          if (!signal.aborted) setPreview({ kind: "search", result });
-        } else {
-          const comparison = await source.loadSaved(savedId, signal);
+        if (current.kind === "saved") {
+          const comparison = await source.loadSaved(current.id, signal);
           if (!signal.aborted) {
             setPreview(comparison ? { kind: "saved", comparison } : { kind: "missing" });
           }
+          return;
         }
+
+        let field: Field;
+        if (current.kind === "name") {
+          const position = await source.resolveName(current.name, signal);
+          if (signal.aborted) return;
+          if (!position) {
+            setPreview({ kind: "name_not_found" });
+            return;
+          }
+          field = { ra: position.ra, dec: position.dec, fovArcmin: current.fovArcmin };
+          setFocus(field);
+        } else {
+          field = current.field;
+        }
+
+        const result = await source.search(field, signal);
+        if (!signal.aborted) setPreview({ kind: "search", result, field });
       } catch {
         if (!signal.aborted) setPreview({ kind: "error" });
       }
@@ -46,7 +80,22 @@ function Harness() {
 
     void load();
     return () => controller.abort();
-  }, [scenario, savedId]);
+  }, [scenario, request]);
+
+  function search(field: Field) {
+    setMapNotice("");
+    setFocus(field);
+    setRequest({ kind: "field", field });
+  }
+
+  function compareViewport(field: Field) {
+    if (!inFieldRange(field.fovArcmin, fieldLimits)) {
+      setMapNotice(`Zoom to a field width of ${fieldLimits.min}–${fieldLimits.max} arcmin before comparing.`);
+      return;
+    }
+    setMapNotice("");
+    setRequest({ kind: "field", field });
+  }
 
   const comparison =
     preview.kind === "search" ? preview.result.comparison :
@@ -56,7 +105,9 @@ function Harness() {
     preview.kind === "search" ? scenarios[preview.result.status] :
     preview.kind === "saved" ? "Saved synthetic comparison" :
     preview.kind === "missing" ? "Saved comparison not found" :
+    preview.kind === "name_not_found" ? "Name unavailable in this fixture. Try Fixture field." :
     preview.kind === "error" ? "Fixture could not be loaded" :
+    preview.kind === "idle" ? "Choose a field to compare." :
     "Loading fixture…";
 
   return (
@@ -65,23 +116,37 @@ function Harness() {
         <h1>SPHEREx viewer</h1>
         <p>Development fixtures. All images and observation metadata are synthetic.</p>
       </header>
+      <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport} />
+      {mapNotice && <p role="status">{mapNotice}</p>}
+      <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
+        onResolve={(name, fovArcmin) => {
+          setMapNotice("");
+          setRequest({ kind: "name", name, fovArcmin });
+        }} />
+      <h2>Fixture results</h2>
       <div className="controls">
         <label>
           Archive response
           <select value={scenario} onChange={(event) => {
             setScenario(event.target.value as Scenario);
-            setSavedId(null);
+            setRequest((current) => current?.kind === "field" ? current : { kind: "field", field: fixtureField });
           }}>
             {Object.entries(scenarios).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </label>
-        <button onClick={() => setSavedId(savedFixtureId)}>Open saved fixture</button>
-        <button onClick={() => setSavedId("missing-fixture")}>Try missing ID</button>
-        {savedId !== null && <button onClick={() => setSavedId(null)}>Back to search</button>}
+        <button onClick={() => setRequest({ kind: "saved", id: savedFixtureId })}>Open saved fixture</button>
+        <button onClick={() => setRequest({ kind: "saved", id: "missing-fixture" })}>Try missing ID</button>
+        {request?.kind === "saved" && <button onClick={() => setRequest(null)}>Back to search</button>}
       </div>
       <p role="status">{status}</p>
+      {preview.kind === "search" && (
+        <p>
+          Requested RA {preview.field.ra.toFixed(6)}°, Dec {preview.field.dec.toFixed(6)}°,
+          width {preview.field.fovArcmin.toFixed(2)} arcmin. The fixture simulates the selected archive outcome.
+        </p>
+      )}
       {comparison && (
         <section aria-label="Synthetic comparison frames">
           <p>

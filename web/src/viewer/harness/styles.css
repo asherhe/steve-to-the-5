@@ -11,9 +11,22 @@ h1 { margin: 0; }
 header p, figcaption { color: #b7c1d2; }
 .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; }
 label { display: grid; gap: 0.25rem; }
-button, select { font: inherit; min-height: 2.75rem; padding: 0.5rem 0.75rem; }
-button:focus-visible, select:focus-visible { outline: 2px solid #90c7ff; outline-offset: 2px; }
+button, select, input { font: inherit; box-sizing: border-box; min-height: 2.75rem; padding: 0.5rem 0.75rem; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #90c7ff; outline-offset: 2px; }
 .frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
 figure { margin: 0; }
-img { display: block; width: 100%; height: auto; background: #090909; }
+.frames img { display: block; width: 100%; height: auto; background: #090909; }
 figcaption { margin-top: 0.4rem; }
+.sky-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; }
+.sky-heading h2, .sky-heading p { margin: 0; }
+.sky-heading p { margin-top: 0.25rem; color: #b7c1d2; }
+.sky-map { position: relative; height: clamp(17rem, 57vw, 32rem); background: #06080d; border: 1px solid #364156; }
+.aladin-host { width: 100%; height: 100%; }
+.map-status { position: absolute; top: 50%; inset-inline: 1rem; margin: 0; text-align: center; transform: translateY(-50%); }
+.field-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); align-items: start; gap: 0.75rem; }
+.field-form button { align-self: start; margin-top: 1.45rem; }
+.field-form input { width: 100%; }
+.field-form small { color: #b7c1d2; }
+.field-form small.invalid, .field-form [aria-invalid="true"] + small { color: #ffb1ae; }
+.presets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.name-form { margin: 1rem 0 1.5rem; }
