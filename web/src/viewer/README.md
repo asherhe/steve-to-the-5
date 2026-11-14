@@ -53,3 +53,51 @@ The harness injects a fixture data source. The viewer-facing TypeScript types de
 - The saved comparison ID referenced by each finding and its frame-specific marks as frame IDs and sky positions. Provide the shared error response for missing IDs.
 
 In the shared app, Vite will proxy relative `/api` requests to the local FastAPI entry point. Deployment will route the same paths through the public origin. Keep the harness entry point and its synthetic images on the development side when integrating the shared app.
+
+## Checkpoint 5: saved evidence (development fixtures)
+
+No Python services or archive access are required for this check:
+
+```sh
+npm ci
+npm run dev:viewer
+```
+
+Open `http://localhost:5173/?fixtures=1&comparison=fixture-matched-pair&finding=fixture-finding`.
+The synthetic discussion exposes **Show evidence** and **Copy link** through the
+`EvidenceDiscussionProps` slot boundary. Replay loads the stored comparison by ID;
+it does not search using current field, scenario, wavelength or stretch defaults.
+Saved marks appear only on their recorded frames. Playback starts paused at the
+first date. **Copy comparison link** intentionally omits the discussion ID.
+
+1. Select **Next** and **Previous** and check the two dates and frame-specific marks.
+2. Use **Copy link** in the fixture discussion, change the search field and archive
+   scenario (for example **Single epoch**), then reopen the copied URL in a fresh
+   browser session. Both original dates, assets, wavelength, stretch and marks return.
+3. Use **Try missing ID**, **Try missing finding**, and **Try mismatched evidence**.
+   Each must show an explicit error with no unrelated frames or marks.
+4. A link with only `finding=fixture-finding` resolves its saved comparison; browser
+   Back/Forward also restores link parameters. If clipboard access fails, use the
+   visible **Saved evidence link**.
+
+Run `node --test web/src/viewer/evidence.test.mjs` with Node 22.18+ (or Node 24)
+and `npm run build` from the repository root. The tests cover ID handling and
+annotation validation. These are synthetic replay checks, not live findings/auth
+integration. The findings owner can implement `EvidenceDiscussionProps`; production
+finding lookup remains for the later integration checkpoint. Fixture discussion and
+assets are loaded only in development fixture mode.
+
+The offline browser regression is retained in `harness/evidence.browser.mjs`.
+With Chrome installed and the fixture server running, run it without changing the
+repository dependency manifests:
+
+```sh
+test_tools=$(mktemp -d)
+npm install --prefix "$test_tools" --no-package-lock playwright
+PLAYWRIGHT_MODULE="$test_tools/node_modules/playwright/index.mjs" node web/src/viewer/harness/evidence.browser.mjs
+```
+
+Set `VIEWER_TEST_URL` if using another port. The regression blocks external network
+requests and checks desktop/mobile replay, actual image decoding, saved marks,
+Show evidence, clipboard links, changed search/scenario defaults, missing IDs,
+mismatched IDs and finding-only links. It uses synthetic data throughout.

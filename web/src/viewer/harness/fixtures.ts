@@ -96,3 +96,20 @@ export function fixtureDataSource(scenario: Scenario): ViewerDataSource {
     },
   };
 }
+
+// Immutable fixture evidence, independent of search presets and scenario defaults.
+export const savedFinding = {
+  id: "fixture-finding",
+  comparisonId: savedFixtureId,
+  title: "Does this synthetic point move?",
+  note: "An observation for discussion, not a validated discovery. Step between the two saved dates.",
+  marks: [
+    { frameId: "fixture-epoch-one", ra: 120, dec: 15 },
+    { frameId: "fixture-epoch-two", ra: 119.99, dec: 15 },
+  ],
+} satisfies import("../evidence").SavedFinding;
+
+export async function loadFixtureFinding(id: string, signal?: AbortSignal) {
+  await wait(signal);
+  return id === savedFinding.id ? savedFinding : null;
+}

@@ -12,7 +12,20 @@ const proxy = {
   "/api/comparisons": archiveProxy,
 };
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  plugins: [{
+    name: "development-viewer-fixtures",
+    enforce: "pre",
+    resolveId(source, importer) {
+      // Exclude even the synthetic PNG assets from the public build.
+      if (command === "build" && source === "./fixtures" && importer?.endsWith("/harness/main.tsx")) {
+        return "\0viewer-fixtures-disabled";
+      }
+    },
+    load(id) {
+      if (id === "\0viewer-fixtures-disabled") return "export {};";
+    },
+  }],
   resolve: { dedupe: ["react", "react-dom"] },
   server: {
     port: Number(process.env.VIEWER_PORT ?? 5173),
@@ -20,4 +33,4 @@ export default defineConfig({
     proxy,
   },
   preview: { proxy },
-});
+}));

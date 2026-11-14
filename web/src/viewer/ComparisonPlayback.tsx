@@ -10,12 +10,13 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, visible = true, selectedPosition, frameMark, onInspect,
+  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect,
 }: {
   comparison: Comparison;
   visible?: boolean;
   selectedPosition: SkyPosition | null;
   frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
+  savedMarks?: readonly (SkyPosition & { frameId: string })[];
   onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
 }) {
   const [index, setIndex] = useState(0);
@@ -96,6 +97,8 @@ export function ComparisonPlayback({
                       (event.clientY - bounds.top) / bounds.height * height - 0.5);
                   }} />
               )}
+              {wcs && savedMarks.filter(mark => mark.frameId === frame.id).map((mark, i) =>
+                <span key={i}>{marker(wcs.toImage(mark), "Saved finding mark", "cutout-selection")}</span>)}
               {wcs && selectedPosition && marker(wcs.toImage(selectedPosition), "Selected sky position", "cutout-selection")}
               {wcs && frameMark?.frameId === frame.id && marker(wcs.toImage(frameMark),
                 frameMark.predicted ? "Predicted Gaia position" : "Gaia catalog position", "cutout-gaia-mark")}
