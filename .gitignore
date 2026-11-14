@@ -1,0 +1,36 @@
+# ── Python (services/*) ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Node / frontend (web/) ───────────────────────────────────────────
+node_modules/
+.vite/
+*.tsbuildinfo
+# build output (web/dist); keep service-specific dist handled by Python block above
+
+# ── Secrets and local environment ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Generated / reproducible artifacts ───────────────────────────────
+services/catalogs/docs/coverage-log.json
+
+# ── Editor / OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
