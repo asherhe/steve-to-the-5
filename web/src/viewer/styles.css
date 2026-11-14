@@ -12,40 +12,33 @@ body { margin: 0; overflow: hidden; }
   --right: max(var(--gap), env(safe-area-inset-right));
   --top: max(var(--gap), env(safe-area-inset-top));
   --bottom: max(var(--gap), env(safe-area-inset-bottom));
-  --bar-height: 3.625rem;
+  --panel-buttons-height: 2.75rem;
   position: fixed;
   inset: 0;
   isolation: isolate;
 }
-.viewer-bar, .floating-panel, .sky-tools {
+.floating-panel, .sky-tools {
   border: 1px solid #45546a;
   border-radius: 0.85rem;
   background: #111824ee;
   box-shadow: 0 0.5rem 1.5rem #0006;
 }
-.viewer-bar {
+.panel-buttons {
   position: absolute;
   z-index: 2;
   top: var(--top);
-  left: var(--left);
   right: var(--right);
-  min-height: var(--bar-height);
-  box-sizing: border-box;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.5rem 0.35rem 1rem;
 }
-.viewer-bar h1 { margin: 0; font-size: clamp(0.9rem, 2.3vw, 1.1rem); line-height: 1.15; }
-.panel-buttons { display: flex; gap: 0.25rem; }
+.panel-buttons button { box-shadow: 0 0.35rem 1rem #0006; }
 .panel-buttons [aria-expanded="true"] { color: #d9f3ff; background: #234764; border-color: #71afd6; }
 .floating-panel {
   position: absolute;
   z-index: 2;
-  top: calc(var(--top) + var(--bar-height) + var(--gap));
+  top: calc(var(--top) + var(--panel-buttons-height) + var(--gap));
   bottom: auto;
-  max-height: calc(100% - var(--top) - var(--bar-height) - var(--gap) - var(--bottom));
+  max-height: calc(100% - var(--top) - var(--panel-buttons-height) - var(--gap) - var(--bottom));
   width: min(26rem, calc(100% - var(--left) - var(--right)));
   padding: 1rem;
   box-sizing: border-box;
@@ -73,14 +66,14 @@ figcaption { color: #b7c1d2; overflow-wrap: anywhere; }
 .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; }
 label { display: grid; gap: 0.25rem; }
 button, select, input { font: inherit; box-sizing: border-box; min-height: 2.75rem; padding: 0.5rem 0.75rem; }
-.viewer-bar button, .floating-panel button, .sky-tools button {
+.panel-buttons button, .floating-panel button, .sky-tools button {
   color: inherit;
   border: 1px solid #46556b;
   background: #1f2a3b;
   border-radius: 0.5rem;
   padding-inline: clamp(0.4rem, 1.6vw, 0.75rem);
 }
-.viewer-bar button:hover, .floating-panel button:hover:enabled, .sky-tools button:hover:enabled { background: #34455c; }
+.panel-buttons button:hover, .floating-panel button:hover:enabled, .sky-tools button:hover:enabled { background: #34455c; }
 button:disabled { opacity: 0.55; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #90c7ff; outline-offset: 2px; }
 figure { margin: 0; }
@@ -130,14 +123,13 @@ figcaption { margin-top: 0.4rem; }
 .name-form label { min-width: 0; flex: 1 1 10rem; }
 
 @media (max-width: 42rem) {
-  .viewer-bar { padding-left: 0.5rem; }
-  .viewer-bar button, .sky-tools button { font-size: 0.8rem; }
+  .panel-buttons button, .sky-tools button { font-size: 0.8rem; }
   .floating-panel {
     top: auto;
     bottom: var(--bottom);
     left: var(--left);
     right: var(--right);
     width: auto;
-    max-height: min(68dvh, calc(100% - var(--top) - var(--bar-height) - var(--gap) - var(--bottom)));
+    max-height: min(68dvh, calc(100% - var(--top) - var(--panel-buttons-height) - var(--gap) - var(--bottom)));
   }
 }

@@ -236,17 +236,14 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
     }}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
         onInspect={inspect} catalogMark={catalogMark} notice={mapNotice} />
-      <header className="viewer-bar">
-        <h1>SPHEREx viewer</h1>
-        <nav className="panel-buttons" aria-label="Viewer panels">
+      <nav className="panel-buttons" aria-label="Viewer panels">
           {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
             <button key={id} type="button" ref={(button) => {
               if (button) panelButtons.current[id] = button;
             }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
               onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
           ))}
-        </nav>
-      </header>
+      </nav>
       <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
         <div className="panel-heading">
           <h2 id="gaia-heading">Gaia source inspector</h2>
