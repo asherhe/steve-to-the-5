@@ -34,3 +34,18 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Archive runtime output (keep curated fixtures/archive evidence tracked)
+/services/archive/.local-data/
+.cache/
+.coverage.*
+coverage.xml
+junit.xml
+junit-*.xml
+*.log
+
+# Superseded response examples: recoverable from Git, retained locally
+/fixtures/archive/history/responses-v1/
+
+# Personal Claude configuration; keep shared instructions and skills
+.claude/settings.local.json
