@@ -240,7 +240,8 @@ collaborative curiosity, exactly the behavior the platform exists to support.
 
 ## Open questions before this leaves the exploratory stage
 
-- Does the short real time series (roughly two to three dated points per target) support a
+- Does the short real time series (a small number of epochs today, growing with each release,
+  since SPHEREx maps the whole sky every six months) support a
   motion/blink-based rarity signal, or should early scoring lean on catalog familiarity and
   band distinctiveness?
 - What exact, defensible inputs define the score, and how do we show every factor so it never
@@ -256,6 +257,48 @@ collaborative curiosity, exactly the behavior the platform exists to support.
   view?
 - Rate/daily-cap design: one dive a day (habit) vs. an endless mode (engagement), as Krillion
   offers both.
+
+## Challenge-compliance mapping
+
+Each feature below ties to the official NASA Space Apps 2026 "Planet X and SPHEREx" challenge.
+This maps our plan to the stated objective and the "potential considerations" list, and is
+written to be pasteable into the submission's Detailed Project Description. See
+`docs/challenge-compliance-assessment.md` for the full assessment.
+
+Mandatory objective (required):
+
+- **Public web tool, RA/Dec entry, image playback over time to spot moving objects.** Met by
+  the core viewer: coordinate search, dated SPHEREx frames played as a matched monochrome
+  blink. This satisfies the challenge on its own.
+- **Test targets** (Barnard's Star, Epsilon Indi B, WISE 0855 at 08h55m10.831s −07d14m42.53s,
+  RW Aurigae, R Draconis). Met as bundled presets with an honest coverage outcome logged for
+  each.
+
+Potential considerations (optional in the challenge; where our plan opts in):
+
+- **Easy to update with new data releases.** SPHEREx maps the whole sky every six months and
+  new data arrives fast; the archive design queries current releases and the time axis grows
+  with each one.
+- **Use the 102 infrared bands creatively.** Infrared band selection is both a viewer control
+  and a game mechanic (band distinctiveness feeds the rarity signal). Spectra-on-the-fly
+  remains deferred.
+- **Add/subtract images across times.** The blink and matched comparison cover the "see what
+  changed" case; difference imaging stays deferred per the brief.
+- **Field-of-view choice.** Provided by the viewer's field control.
+- **Overlay Gaia / WISE data.** The catalog inspector provides Gaia DR3 context; the WISE blink
+  is part of the game's tool set.
+- **URL coordinate queries for embedding.** Supported via the `comparison` and `finding` query
+  parameters for exact replay.
+- **Display metadata such as contamination flags.** Quality/contamination flags are surfaced,
+  and they also gate the game score (missing/low quality withholds a score rather than
+  inventing one).
+- **Use Astropy and Aladin.** Astropy on the Python services; Aladin Lite as the map viewer.
+
+Crowd-discovery intent (explicitly invited by the challenge): the rarity hunt, permanent
+leaderboard and per-entry discussion forum answer the call to "help as many people as possible
+pitch in to make discoveries" and to triage a dataset too large for any one person. Framed as
+candidate triage that feeds human discovery, never as the tool making discoveries, with
+"possible/candidate" labels that mirror NASA's own SPHEREx language.
 
 ## Relationship to the pitch
 
