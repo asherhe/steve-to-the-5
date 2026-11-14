@@ -39,6 +39,8 @@ class Supabase:
                 raise ApiError(401, "unauthorized", "Sign in to post or reply.")
             response.raise_for_status()
             user = response.json()
+            if not isinstance(user, dict) or not isinstance(user.get("id"), str):
+                raise ValueError("Invalid auth response")
             user_id = str(UUID(user["id"]))
         except (httpx.HTTPError, ValueError, TypeError, KeyError) as error:
             raise ApiError(503, "auth_unavailable", "Sign-in verification is unavailable.") from error
@@ -46,8 +48,12 @@ class Supabase:
         if user.get("is_anonymous"):
             raise ApiError(401, "unauthorized", "Sign in to post or reply.")
         metadata = user.get("user_metadata") or {}
+        if not isinstance(metadata, dict):
+            metadata = {}
         display_name = metadata.get("display_name") or metadata.get("full_name")
-        if isinstance(display_name, str) and "@" not in display_name:
+        if isinstance(display_name, str) and not any(
+            char == "@" or char == "\x00" or 0xD800 <= ord(char) <= 0xDFFF for char in display_name
+        ):
             display_name = " ".join(display_name.split())[:80]
         else:
             display_name = ""

@@ -3,12 +3,12 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .models import CreatedFinding, Finding, FindingInput, Reply, ReplyInput, Viewport
+from .models import CreatedFinding, ErrorResponse, Finding, FindingInput, Reply, ReplyInput, Viewport
 from .supabase import ApiError, Supabase
 
 ComparisonLoader = Callable[[str], Awaitable[dict | None]]
@@ -33,12 +33,20 @@ class FindingsRoute(APIRoute):
                 return JSONResponse(
                     {"code": error.code, "message": error.message}, status_code=error.status
                 )
+            except ResponseValidationError:
+                return JSONResponse(
+                    {"code": "findings_unavailable", "message": "Findings are temporarily unavailable."},
+                    status_code=503,
+                )
 
         return handle
 
 
 def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -> APIRouter:
-    router = APIRouter(prefix="/api/findings", tags=["findings"], route_class=FindingsRoute)
+    router = APIRouter(
+        prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
+        responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+    )
 
     async def signed_in(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):
         if credentials is None:
@@ -58,19 +66,29 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
         )
         return {"items": items}
 
-    @router.get("/{finding_id}", response_model=Finding)
+    @router.get("/{finding_id}", response_model=Finding, responses={404: {"model": ErrorResponse}})
     async def get_finding(finding_id: UUID):
         finding = await supabase.rpc("spherex_finding_thread", {"p_id": str(finding_id)})
         if finding is None:
             raise ApiError(404, "finding_not_found", "Finding not found.")
         return finding
 
-    @router.post("", status_code=201, response_model=CreatedFinding)
+    @router.post("", status_code=201, response_model=CreatedFinding, responses={401: {"model": ErrorResponse}})
     async def create_finding(finding: FindingInput, author=Depends(signed_in)):
         comparison = await load_saved_comparison(finding.comparisonId)
-        if not comparison or comparison.get("id") != finding.comparisonId or not comparison.get("frames"):
+        if comparison is None:
             raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
-        frame_ids = {frame["id"] for frame in comparison["frames"]}
+        if not isinstance(comparison, dict) or comparison.get("id") != finding.comparisonId:
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        frames = comparison.get("frames")
+        if not isinstance(frames, list) or not frames or any(
+            not isinstance(frame, dict) or not isinstance(frame.get("id"), str) or not frame["id"]
+            for frame in frames
+        ):
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        frame_ids = {frame["id"] for frame in frames}
+        if len(frame_ids) != len(frames):
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
         if any(mark.frameId not in frame_ids for mark in finding.marks):
             raise ApiError(422, "invalid_frame", "Each mark must belong to the saved comparison.")
 
@@ -92,7 +110,10 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
         )
         return {"id": finding_id}
 
-    @router.post("/{finding_id}/replies", status_code=201, response_model=Reply)
+    @router.post(
+        "/{finding_id}/replies", status_code=201, response_model=Reply,
+        responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    )
     async def create_reply(finding_id: UUID, reply: ReplyInput, author=Depends(signed_in)):
         created = await supabase.rpc(
             "spherex_finding_reply",

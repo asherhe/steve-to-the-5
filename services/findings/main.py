@@ -10,8 +10,12 @@ from .supabase import ApiError, Supabase
 
 
 def create_app() -> FastAPI:
+    required = ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
+    missing = [name for name in required if not os.environ.get(name, "").strip()]
+    if missing:
+        raise RuntimeError("Missing server configuration: " + ", ".join(missing))
     comparison_base = os.environ["SPHEREX_COMPARISON_BASE_URL"].rstrip("/")
-    client = httpx.AsyncClient(timeout=10.0)
+    client = httpx.AsyncClient(timeout=10.0, follow_redirects=False)
     supabase = Supabase(
         client,
         os.environ["SUPABASE_URL"],
