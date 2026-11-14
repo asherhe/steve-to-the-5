@@ -1,0 +1,7 @@
+{
+  "httpStatus": 422,
+  "body": {
+    "code": "INVALID_REQUEST",
+    "message": "Finite RA/Dec and a field of 1\u201330 arcminutes are required"
+  }
+}

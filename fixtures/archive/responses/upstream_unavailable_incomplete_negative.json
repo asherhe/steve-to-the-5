@@ -1,0 +1,81 @@
+{
+  "status": "upstream_unavailable",
+  "comparison": null,
+  "diagnostics": {
+    "schemaVersion": 2,
+    "complete": false,
+    "incompleteStages": [
+      "retrieval"
+    ],
+    "coverageThresholds": {
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_fixture_inputs",
+      "totalExposures": 3,
+      "byRelease": {
+        "dr1": 3
+      },
+      "byDetector": {
+        "D2": 3
+      },
+      "byReleaseDetector": {
+        "dr1:D2": 3
+      },
+      "observedTimeRangeUtc": {
+        "dr1": {
+          "start": "2025-11-21T00:00:00Z",
+          "end": "2026-11-16T00:01:26.400000Z"
+        }
+      },
+      "failedReleaseQueries": [],
+      "complete": true
+    },
+    "discoveredExposureCount": 3,
+    "retrieval": {
+      "cutoutSizeDeg": 0.154811,
+      "requestedCutouts": 3,
+      "succeededCutouts": 2,
+      "failedCutouts": 1,
+      "failureCategories": {
+        "transient_http": 1
+      },
+      "failures": [
+        {
+          "observationId": "synthetic-2",
+          "detector": 2,
+          "release": "dr1",
+          "category": "transient_http",
+          "code": "UPSTREAM_ERROR",
+          "attempts": 3
+        }
+      ],
+      "notRequestedExposureCount": 0
+    },
+    "invalidCutouts": [],
+    "rejectedObservations": [],
+    "pairChecks": {
+      "wavelength_mismatch": 1
+    },
+    "usableExposureCount": 2,
+    "alignmentFailures": [],
+    "preparedExposureCount": 2,
+    "processedExposureCount": 2,
+    "selectionScope": "discovered_exposures_minus_failed_retrievals",
+    "sampledExposures": [
+      {
+        "observationId": "synthetic-0",
+        "detector": 2
+      },
+      {
+        "observationId": "synthetic-1",
+        "detector": 2
+      }
+    ],
+    "code": "INCOMPLETE_RETRIEVAL",
+    "message": "Some archive requests failed and no comparable pair was found among the exposures retrieved; absence of a pair is not established"
+  }
+}

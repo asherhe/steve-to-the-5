@@ -1,0 +1,78 @@
+{
+  "status": "upstream_unavailable",
+  "comparison": null,
+  "diagnostics": {
+    "schemaVersion": 2,
+    "complete": false,
+    "incompleteStages": [
+      "retrieval"
+    ],
+    "coverageThresholds": {
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_fixture_inputs",
+      "totalExposures": 2,
+      "byRelease": {
+        "dr1": 2
+      },
+      "byDetector": {
+        "D2": 2
+      },
+      "byReleaseDetector": {
+        "dr1:D2": 2
+      },
+      "observedTimeRangeUtc": {
+        "dr1": {
+          "start": "2025-11-21T00:00:00Z",
+          "end": "2026-05-20T00:01:26.400000Z"
+        }
+      },
+      "failedReleaseQueries": [],
+      "complete": true
+    },
+    "discoveredExposureCount": 2,
+    "retrieval": {
+      "cutoutSizeDeg": 0.154811,
+      "requestedCutouts": 2,
+      "succeededCutouts": 0,
+      "failedCutouts": 2,
+      "failureCategories": {
+        "transient_http": 2
+      },
+      "failures": [
+        {
+          "observationId": "synthetic-0",
+          "detector": 2,
+          "release": "dr1",
+          "category": "transient_http",
+          "code": "UPSTREAM_ERROR",
+          "attempts": 3
+        },
+        {
+          "observationId": "synthetic-1",
+          "detector": 2,
+          "release": "dr1",
+          "category": "transient_http",
+          "code": "UPSTREAM_ERROR",
+          "attempts": 3
+        }
+      ],
+      "notRequestedExposureCount": 0
+    },
+    "invalidCutouts": [],
+    "rejectedObservations": [],
+    "pairChecks": {},
+    "usableExposureCount": 0,
+    "alignmentFailures": [],
+    "preparedExposureCount": 0,
+    "processedExposureCount": 0,
+    "selectionScope": "discovered_exposures_minus_failed_retrievals",
+    "sampledExposures": [],
+    "code": "UPSTREAM_ERROR",
+    "message": "All 2 requested cutouts failed"
+  }
+}

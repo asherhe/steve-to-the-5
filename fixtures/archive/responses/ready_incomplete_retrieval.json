@@ -1,0 +1,298 @@
+{
+  "status": "ready",
+  "comparison": {
+    "id": "9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b",
+    "field": {
+      "ra": 10.0,
+      "dec": 20.0,
+      "fovArcmin": 6.0
+    },
+    "wavelengthRangeUm": [
+      1.235,
+      1.265
+    ],
+    "stretch": {
+      "type": "asinh",
+      "lower": 0.0,
+      "upper": 12.904703855485566,
+      "softening": 0.1,
+      "unit": "MJy/sr"
+    },
+    "grid": {
+      "width": 59,
+      "height": 59,
+      "pixelScaleArcsec": 6.2,
+      "projection": "TAN",
+      "coordinateFrame": "ICRS",
+      "rowOrigin": "top",
+      "fitsHeader": {
+        "WCSAXES": 2,
+        "CRPIX1": 30.0,
+        "CRPIX2": 30.0,
+        "CDELT1": -0.0017222222222222,
+        "CDELT2": 0.0017222222222222,
+        "CUNIT1": "deg",
+        "CUNIT2": "deg",
+        "CTYPE1": "RA---TAN",
+        "CTYPE2": "DEC--TAN",
+        "CRVAL1": 10.0,
+        "CRVAL2": 20.0,
+        "LONPOLE": 180.0,
+        "LATPOLE": 20.0,
+        "MJDREF": 0.0,
+        "RADESYS": "ICRS"
+      }
+    },
+    "frames": [
+      {
+        "id": "d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d",
+        "observationId": "synthetic-0",
+        "observedAtUtc": "2025-11-21T00:00:43.200000Z",
+        "observationStartUtc": "2025-11-21T00:00:00Z",
+        "observationEndUtc": "2025-11-21T00:01:26.400000Z",
+        "wavelengthUm": 1.25,
+        "bandwidthUm": 0.03,
+        "release": "dr1",
+        "imageUrl": "/api/comparisons/9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b/assets/d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d.png",
+        "sourceUrl": "https://example.invalid/synthetic-0.fits",
+        "sourceSha256": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f",
+        "processingVersion": "synthetic-v1",
+        "validFraction": 1.0,
+        "qualityFlags": {
+          "inputPixels": 8100,
+          "flaggedInputPixels": 8100,
+          "qualityRejectedInputPixels": 0,
+          "informationalFlagMask": 2101248,
+          "invalidInputPixels": 0,
+          "invalidOutputPixels": 0
+        },
+        "alignment": "reference_frame",
+        "detector": 2,
+        "coverage": {
+          "outputPixels": 3481,
+          "geometricFraction": 1.0,
+          "validFraction": 1.0,
+          "validFractionOfGeometric": 1.0,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionPixels": 81,
+          "targetRegionValidFraction": 1.0
+        }
+      },
+      {
+        "id": "d6d3e47e8f82d4e26e00322739f25da3a709023ffa9fa168fac3d63e3f90d7b6",
+        "observationId": "synthetic-2",
+        "observedAtUtc": "2026-11-16T00:00:43.200000Z",
+        "observationStartUtc": "2026-11-16T00:00:00Z",
+        "observationEndUtc": "2026-11-16T00:01:26.400000Z",
+        "wavelengthUm": 1.25,
+        "bandwidthUm": 0.03,
+        "release": "dr1",
+        "imageUrl": "/api/comparisons/9eee9e083af95f541ae4bc9a38da3cd2a55a81d828378c7dd39a0ac79825d36b/assets/d6d3e47e8f82d4e26e00322739f25da3a709023ffa9fa168fac3d63e3f90d7b6.png",
+        "sourceUrl": "https://example.invalid/synthetic-2.fits",
+        "sourceSha256": "34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972",
+        "processingVersion": "synthetic-v1",
+        "validFraction": 1.0,
+        "qualityFlags": {
+          "inputPixels": 8100,
+          "flaggedInputPixels": 8100,
+          "qualityRejectedInputPixels": 0,
+          "informationalFlagMask": 2101248,
+          "invalidInputPixels": 0,
+          "invalidOutputPixels": 0
+        },
+        "alignment": "verified",
+        "detector": 2,
+        "coverage": {
+          "outputPixels": 3481,
+          "geometricFraction": 1.0,
+          "validFraction": 1.0,
+          "validFractionOfGeometric": 1.0,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionPixels": 81,
+          "targetRegionValidFraction": 1.0
+        }
+      }
+    ],
+    "config": {
+      "pixelScaleArcsec": 6.2,
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "targetRegionRadiusPixels": 5.0,
+      "wavelengthToleranceBandwidth": 0.25,
+      "maxFrames": 12,
+      "maxCandidates": 1000,
+      "maxCutouts": 120,
+      "batchSize": 24,
+      "maxDownloadBytes": 20000000,
+      "timeoutSeconds": 30.0,
+      "attempts": 3,
+      "backoffBaseSeconds": 0.5,
+      "backoffMaxSeconds": 8.0,
+      "buildDeadlineSeconds": 180.0,
+      "concurrency": 3,
+      "lowerPercentile": 1.0,
+      "upperPercentile": 99.5,
+      "asinhSoftening": 0.1,
+      "cutoutPaddingArcsec": 20.0,
+      "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+      "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+      "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+      "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+      "backgroundPolicy": "subtract_zodi",
+      "resampling": "bilinear_with_full_valid_support"
+    },
+    "provenance": {
+      "schemaVersion": 2,
+      "implementation": {
+        "sourceSha256": "1e1848aaab05827720f34a5ab0bf99ee11db7cbdb777522c3d058efaec171e2b",
+        "python": "3.13.14",
+        "packages": {
+          "numpy": "2.5.4",
+          "astropy": "8.0.2",
+          "reproject": "0.21.0",
+          "pillow": "13.0.0"
+        }
+      },
+      "evidenceKind": "synthetic_fixture",
+      "discoveryScope": "synthetic_fixture_inputs",
+      "inputs": [
+        {
+          "observation": {
+            "observationId": "synthetic-0",
+            "detector": 2,
+            "release": "dr1",
+            "sourceUrl": "https://example.invalid/synthetic-0.fits",
+            "startMjd": 61000.0,
+            "endMjd": 61000.001
+          },
+          "sourceSha256": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f"
+        },
+        {
+          "observation": {
+            "observationId": "synthetic-2",
+            "detector": 2,
+            "release": "dr1",
+            "sourceUrl": "https://example.invalid/synthetic-2.fits",
+            "startMjd": 61360.0,
+            "endMjd": 61360.001
+          },
+          "sourceSha256": "34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972"
+        }
+      ],
+      "acknowledgement": "This publication makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.",
+      "releaseDocumentation": "https://irsa.ipac.caltech.edu/Missions/spherex.html",
+      "timestampPolicy": "midpoint_of_SIA_UTC_MJD_bounds",
+      "alignmentChecks": {
+        "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f": {
+          "status": "reference_frame"
+        },
+        "34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972": {
+          "status": "verified",
+          "matchedSources": 4,
+          "medianResidualPixels": 0.0,
+          "acceptancePixels": 0.5,
+          "referenceSourceSha256": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f"
+        }
+      }
+    },
+    "limitations": [
+      "Quick-look visualization, not significant motion or variability measurement.",
+      "Selection scope and completeness are recorded in diagnostics; bounded or incomplete samples do not prove absence or maximize the full-archive time baseline.",
+      "No PSF homogenization or precision photometry; one exposure per frame.",
+      "Only SOURCE/FULLSAMPLE flags allowed; ZODI subtracted, no frame-wise normalization.",
+      "Coverage thresholds are provisional engineering choices; masked pixels are transparent and never filled. Check target-region validity before interpreting the centre.",
+      "Alignment is WCS reprojection only; the stationary-source check labels frames and applies no correction.",
+      "Wavelength labels describe the target; response varies spatially.",
+      "PNG rows are flipped relative to FITS: fitsY=height-1-pngY (zero-based).",
+      "Archive search incomplete (see diagnostics.incompleteStages); some discovered exposures were not retrieved or not requested."
+    ],
+    "coverage": {
+      "outputPixels": 3481,
+      "allFramesCommonValidFraction": 1.0,
+      "minPairwiseCommonValidFraction": 1.0,
+      "targetRegionRadiusPixels": 5.0,
+      "targetRegionPixels": 81,
+      "targetRegionCommonValidFraction": 1.0
+    }
+  },
+  "diagnostics": {
+    "schemaVersion": 2,
+    "complete": false,
+    "incompleteStages": [
+      "retrieval"
+    ],
+    "coverageThresholds": {
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_fixture_inputs",
+      "totalExposures": 3,
+      "byRelease": {
+        "dr1": 3
+      },
+      "byDetector": {
+        "D2": 3
+      },
+      "byReleaseDetector": {
+        "dr1:D2": 3
+      },
+      "observedTimeRangeUtc": {
+        "dr1": {
+          "start": "2025-11-21T00:00:00Z",
+          "end": "2026-11-16T00:01:26.400000Z"
+        }
+      },
+      "failedReleaseQueries": [],
+      "complete": true
+    },
+    "discoveredExposureCount": 3,
+    "retrieval": {
+      "cutoutSizeDeg": 0.154811,
+      "requestedCutouts": 3,
+      "succeededCutouts": 2,
+      "failedCutouts": 1,
+      "failureCategories": {
+        "transient_http": 1
+      },
+      "failures": [
+        {
+          "observationId": "synthetic-1",
+          "detector": 2,
+          "release": "dr1",
+          "category": "transient_http",
+          "code": "UPSTREAM_ERROR",
+          "attempts": 3
+        }
+      ],
+      "notRequestedExposureCount": 0
+    },
+    "invalidCutouts": [],
+    "rejectedObservations": [],
+    "pairChecks": {
+      "compatible": 1
+    },
+    "usableExposureCount": 2,
+    "alignmentFailures": [],
+    "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+    "candidatePairCount": 1,
+    "candidatePairsTried": 1,
+    "notSelectedExposures": [],
+    "preparedExposureCount": 2,
+    "processedExposureCount": 2,
+    "selectionScope": "discovered_exposures_minus_failed_retrievals",
+    "sampledExposures": [
+      {
+        "observationId": "synthetic-0",
+        "detector": 2
+      },
+      {
+        "observationId": "synthetic-2",
+        "detector": 2
+      }
+    ]
+  }
+}

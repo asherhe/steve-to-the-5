@@ -1,0 +1,100 @@
+{
+  "evidenceKind": "live_archive_check",
+  "targets": [
+    {
+      "target": "Barnard's Star",
+      "checkedAtUtc": "2026-11-14T19:32:10.447768+00:00",
+      "coordinateProvenance": "Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field.",
+      "visibleChange": "not_assessed",
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6.0
+      },
+      "status": "upstream_unavailable",
+      "diagnostics": {
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries",
+        "complete": false
+      },
+      "comparisonId": null,
+      "elapsedSeconds": 2.5233479170128703
+    },
+    {
+      "target": "RW Aurigae",
+      "checkedAtUtc": "2026-11-14T19:32:12.974188+00:00",
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "visibleChange": "not_assessed",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6.0
+      },
+      "status": "upstream_unavailable",
+      "diagnostics": {
+        "code": "UPSTREAM_ERROR",
+        "message": "Incomplete retrieval: 5 of 24 cutouts failed",
+        "complete": false
+      },
+      "comparisonId": null,
+      "elapsedSeconds": 39.91773754218593
+    },
+    {
+      "target": "Epsilon Indi B",
+      "checkedAtUtc": "2026-11-14T19:32:52.892843+00:00",
+      "coordinateProvenance": "Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry.",
+      "visibleChange": "not_assessed",
+      "field": {
+        "ra": 331.04375,
+        "dec": -56.782777777777774,
+        "fovArcmin": 6.0
+      },
+      "status": "upstream_unavailable",
+      "diagnostics": {
+        "code": "UPSTREAM_ERROR",
+        "message": "Incomplete retrieval: 11 of 24 cutouts failed",
+        "complete": false
+      },
+      "comparisonId": null,
+      "elapsedSeconds": 33.5369326248765
+    },
+    {
+      "target": "WISE 0855",
+      "checkedAtUtc": "2026-11-14T19:33:26.432452+00:00",
+      "coordinateProvenance": "Coordinates supplied by the NASA challenge; epoch unspecified; not propagated.",
+      "visibleChange": "not_assessed",
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6.0
+      },
+      "status": "upstream_unavailable",
+      "diagnostics": {
+        "code": "UPSTREAM_ERROR",
+        "message": "Incomplete retrieval: 3 of 24 cutouts failed",
+        "complete": false
+      },
+      "comparisonId": null,
+      "elapsedSeconds": 47.052566833095625
+    },
+    {
+      "target": "R Draconis",
+      "checkedAtUtc": "2026-11-14T19:34:13.485657+00:00",
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "visibleChange": "not_assessed",
+      "field": {
+        "ra": 248.16750000000002,
+        "dec": 66.75472222222223,
+        "fovArcmin": 6.0
+      },
+      "status": "upstream_unavailable",
+      "diagnostics": {
+        "code": "UPSTREAM_ERROR",
+        "message": "Incomplete retrieval: 5 of 24 cutouts failed",
+        "complete": false
+      },
+      "comparisonId": null,
+      "elapsedSeconds": 48.17721275007352
+    }
+  ]
+}

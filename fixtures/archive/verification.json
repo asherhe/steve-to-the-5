@@ -1,0 +1,194 @@
+{
+  "kind": "executed_local_verification",
+  "schemaVersion": 2,
+  "recordedOn": "2026-11-14",
+  "tests": {
+    "command": "services/archive/.venv/bin/python -m pytest services/archive/tests -q",
+    "result": "77 passed, 0 skipped, 1 warning (Starlette TestClient/HTTPX deprecation)",
+    "baselineBeforeRepairs": "27 passed (history/baseline-20261114.json)"
+  },
+  "liveFiveTargetCheck": {
+    "log": "coverage-log.json",
+    "fovArcmin": 6,
+    "caveat": "coverage-log.json is the third pass of the day, run with the final code. Its cutouts were downloaded from IRSA earlier the same day and mostly served from the local cache; discovery queries were live. The first full live pass (cold cache, slightly earlier code) is history/coverage-log-20261114-run2-first-live-pass.json: same three targets ready, Barnard's Star and RW Aurigae stopped by the 180 s deadline with 13 and 11 cutout failures. The pre-repair attempt is history/coverage-log-20261114T1932Z.json.",
+    "targets": {
+      "Barnard's Star": {
+        "outcome": "http_error:PROCESSING_LIMIT:cutout_budget",
+        "comparisonId": null,
+        "discoveredExposures": 387,
+        "byRelease": {
+          "dr1": 259,
+          "qr3": 128
+        },
+        "cutoutsRequested": 120,
+        "cutoutsFailed": 0,
+        "pairChecks": {
+          "different_detector": 3989,
+          "wavelength_mismatch": 763,
+          "insufficient_common_coverage": 1
+        },
+        "frames": [],
+        "visibleChange": "not_assessed",
+        "note": "No comparison produced: 120 cutouts sampled of 387 discovered, no wavelength-compatible same-detector pair in the sample. Not evidence that no pair exists."
+      },
+      "RW Aurigae": {
+        "outcome": "http_error:PROCESSING_LIMIT:cutout_budget",
+        "comparisonId": null,
+        "discoveredExposures": 357,
+        "byRelease": {
+          "dr1": 237,
+          "qr3": 120
+        },
+        "cutoutsRequested": 120,
+        "cutoutsFailed": 0,
+        "pairChecks": {
+          "different_detector": 4949,
+          "wavelength_mismatch": 903,
+          "insufficient_common_coverage": 34
+        },
+        "frames": [],
+        "visibleChange": "not_assessed",
+        "note": "No comparison produced: 120 cutouts sampled of 357 discovered, no wavelength-compatible same-detector pair in the sample. Not evidence that no pair exists."
+      },
+      "Epsilon Indi B": {
+        "outcome": "ready",
+        "comparisonId": "516ecdf6be6a3a51c918b4359334ea95692c4d6d61e061ad145fafab0acb7c17",
+        "discoveredExposures": 491,
+        "byRelease": {
+          "dr1": 371,
+          "qr3": 120
+        },
+        "cutoutsRequested": 48,
+        "cutoutsFailed": 0,
+        "pairChecks": {
+          "different_detector": 452,
+          "wavelength_mismatch": 74,
+          "compatible": 1,
+          "insufficient_common_coverage": 1
+        },
+        "frames": [
+          {
+            "observationId": "2025W17_4B_0468_1",
+            "detector": 4,
+            "release": "dr1",
+            "observedAtUtc": "2025-04-27T20:12:15.796799Z",
+            "wavelengthUm": 3.626863302305218,
+            "alignment": "reference_frame"
+          },
+          {
+            "observationId": "2026W18_2A_0819_1",
+            "detector": 4,
+            "release": "dr1",
+            "observedAtUtc": "2026-05-03T17:14:22.286399Z",
+            "wavelengthUm": 3.6270157457230927,
+            "alignment": "verified"
+          }
+        ],
+        "visibleChange": "ambiguous",
+        "note": "Informal look at the two PNGs at 3.63 um, 371 days apart: background sources repeat and a bright glow enters from the west edge. No source was identified as the brown-dwarf pair and no motion was measured. targetRegionCommonValidFraction 0.90."
+      },
+      "WISE 0855": {
+        "outcome": "ready",
+        "comparisonId": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416",
+        "discoveredExposures": 297,
+        "byRelease": {
+          "dr1": 297
+        },
+        "cutoutsRequested": 24,
+        "cutoutsFailed": 0,
+        "pairChecks": {
+          "different_detector": 201,
+          "wavelength_mismatch": 26,
+          "compatible": 4
+        },
+        "frames": [
+          {
+            "observationId": "2025W19_1B_0181_2",
+            "detector": 2,
+            "release": "dr1",
+            "observedAtUtc": "2025-05-06T02:36:36.432000Z",
+            "wavelengthUm": 1.5537267176527214,
+            "alignment": "reference_frame"
+          },
+          {
+            "observationId": "2026W20_1A_0939_1",
+            "detector": 2,
+            "release": "dr1",
+            "observedAtUtc": "2026-05-13T16:14:39.062400Z",
+            "wavelengthUm": 1.5536864251652962,
+            "alignment": "verified"
+          }
+        ],
+        "visibleChange": "not_assessed",
+        "note": "Frames are at 1.55 um. Informal look at the two PNGs: field stars repeat; nothing identified at the requested position. An object this cold is not expected to be detectable at 1.55 um, so this pair does not test the target itself. targetRegionCommonValidFraction 0.95."
+      },
+      "R Draconis": {
+        "outcome": "ready",
+        "comparisonId": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+        "discoveredExposures": 586,
+        "byRelease": {
+          "dr1": 456,
+          "qr3": 130
+        },
+        "cutoutsRequested": 72,
+        "cutoutsFailed": 1,
+        "pairChecks": {
+          "different_detector": 1868,
+          "wavelength_mismatch": 323,
+          "insufficient_common_coverage": 18,
+          "compatible": 2
+        },
+        "frames": [
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 4,
+            "release": "dr1",
+            "observedAtUtc": "2025-06-06T11:25:30.374400Z",
+            "wavelengthUm": 3.2557049415562336,
+            "alignment": "reference_frame"
+          },
+          {
+            "observationId": "2026W29_1A_0364_1",
+            "detector": 4,
+            "release": "qr3",
+            "observedAtUtc": "2026-07-14T21:41:40.934400Z",
+            "wavelengthUm": 3.245933773545258,
+            "alignment": "wcs_only_not_empirically_verified"
+          }
+        ],
+        "visibleChange": "not_assessed",
+        "note": "The star's core is masked in both frames (targetRegionCommonValidFraction 0.0; flagged pixels are transparent), leaving only the surrounding halo. Brightness change of the star cannot be read from these images. Alignment is WCS-only, not empirically verified. Frames differ in release (dr1, qr3)."
+      }
+    },
+    "summary": "3 of 5 targets produced a live comparison. 2 of 5 exhausted the 120-cutout budget without a compatible pair; the milestone of a comparison for every target is unmet."
+  },
+  "visibleChangeAssessment": "Informal visual look by the implementing agent at upscaled PNGs only. No photometry, astrometry or significance test. Nothing here is a detection of motion or variability.",
+  "realFixtures": {
+    "real-wise0855": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416",
+    "real-rdraconis": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+    "real-epsindib": "516ecdf6be6a3a51c918b4359334ea95692c4d6d61e061ad145fafab0acb7c17",
+    "real (tutorial, schema 1)": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31"
+  },
+  "httpSmoke": {
+    "origin": "http://127.0.0.1:8766",
+    "store": "fixtures/archive/real-wise0855",
+    "passed": [
+      "saved_replay_equals_response_json",
+      "png_asset",
+      "fits_asset_hash",
+      "invalid_input_422",
+      "unknown_id_404",
+      "offline_rebuild_from_retained_cutouts",
+      "openapi_matches_export"
+    ],
+    "hostedDeployment": false
+  },
+  "notVerified": [
+    "hosted deployment",
+    "frontend integration",
+    "cold-cache latency under the final code for all five targets",
+    "30-arcminute live request",
+    "multi-worker admission behaviour",
+    "bitwise reprocessing on another platform"
+  ]
+}

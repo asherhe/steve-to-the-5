@@ -1,0 +1,7 @@
+{
+  "httpStatus": 503,
+  "body": {
+    "code": "PROCESSING_LIMIT",
+    "message": "No pair found within cutout budget; archive search is not exhaustive"
+  }
+}

@@ -1,0 +1,11 @@
+# SIA2 is requested directly with HTTPX for bounded streaming and explicit failures.
+fastapi
+uvicorn
+pydantic
+httpx
+astropy
+numpy
+reproject
+scipy
+pillow
+pytest
