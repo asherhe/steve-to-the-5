@@ -69,6 +69,8 @@ export function SkyMap({
           showFullscreenControl: false,
           showSettingsControl: false,
           showCooLocation: false,
+          // The frame is fixed to ICRSd; its selector would sit under the leaderboard button.
+          showFrame: false,
           showFov: false,
           showSimbadPointerControl: false,
         });
