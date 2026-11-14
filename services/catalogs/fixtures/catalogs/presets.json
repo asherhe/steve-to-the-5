@@ -1,0 +1,35 @@
+{
+  "_note": "Bundled target presets for /api/resolve. Independent of any external name lookup. ICRS decimal degrees. WISE 0855 uses the challenge-supplied position 08h55m10.831s, -07d14m42.53s.",
+  "presets": [
+    {
+      "name": "Barnard's Star",
+      "aliases": ["barnard", "barnards star", "gj 699", "hip 87937"],
+      "ra": 269.45207,
+      "dec": 4.66829
+    },
+    {
+      "name": "Epsilon Indi B",
+      "aliases": ["epsilon indi", "eps ind b", "eps indi b", "gj 845 b"],
+      "ra": 330.80833,
+      "dec": -56.78139
+    },
+    {
+      "name": "WISE 0855-0714",
+      "aliases": ["wise 0855", "wise0855", "wise j085510.83-071442.5", "wise 0855-071"],
+      "ra": 133.79513,
+      "dec": -7.24515
+    },
+    {
+      "name": "RW Aurigae",
+      "aliases": ["rw aur", "rw aurigae a", "rw aur a"],
+      "ra": 76.95642,
+      "dec": 30.40139
+    },
+    {
+      "name": "R Draconis",
+      "aliases": ["r dra", "r draconis"],
+      "ra": 242.17654,
+      "dec": 66.78747
+    }
+  ]
+}

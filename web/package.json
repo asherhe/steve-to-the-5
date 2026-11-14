@@ -1,0 +1,33 @@
+{
+  "name": "spherex-web-inspector",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Standalone dev harness and tests for the SPHEREx source inspector (task 3). Not the app shell; the coordinator owns the integrated web app.",
+  "scripts": {
+    "dev:inspector": "vite --config vite.inspector.config.ts",
+    "build:inspector": "tsc -p tsconfig.json --noEmit && vite build --config vite.inspector.config.ts",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "jsdom": "^25.0.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2",
+    "vitest": "^2.0.5"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

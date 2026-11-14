@@ -1,0 +1,5 @@
+# Node dependencies and build output (inspector harness, task 3)
+node_modules/
+dist/
+.vite/
+*.local

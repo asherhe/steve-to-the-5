@@ -1,0 +1,8 @@
+# Python local environment and caches (catalog slice)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+# Generated coverage log is reproducible; keep it out of version control.
+docs/coverage-log.json

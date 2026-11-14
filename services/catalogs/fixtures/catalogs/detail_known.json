@@ -1,0 +1,27 @@
+{
+  "_scenario": "known-detail-full",
+  "_description": "Full Gaia DR3 detail for the known match (Barnard's Star analogue), including uncertainties, radial velocity and BP/RP photometry. Synthetic values; not a dated live query.",
+  "sourceId": "4472832130942575872",
+  "ra": 269.45207,
+  "dec": 4.66829,
+  "refEpoch": 2016.0,
+  "pmRaCosDecMasYr": -802.803,
+  "pmDecMasYr": 10362.542,
+  "parallaxMas": 546.976,
+  "gMag": 8.194,
+  "raErrorMas": 0.027,
+  "decErrorMas": 0.034,
+  "pmRaCosDecErrorMasYr": 0.031,
+  "pmDecErrorMasYr": 0.042,
+  "parallaxErrorMas": 0.040,
+  "radialVelocityKmS": -110.353,
+  "radialVelocityErrorKmS": 0.123,
+  "bpMag": 9.978,
+  "rpMag": 6.964,
+  "provenance": {
+    "catalog": "gaiadr3.gaia_source",
+    "dataRelease": "Gaia DR3",
+    "sourceTableUrl": "https://gea.esac.esa.int/archive/",
+    "sourceDetailUrl": "https://gea.esac.esa.int/archive/?source_id=4472832130942575872"
+  }
+}
