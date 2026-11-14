@@ -1,0 +1,19 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  color: #e7ebf3;
+  background: #10141c;
+}
+
+body { margin: 0; }
+main { max-width: 56rem; margin: auto; padding: clamp(1rem, 5vw, 3rem); }
+h1 { margin: 0; }
+header p, figcaption { color: #b7c1d2; }
+.controls { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; }
+label { display: grid; gap: 0.25rem; }
+button, select { font: inherit; min-height: 2.75rem; padding: 0.5rem 0.75rem; }
+button:focus-visible, select:focus-visible { outline: 2px solid #90c7ff; outline-offset: 2px; }
+.frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
+figure { margin: 0; }
+img { display: block; width: 100%; height: auto; background: #090909; }
+figcaption { margin-top: 0.4rem; }
