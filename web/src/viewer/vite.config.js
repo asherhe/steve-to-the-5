@@ -18,7 +18,7 @@ export default defineConfig(({ command }) => ({
     enforce: "pre",
     resolveId(source, importer) {
       // Exclude even the synthetic PNG assets from the public build.
-      if (command === "build" && source === "./fixtures" && importer?.endsWith("/harness/main.tsx")) {
+      if (command === "build" && source === "./harness/main" && importer?.endsWith("/viewer/main.tsx")) {
         return "\0viewer-fixtures-disabled";
       }
     },

@@ -101,3 +101,68 @@ Set `VIEWER_TEST_URL` if using another port. The regression blocks external netw
 requests and checks desktop/mobile replay, actual image decoding, saved marks,
 Show evidence, clipboard links, changed search/scenario defaults, missing IDs,
 mismatched IDs and finding-only links. It uses synthetic data throughout.
+
+## Checkpoint 6: production adapter and reusable viewer
+
+The public entry is now `main.tsx`, which mounts the exported `Viewer` using
+`createViewerDataSource()` and an inspector slot wrapping the catalog owner's
+`SourceInspector`. The root `npm run dev:viewer`, `check`, `build`, and `preview`
+commands provide the shared tooling. No separate runner dependencies were added.
+The `harness/` directory is only loaded in development with `?fixtures=1`; its
+controls, discussion fixture and synthetic PNGs are excluded from production builds.
+
+The production adapter implements all three `ViewerDataSource` operations:
+
+- Search: `GET /api/comparisons?ra&dec&fovArcmin`.
+- Saved replay: `GET /api/comparisons/{id}`, without issuing a search or applying new defaults.
+- Name lookup: `GET /api/resolve?name`, using the catalog owner's typed client.
+
+Archive responses use `archive.generated.ts`, verified against
+`fixtures/archive/openapi.json`. The adapter preserves asset URLs, observation dates,
+WCS, provenance and completeness diagnostics, maps the saved stretch bounds to the
+viewer, and sorts frames chronologically without mutating the response. Bounds of
+1–30 arcmin are shared with the controls and checked against OpenAPI by the tests.
+Requests forward abort signals. Missing names and saved IDs, malformed responses,
+archive HTTP errors and domain outage statuses remain distinct.
+
+`ViewerProps` supplies the data source, inspector slot, optional discussion slot and
+finding loader. The shell owns concrete clients. The viewer no longer imports the
+fixture adapter or fetches name resolution through a second fallback client. In
+fixture mode an unknown name stays unknown and never falls through to a real service.
+
+Run contract verification without Python, FastAPI or archive access (Node 22.18+ or 24):
+
+```sh
+node --test web/src/viewer/production.test.mjs web/src/viewer/evidence.test.mjs
+npm run build
+```
+
+For the built-app browser smoke test, start `npm run preview -- --port 5176`.
+Using the temporary Playwright installation described above:
+
+```sh
+PLAYWRIGHT_MODULE="$test_tools/node_modules/playwright/index.mjs" VIEWER_TEST_URL=http://localhost:5176 node web/src/viewer/production.browser.mjs
+```
+
+This test intercepts the same-origin API routes with the archive owner's responses
+and retained synthetic PNG blobs. It checks name-to-search wiring, image decoding,
+stepping, the inspector slot, saved replay without search, outage/retry, and that
+`?fixtures=1` cannot activate fixture controls in the public build. External network
+requests are blocked. Run the checkpoint 5 browser regression against the development
+server as well; the same reusable viewer is used in both modes.
+
+### Coordinator handoff and remaining dependencies
+
+The available OpenAPI covers archive routes only. The resolver uses the existing
+catalog owner's typed client and documented preset fixture until the coordinator
+publishes its generated shared schema. There is no findings UI or service in this
+checkout; the public shell therefore leaves `Discussion` and `loadFinding` unset,
+while development injects their fixture implementations. No parallel wire schema was
+introduced for these missing owners. Connect their components through `ViewerProps`
+when delivered; findings links in the public app currently show an explicit
+not-connected message rather than silently dropping the finding ID.
+
+Checkpoint 6 verification used local contract fixtures and mocked HTTP in Chrome;
+it did not contact the archive, Gaia, auth or a deployed origin. Live services,
+five-target coverage, posting and cross-session auth remain checkpoint 7 work.
+The production build still reports the existing large Aladin bundle warning.
