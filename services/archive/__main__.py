@@ -150,7 +150,11 @@ def main():
     config = ProcessingConfig(maxCandidates=args.max_candidates, maxFrames=args.max_frames,
                               timeoutSeconds=args.timeout, attempts=args.attempts,
                               buildDeadlineSeconds=args.deadline)
-    store = LocalStore(args.storage / "evidence")
+    examples = (
+        Path(__file__).resolve().parents[2] / "fixtures" / "archive" / "real" / "evidence"
+        if args.command in {"serve", "replay"} else None
+    )
+    store = LocalStore(args.storage / "evidence", examples=examples)
     if args.synthetic and args.recorded:
         parser.error("Choose either synthetic or recorded inputs")
     client = RecordedClient(args.recorded) if args.recorded else (FixtureClient() if args.synthetic else IRSAClient(config, args.storage / "cache"))

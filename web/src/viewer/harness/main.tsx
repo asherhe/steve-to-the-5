@@ -5,7 +5,10 @@ import { CatalogApiError, createCatalogClient, SourceInspector, type MarkAction 
 import { targetPresets } from "../coordinates";
 import { FieldSearch, inFieldRange } from "../FieldSearch";
 import { SkyMap } from "../SkyMap";
-import { fixtureDataSource, fixtureField, savedFixtureId, type Scenario } from "./fixtures";
+import { archiveDataSource, ArchiveRequestError } from "../archive";
+import { ComparisonPlayback } from "../ComparisonPlayback";
+import retainedExample from "../../../../fixtures/archive/real/response.json";
+import type { Scenario } from "./fixtures";
 import "./styles.css";
 
 const scenarios: Record<Scenario, string> = {
@@ -17,9 +20,10 @@ const scenarios: Record<Scenario, string> = {
 };
 
 const initialCenter = targetPresets[0];
-const initialField = { ...initialCenter, fovArcmin: fixtureField.fovArcmin };
+const initialField = { ...initialCenter, fovArcmin: 6 };
 const fieldLimits = { min: 1, max: 30 };
 const catalogClient = createCatalogClient();
+const fixtureMode = import.meta.env.DEV && new URLSearchParams(location.search).get("fixtures") === "1";
 
 type Request =
   | { kind: "field"; field: Field }
@@ -27,18 +31,23 @@ type Request =
   | { kind: "saved"; id: string };
 
 type Preview =
-  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" | "error" }
+  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" }
+  | { kind: "error"; message: string }
   | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison };
 
 function Harness() {
   const [scenario, setScenario] = useState<Scenario>("ready");
-  const [request, setRequest] = useState<Request | null>(null);
+  const [request, setRequest] = useState<Request | null>(() => {
+    const id = new URLSearchParams(location.search).get("comparison");
+    return id ? { kind: "saved", id } : null;
+  });
   const [focus, setFocus] = useState<Field | null>(null);
   const [mapNotice, setMapNotice] = useState("");
   const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
   const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     if (!request) {
@@ -47,24 +56,31 @@ function Harness() {
     }
     const current = request;
     const controller = new AbortController();
-    const source = fixtureDataSource(scenario);
     const signal = controller.signal;
 
     async function load() {
       setPreview({ kind: "loading" });
+      setCopyStatus("");
+      let resolving = false;
       try {
+        const fixture = fixtureMode ? (await import("./fixtures")).fixtureDataSource(scenario) : null;
+        if (signal.aborted) return;
+        const source = fixture ?? archiveDataSource;
         if (current.kind === "saved") {
           const comparison = await source.loadSaved(current.id, signal);
           if (!signal.aborted) {
             setPreview(comparison ? { kind: "saved", comparison } : { kind: "missing" });
+            if (comparison) setFocus(comparison.field);
           }
           return;
         }
 
         let field: Field;
         if (current.kind === "name") {
-          const position = await source.resolveName(current.name, signal) ??
+          resolving = true;
+          const position = await fixture?.resolveName(current.name, signal) ??
             await catalogClient.resolve(current.name, signal);
+          resolving = false;
           if (signal.aborted) return;
           field = { ra: position.ra, dec: position.dec, fovArcmin: current.fovArcmin };
           setFocus(field);
@@ -76,8 +92,9 @@ function Harness() {
         if (!signal.aborted) setPreview({ kind: "search", result, field });
       } catch (error) {
         if (signal.aborted) return;
-        if (current.kind !== "name") {
-          setPreview({ kind: "error" });
+        if (!resolving) {
+          setPreview({ kind: "error", message: error instanceof ArchiveRequestError
+            ? error.message : "The archive service could not be reached." });
         } else {
           const missing = error instanceof CatalogApiError && error.code === "not_found";
           setPreview({ kind: missing ? "name_not_found" : "catalog_error" });
@@ -110,19 +127,43 @@ function Harness() {
 
   const status =
     preview.kind === "search" ? scenarios[preview.result.status] :
-    preview.kind === "saved" ? "Saved synthetic comparison" :
+    preview.kind === "saved" ? "Saved comparison" :
     preview.kind === "missing" ? "Saved comparison not found" :
     preview.kind === "name_not_found" ? "Object name not found. Try a preset or enter sky coordinates." :
     preview.kind === "catalog_error" ? "Name lookup is unavailable. Try a preset or enter sky coordinates." :
-    preview.kind === "error" ? "Fixture could not be loaded" :
+    preview.kind === "error" ? preview.message :
     preview.kind === "idle" ? "Choose a field to compare." :
-    "Loading fixture…";
+    "Loading comparison…";
+  const diagnostics = preview.kind === "search" ? preview.result.diagnostics : comparison?.diagnostics;
+  const kind = comparison?.provenance?.evidenceKind;
+  const fallbackAvailable = preview.kind === "error" ||
+    (preview.kind === "search" && preview.result.status === "upstream_unavailable");
+
+  async function openExample() {
+    const id = fixtureMode ? (await import("./fixtures")).savedFixtureId : retainedExample.comparison.id;
+    setRequest({ kind: "saved", id });
+  }
+
+  function comparisonLink(id: string) {
+    const link = new URL(location.href);
+    link.searchParams.set("comparison", id);
+    return link.href;
+  }
+
+  async function copyLink(id: string) {
+    try {
+      await navigator.clipboard.writeText(comparisonLink(id));
+      setCopyStatus("Comparison link copied.");
+    } catch {
+      setCopyStatus("Copying failed. Use the saved comparison link.");
+    }
+  }
 
   return (
     <main>
       <header>
         <h1>SPHEREx viewer</h1>
-        <p>Development fixtures. All images and observation metadata are synthetic.</p>
+        {fixtureMode && <p>Development fixtures. Comparison images and metadata are synthetic.</p>}
       </header>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
         onInspect={setInspecting} catalogMark={catalogMark} />
@@ -147,52 +188,55 @@ function Harness() {
           setMapNotice("");
           setRequest({ kind: "name", name, fovArcmin });
         }} />
-      <h2>Fixture results</h2>
-      <div className="controls">
+      <h2>Comparison</h2>
+      {fixtureMode && <div className="controls">
         <label>
           Archive response
           <select value={scenario} onChange={(event) => {
             setScenario(event.target.value as Scenario);
-            setRequest((current) => current?.kind === "field" ? current : { kind: "field", field: fixtureField });
+            setRequest((current) => current?.kind === "field" ? current : { kind: "field", field: initialField });
           }}>
             {Object.entries(scenarios).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </label>
-        <button onClick={() => setRequest({ kind: "saved", id: savedFixtureId })}>Open saved fixture</button>
+        <button onClick={openExample}>Open saved fixture</button>
         <button onClick={() => setRequest({ kind: "saved", id: "missing-fixture" })}>Try missing ID</button>
         {request?.kind === "saved" && <button onClick={() => setRequest(null)}>Back to search</button>}
-      </div>
+      </div>}
       <p role="status">{status}</p>
+      {preview.kind === "loading" && request?.kind !== "saved" && <p>An archive search can take a few minutes.</p>}
+      {typeof diagnostics?.message === "string" && <p>{diagnostics.message}</p>}
+      {comparison && diagnostics?.complete === false && <p>This comparison comes from an incomplete archive search.</p>}
+      {fallbackAvailable && request && (
+        <div className="controls">
+          <button type="button" onClick={() => setRequest({ ...request })}>Retry</button>
+          {request.kind !== "saved" && <button type="button" onClick={openExample}>
+            {fixtureMode ? "Open saved fixture" : "Open saved real example"}
+          </button>}
+        </div>
+      )}
+      {!fixtureMode && preview.kind === "idle" && (
+        <button type="button" onClick={openExample}>Open saved real example</button>
+      )}
       {preview.kind === "search" && (
         <p>
           Requested RA {preview.field.ra.toFixed(6)}°, Dec {preview.field.dec.toFixed(6)}°,
-          width {preview.field.fovArcmin.toFixed(2)} arcmin. The fixture simulates the selected archive outcome.
+          width {preview.field.fovArcmin.toFixed(2)} arcmin.
         </p>
       )}
       {comparison && (
-        <section aria-label="Synthetic comparison frames">
-          <p>
-            {comparison.wavelengthRangeUm.join("–")} µm · Shared stretch{" "}
-            {comparison.stretch.min}–{comparison.stretch.max} {comparison.stretch.unit}
-          </p>
-          <div className="frames">
-            {comparison.frames.map((frame, index) => (
-              <figure key={frame.id}>
-                <img
-                  src={frame.imageUrl}
-                  width={comparison.grid.width}
-                  height={comparison.grid.height}
-                  alt={`Synthetic star field, epoch ${index + 1}`}
-                />
-                <figcaption>
-                  <time dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
-                </figcaption>
-              </figure>
-            ))}
+        <>
+          <p>{fixtureMode || kind === "synthetic_fixture" ? "Synthetic comparison" :
+            kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
+          <ComparisonPlayback key={comparison.id} comparison={comparison} />
+          <div className="controls">
+            <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
+            <button type="button" onClick={() => void copyLink(comparison.id)}>Copy comparison link</button>
           </div>
-        </section>
+          {copyStatus && <p role="status">{copyStatus}</p>}
+        </>
       )}
     </main>
   );

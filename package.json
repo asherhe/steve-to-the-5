@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite web/src/viewer --strictPort",
     "check": "tsc --project web/src/viewer/tsconfig.json",
+    "generate:archive-types": "openapi-typescript fixtures/archive/openapi.json -o web/src/viewer/archive.generated.ts",
     "build": "npm run check && vite build web/src/viewer"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "openapi-typescript": "7.10.1",
     "typescript": "~5.9.3",
     "vite": "^7.0.0"
   }

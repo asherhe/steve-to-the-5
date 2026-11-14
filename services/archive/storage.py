@@ -27,8 +27,9 @@ class EvidenceStore(Protocol):
 class LocalStore:
     """Immutable blobs; an atomic manifest is the publication/commit point."""
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, examples: Path | None = None):
         self.root = Path(root)
+        self.examples = examples
 
     def _manifest(self, comparison_id):
         if not re.fullmatch(r"[a-f0-9]{64}", comparison_id):
@@ -52,11 +53,12 @@ class LocalStore:
             except FileExistsError:
                 if path.read_bytes() != data:
                     raise ArchiveError("EVIDENCE_CONFLICT", "Refusing conflicting evidence", 409)
-            directory = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory)
-            finally:
-                os.close(directory)
+            if os.name != "nt":
+                directory = os.open(path.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
         finally:
             temporary.unlink(missing_ok=True)
 
@@ -78,6 +80,10 @@ class LocalStore:
 
     def _record(self, comparison_id):
         path = self._manifest(comparison_id)
+        root = self.root
+        if not path.exists() and self.examples is not None:
+            root = self.examples
+            path = root / "manifests" / path.name
         if not path.exists():
             raise ArchiveError("NOT_FOUND", "Unknown comparison ID", 404)
         try:
@@ -93,25 +99,26 @@ class LocalStore:
             for sha in record["assets"].values():
                 if not re.fullmatch(r"[a-f0-9]{64}", sha):
                     raise ValueError("Invalid blob identity")
-                content = (self.root / "blobs" / sha).read_bytes()
+                content = (root / "blobs" / sha).read_bytes()
                 if digest(content) != sha:
                     raise ValueError("Invalid blob content")
-            return record
+            return record, root
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise ArchiveError("EVIDENCE_CORRUPT", "Saved evidence is missing or corrupt", 500) from exc
 
     def load(self, comparison_id):
-        return ComparisonResponse.model_validate(self._record(comparison_id)["response"])
+        return ComparisonResponse.model_validate(self.load_raw(comparison_id))
 
     def load_raw(self, comparison_id):
         """The saved response exactly as written, after integrity checks. Replay
         serves this so evidence from an earlier manifest schema is never reshaped
         by current models or defaults."""
-        return self._record(comparison_id)["response"]
+        record, _ = self._record(comparison_id)
+        return record["response"]
 
     def asset(self, comparison_id, name):
-        record = self._record(comparison_id)
+        record, root = self._record(comparison_id)
         sha = record["assets"].get(name)
         if sha is None:
             raise ArchiveError("NOT_FOUND", "Unknown asset", 404)
-        return (self.root / "blobs" / sha).read_bytes(), sha
+        return (root / "blobs" / sha).read_bytes(), sha

@@ -10,7 +10,7 @@ const frames: Comparison["frames"] = [
     release: "Synthetic",
     imageUrl: firstImage,
     sourceUrl: null,
-    qualityFlags: [],
+    qualityFlags: {},
   },
   {
     id: "fixture-epoch-two",
@@ -19,7 +19,7 @@ const frames: Comparison["frames"] = [
     release: "Synthetic",
     imageUrl: secondImage,
     sourceUrl: null,
-    qualityFlags: [],
+    qualityFlags: {},
   },
 ];
 
