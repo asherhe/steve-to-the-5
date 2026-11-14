@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const catalog = join(root, "services", "catalogs");
 const archive = join(root, "services", "archive");
+const findings = join(root, "services", "findings");
 const services = {
   gaia: {
     directory: catalog,
@@ -17,11 +18,18 @@ const services = {
     cwd: root,
     args: ["-m", "services.archive", "serve", "--port", "8000"],
   },
+  // Needs SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVER_KEY and
+  // SPHEREX_COMPARISON_BASE_URL in the environment; see services/findings/README.md.
+  findings: {
+    directory: findings,
+    cwd: root,
+    args: ["-m", "uvicorn", "services.findings.main:create_app", "--factory", "--host", "127.0.0.1", "--port", "8014"],
+  },
 };
 
 const service = services[process.argv[2]];
 if (!service) {
-  console.error("Choose a development service: gaia or spherex.");
+  console.error("Choose a development service: gaia, spherex or findings.");
   process.exit(1);
 }
 

@@ -7,6 +7,7 @@
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",
     "dev:spherex": "node scripts/dev-backend.mjs spherex",
+    "dev:findings": "node scripts/dev-backend.mjs findings",
     "preview": "vite preview web/src/viewer --strictPort",
     "check": "tsc --project web/src/viewer/tsconfig.json",
     "generate:archive-types": "openapi-typescript fixtures/archive/openapi.json -o web/src/viewer/archive.generated.ts",

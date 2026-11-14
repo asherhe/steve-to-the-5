@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src/inspector", "vite.inspector.config.ts", "vitest.setup.ts"]
+  "include": ["src/inspector", "src/findings", "vite.inspector.config.ts", "vite.findings.config.ts", "vitest.setup.ts"]
 }

@@ -6,10 +6,13 @@ const archiveProxy = {
   proxyTimeout: 240_000,
 };
 const catalogTarget = process.env.CATALOG_API_TARGET ?? "http://127.0.0.1:8010";
+// Findings backend is opt-in (`npm run dev:findings`); requests fail fast while it is down.
+const findingsTarget = process.env.FINDINGS_API_TARGET ?? "http://127.0.0.1:8014";
 const proxy = {
   "/api/resolve": catalogTarget,
   "/api/catalogs": catalogTarget,
   "/api/comparisons": archiveProxy,
+  "/api/findings": findingsTarget,
 };
 
 export default defineConfig(({ command }) => ({
