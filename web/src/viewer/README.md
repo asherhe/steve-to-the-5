@@ -13,6 +13,12 @@ Pan and zoom, then select **Compare this field** once the map width is within th
 
 Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the pair by ID during the outage, and **Try missing ID** to check the missing-evidence state. Both PNGs share the same dimensions, stationary stars and background. One simulated point moves between epochs. The same synthetic images stand in for any requested field. Run `npm.cmd run build` from the repository root to type-check and bundle the harness.
 
+## Gaia catalog integration
+
+Start the [catalog service](../../../services/catalogs/README.md) on port 8010 in a separate terminal. The Vite development server proxies `/api/resolve` and `/api/catalogs` there. Set `CATALOG_API_TARGET` before running Vite to use a different backend address.
+
+Choose **Inspect map center** on the initial Barnard’s Star view or click a sky position to query Gaia. The inspector lists nearby results and fetches the details for the chosen source. **Mark position** places its Gaia catalog position on the reference sky. The catalog service starts in fixture mode. Archive comparisons still use synthetic data, and the sky map displays DSS2 reference imagery.
+
 ## Coordinator handoff
 
 The harness injects a fixture data source. The viewer-facing TypeScript types describe the UI inputs and states. When the coordinator publishes OpenAPI, the production adapter will consume its generated types and map them into the viewer. The shared contract and representative fixtures need to specify:

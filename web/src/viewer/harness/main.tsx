@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { Comparison, ComparisonResult, Field } from "../comparison";
+import type { Comparison, ComparisonResult, Field, SkyPosition } from "../comparison";
+import { CatalogApiError, createCatalogClient, SourceInspector, type MarkAction } from "../../inspector";
 import { targetPresets } from "../coordinates";
 import { FieldSearch, inFieldRange } from "../FieldSearch";
 import { SkyMap } from "../SkyMap";
@@ -18,6 +19,7 @@ const scenarios: Record<Scenario, string> = {
 const initialCenter = targetPresets[0];
 const initialField = { ...initialCenter, fovArcmin: fixtureField.fovArcmin };
 const fieldLimits = { min: 1, max: 30 };
+const catalogClient = createCatalogClient();
 
 type Request =
   | { kind: "field"; field: Field }
@@ -25,7 +27,7 @@ type Request =
   | { kind: "saved"; id: string };
 
 type Preview =
-  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "error" }
+  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" | "error" }
   | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison };
 
@@ -34,6 +36,8 @@ function Harness() {
   const [request, setRequest] = useState<Request | null>(null);
   const [focus, setFocus] = useState<Field | null>(null);
   const [mapNotice, setMapNotice] = useState("");
+  const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
+  const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
 
   useEffect(() => {
@@ -59,12 +63,9 @@ function Harness() {
 
         let field: Field;
         if (current.kind === "name") {
-          const position = await source.resolveName(current.name, signal);
+          const position = await source.resolveName(current.name, signal) ??
+            await catalogClient.resolve(current.name, signal);
           if (signal.aborted) return;
-          if (!position) {
-            setPreview({ kind: "name_not_found" });
-            return;
-          }
           field = { ra: position.ra, dec: position.dec, fovArcmin: current.fovArcmin };
           setFocus(field);
         } else {
@@ -73,8 +74,14 @@ function Harness() {
 
         const result = await source.search(field, signal);
         if (!signal.aborted) setPreview({ kind: "search", result, field });
-      } catch {
-        if (!signal.aborted) setPreview({ kind: "error" });
+      } catch (error) {
+        if (signal.aborted) return;
+        if (current.kind !== "name") {
+          setPreview({ kind: "error" });
+        } else {
+          const missing = error instanceof CatalogApiError && error.code === "not_found";
+          setPreview({ kind: missing ? "name_not_found" : "catalog_error" });
+        }
       }
     }
 
@@ -105,7 +112,8 @@ function Harness() {
     preview.kind === "search" ? scenarios[preview.result.status] :
     preview.kind === "saved" ? "Saved synthetic comparison" :
     preview.kind === "missing" ? "Saved comparison not found" :
-    preview.kind === "name_not_found" ? "Name unavailable in this fixture. Try Fixture field." :
+    preview.kind === "name_not_found" ? "Object name not found. Try a preset or enter sky coordinates." :
+    preview.kind === "catalog_error" ? "Name lookup is unavailable. Try a preset or enter sky coordinates." :
     preview.kind === "error" ? "Fixture could not be loaded" :
     preview.kind === "idle" ? "Choose a field to compare." :
     "Loading fixture…";
@@ -116,7 +124,23 @@ function Harness() {
         <h1>SPHEREx viewer</h1>
         <p>Development fixtures. All images and observation metadata are synthetic.</p>
       </header>
-      <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport} />
+      <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
+        onInspect={setInspecting} catalogMark={catalogMark} />
+      {catalogMark && (
+        <p role="status">
+          Marked Gaia source {catalogMark.sourceId} at RA {catalogMark.ra.toFixed(6)}°, Dec {catalogMark.dec.toFixed(6)}°.{" "}
+          <button type="button" onClick={() => setCatalogMark(null)}>Clear mark</button>
+        </p>
+      )}
+      {inspecting && (
+        <section aria-labelledby="gaia-heading" className="gaia-panel">
+          <div className="sky-heading">
+            <h2 id="gaia-heading">Gaia source inspector</h2>
+            <button type="button" onClick={() => setInspecting(null)}>Close inspector</button>
+          </div>
+          <SourceInspector skyPosition={inspecting} client={catalogClient} onMark={setCatalogMark} />
+        </section>
+      )}
       {mapNotice && <p role="status">{mapNotice}</p>}
       <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
         onResolve={(name, fovArcmin) => {

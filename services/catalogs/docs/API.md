@@ -28,7 +28,7 @@ Query: `name` (string, required).
 200:
 
 ```json
-{ "name": "Barnard's Star", "ra": 269.45207, "dec": 4.66829 }
+{ "name": "Barnard's Star", "ra": 269.45207695833336, "dec": 4.693364966666667 }
 ```
 
 Errors: `invalid_request` (empty name), `not_found` (unknown name, external lookup disabled),

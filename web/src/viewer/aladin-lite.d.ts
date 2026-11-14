@@ -5,10 +5,19 @@ declare module "aladin-lite" {
     gotoRaDec(ra: number, dec: number): void;
     setFoV(degrees: number): void;
     setProjection(projection: "SIN" | "AIT"): void;
+    on(event: "click", callback: (position: { ra: number; dec: number; isDragging: boolean }) => void): void;
+    addCatalog(catalog: AladinCatalog): void;
+  }
+
+  interface AladinCatalog {
+    clear(): void;
+    addSources(sources: unknown[]): void;
   }
 
   const Aladin: {
     init: Promise<unknown>;
+    catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" }): AladinCatalog;
+    source(ra: number, dec: number): unknown;
     aladin(
       element: HTMLElement,
       options: {

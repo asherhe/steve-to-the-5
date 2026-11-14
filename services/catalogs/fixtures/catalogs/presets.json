@@ -4,32 +4,32 @@
     {
       "name": "Barnard's Star",
       "aliases": ["barnard", "barnards star", "gj 699", "hip 87937"],
-      "ra": 269.45207,
-      "dec": 4.66829
+      "ra": 269.45207695833336,
+      "dec": 4.693364966666667
     },
     {
       "name": "Epsilon Indi B",
       "aliases": ["epsilon indi", "eps ind b", "eps indi b", "gj 845 b"],
-      "ra": 330.80833,
-      "dec": -56.78139
+      "ra": 331.0656,
+      "dec": -56.7901
     },
     {
       "name": "WISE 0855-0714",
       "aliases": ["wise 0855", "wise0855", "wise j085510.83-071442.5", "wise 0855-071"],
-      "ra": 133.79513,
-      "dec": -7.24515
+      "ra": 133.79512916666667,
+      "dec": -7.245147222222222
     },
     {
       "name": "RW Aurigae",
       "aliases": ["rw aur", "rw aurigae a", "rw aur a"],
-      "ra": 76.95642,
-      "dec": 30.40139
+      "ra": 76.95625,
+      "dec": 30.40138888888889
     },
     {
       "name": "R Draconis",
       "aliases": ["r dra", "r draconis"],
-      "ra": 242.17654,
-      "dec": 66.78747
+      "ra": 248.1676075,
+      "dec": 66.75498416666667
     }
   ]
 }

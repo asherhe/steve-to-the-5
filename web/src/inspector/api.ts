@@ -46,9 +46,9 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
       return (await resp.json()) as GaiaDetail;
     },
 
-    async resolve(name: string): Promise<{ name: string; ra: number; dec: number }> {
+    async resolve(name: string, signal?: AbortSignal): Promise<{ name: string; ra: number; dec: number }> {
       const url = `${baseUrl}/resolve?name=${encodeURIComponent(name)}`;
-      const resp = await doFetch(url);
+      const resp = await doFetch(url, { signal });
       if (!resp.ok) return parseError(resp);
       return (await resp.json()) as { name: string; ra: number; dec: number };
     },
