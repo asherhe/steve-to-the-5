@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Comparison } from "./comparison";
+import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
+import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -8,7 +9,15 @@ const alignmentLabels: Record<string, string> = {
   single_frame_not_applicable: "Single frame",
 };
 
-export function ComparisonPlayback({ comparison, visible = true }: { comparison: Comparison; visible?: boolean }) {
+export function ComparisonPlayback({
+  comparison, visible = true, selectedPosition, frameMark, onInspect,
+}: {
+  comparison: Comparison;
+  visible?: boolean;
+  selectedPosition: SkyPosition | null;
+  frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
+  onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
+}) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -18,6 +27,24 @@ export function ComparisonPlayback({ comparison, visible = true }: { comparison:
   const frames = comparison.frames;
   const frame = frames[index];
   const multi = frames.length > 1;
+  const { width, height } = comparison.grid;
+  const wcs = cutoutWcs(comparison.grid);
+  const canInspect = !!wcs && loadedFrame === frame.id && !failed;
+
+  function inspect(x: number, y: number) {
+    if (!canInspect || !wcs) return;
+    setPlaying(false);
+    onInspect(wcs.toSky({ x, y }), frame);
+  }
+
+  function marker(point: ImagePoint | null, label: string, className: string) {
+    if (!point || point.x < -0.5 || point.x >= width - 0.5 ||
+        point.y < -0.5 || point.y >= height - 0.5) return null;
+    return (
+      <span className={`cutout-marker ${className}`} role="img" aria-label={label} title={label}
+        style={{ left: `${(point.x + 0.5) / width * 100}%`, top: `${(point.y + 0.5) / height * 100}%` }} />
+    );
+  }
 
   useEffect(() => {
     if (!visible) setPlaying(false);
@@ -55,10 +82,24 @@ export function ComparisonPlayback({ comparison, visible = true }: { comparison:
               }}>Retry frame</button>
             </div>
           ) : (
-            <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={comparison.grid.width}
-              height={comparison.grid.height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
-              onLoad={() => setLoadedFrame(frame.id)}
-              onError={() => { setFailed(true); setPlaying(false); }} />
+            <>
+              <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={width}
+                height={height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
+                onLoad={() => setLoadedFrame(frame.id)}
+                onError={() => { setFailed(true); setPlaying(false); }} />
+              {canInspect && (
+                <button type="button" className="cutout-inspect" aria-label="Inspect image. Press Enter to inspect its center."
+                  onClick={(event) => {
+                    const bounds = event.currentTarget.getBoundingClientRect();
+                    if (event.detail === 0) inspect((width - 1) / 2, (height - 1) / 2);
+                    else inspect((event.clientX - bounds.left) / bounds.width * width - 0.5,
+                      (event.clientY - bounds.top) / bounds.height * height - 0.5);
+                  }} />
+              )}
+              {wcs && selectedPosition && marker(wcs.toImage(selectedPosition), "Selected sky position", "cutout-selection")}
+              {wcs && frameMark?.frameId === frame.id && marker(wcs.toImage(frameMark),
+                frameMark.predicted ? "Predicted Gaia position" : "Gaia catalog position", "cutout-gaia-mark")}
+            </>
           )}
         </div>
         <figcaption>
@@ -67,6 +108,8 @@ export function ComparisonPlayback({ comparison, visible = true }: { comparison:
           {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
         </figcaption>
       </figure>
+      {wcs ? <p>Click the image to inspect a sky position with Gaia.</p> :
+        <p>Point inspection is unavailable for this image grid.</p>}
       {frame.observationStartUtc && frame.observationEndUtc && (
         <p>Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</p>
       )}

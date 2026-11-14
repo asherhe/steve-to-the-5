@@ -87,6 +87,31 @@ figure { margin: 0; }
 .comparison-frame { max-width: 34rem; }
 .cutout { position: relative; display: grid; place-items: center; background: #202631; }
 .cutout img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.floating-panel .cutout-inspect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: crosshair;
+}
+.floating-panel .cutout-inspect:hover:enabled { background: transparent; }
+.cutout-marker {
+  position: absolute;
+  width: 0.85rem;
+  height: 0.85rem;
+  box-sizing: border-box;
+  border: 2px solid #8ce5ff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px #10141c;
+  pointer-events: none;
+}
+.cutout-gaia-mark { border-color: #ffd08e; border-radius: 0; transform: translate(-50%, -50%) rotate(45deg); }
 .cutout [role="status"] { padding: 1rem; text-align: center; }
 .playback-controls { margin: 0.85rem 0; }
 a { color: #90c7ff; }

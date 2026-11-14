@@ -28,7 +28,14 @@ const pair: Comparison = {
   field: { ra: 120, dec: 15, fovArcmin: 8 },
   wavelengthRangeUm: [2.19, 2.21],
   stretch: { min: 0, max: 255, unit: "synthetic intensity" },
-  grid: { width: 320, height: 240, projection: "TAN" },
+  grid: {
+    width: 320, height: 240, projection: "TAN", coordinateFrame: "ICRS", rowOrigin: "top",
+    fitsHeader: {
+      CTYPE1: "RA---TAN", CTYPE2: "DEC--TAN", CUNIT1: "deg", CUNIT2: "deg",
+      CRPIX1: 160.5, CRPIX2: 120.5, CRVAL1: 120, CRVAL2: 15,
+      CDELT1: -8 / 60 / 320, CDELT2: 8 / 60 / 320,
+    },
+  },
   frames,
 };
 

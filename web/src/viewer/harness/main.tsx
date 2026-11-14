@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { Comparison, ComparisonResult, Field, SkyPosition } from "../comparison";
-import { CatalogApiError, createCatalogClient, SourceInspector, type MarkAction } from "../../inspector";
+import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition } from "../comparison";
+import { CatalogApiError, createCatalogClient, SourceInspector, type MarkAction, type SelectedFrameMeta } from "../../inspector";
 import { targetPresets } from "../coordinates";
 import { FieldSearch, inFieldRange } from "../FieldSearch";
 import { SkyMap } from "../SkyMap";
@@ -50,7 +50,12 @@ function Harness() {
   const panelButtons = useRef<Partial<Record<Panel, HTMLButtonElement>>>({});
   const [mapNotice, setMapNotice] = useState("");
   const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
+  const [frameSelection, setFrameSelection] = useState<{
+    comparisonId: string; position: SkyPosition; frame: SelectedFrameMeta;
+  } | null>(null);
+  const [inspectFrame, setInspectFrame] = useState(false);
   const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
+  const [comparisonMark, setComparisonMark] = useState<{ comparisonId: string; mark: MarkAction } | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [copyStatus, setCopyStatus] = useState("");
 
@@ -61,7 +66,19 @@ function Harness() {
 
   function inspect(position: SkyPosition) {
     setInspecting(position);
+    setInspectFrame(false);
     setPanel("gaia");
+  }
+
+  function inspectCutout(comparisonId: string, position: SkyPosition, frame: ComparisonFrame) {
+    setFrameSelection({
+      comparisonId,
+      position,
+      frame: { frameId: frame.id, observedAtUtc: frame.observedAtUtc, wavelengthUm: frame.wavelengthUm },
+    });
+    setInspectFrame(true);
+    setPanel("gaia");
+    panelButtons.current.gaia?.focus();
   }
 
   useEffect(() => {
@@ -141,6 +158,10 @@ function Harness() {
   const comparison =
     preview.kind === "search" ? preview.result.comparison :
     preview.kind === "saved" ? preview.comparison : null;
+  const selection = frameSelection?.comparisonId === comparison?.id ? frameSelection : null;
+  const frameMark = comparisonMark?.comparisonId === comparison?.id ? comparisonMark?.mark ?? null : null;
+  const inspectingCutout = inspectFrame && selection;
+  const activeMark = inspectingCutout ? frameMark : catalogMark;
 
   const status =
     preview.kind === "search" ? scenarios[preview.result.status] :
@@ -198,11 +219,23 @@ function Harness() {
           <h2 id="gaia-heading">Gaia source inspector</h2>
           <button type="button" onClick={() => closePanel("gaia")}>Close</button>
         </div>
-        <SourceInspector skyPosition={inspecting} client={catalogClient} onMark={setCatalogMark} />
-        {catalogMark && (
+        {inspectingCutout && <p>Selected SPHEREx frame <time dateTime={inspectingCutout.frame.observedAtUtc}>
+          {inspectingCutout.frame.observedAtUtc}
+        </time> · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec {inspectingCutout.position.dec.toFixed(6)}°</p>}
+        <SourceInspector skyPosition={inspectFrame ? selection?.position ?? null : inspecting}
+          selectedFrame={inspectingCutout ? inspectingCutout.frame : null} client={catalogClient}
+          onMark={(mark) => {
+            if (inspectingCutout) setComparisonMark({ comparisonId: inspectingCutout.comparisonId, mark });
+            else setCatalogMark(mark);
+          }} />
+        {activeMark && (
           <p role="status">
-            Marked Gaia source {catalogMark.sourceId} at RA {catalogMark.ra.toFixed(6)}°, Dec {catalogMark.dec.toFixed(6)}°.{" "}
-            <button type="button" onClick={() => setCatalogMark(null)}>Clear mark</button>
+            {activeMark.predicted ? "Predicted Gaia position" : "Gaia catalog position"} for {activeMark.sourceId}
+            {" at RA "}{activeMark.ra.toFixed(6)}°, Dec {activeMark.dec.toFixed(6)}°.{" "}
+            <button type="button" onClick={() => {
+              if (inspectingCutout) setComparisonMark(null);
+              else setCatalogMark(null);
+            }}>Clear mark</button>
           </p>
         )}
       </section>
@@ -265,7 +298,9 @@ function Harness() {
           <>
             <p>{fixtureMode || kind === "synthetic_fixture" ? "Synthetic comparison" :
               kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
-            <ComparisonPlayback key={comparison.id} comparison={comparison} visible={panel === "comparison"} />
+            <ComparisonPlayback key={comparison.id} comparison={comparison} visible={panel === "comparison"}
+              selectedPosition={selection?.position ?? null} frameMark={frameMark}
+              onInspect={(position, frame) => inspectCutout(comparison.id, position, frame)} />
             <div className="controls">
               <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
               <button type="button" onClick={() => void copyLink(comparison.id)}>Copy comparison link</button>
