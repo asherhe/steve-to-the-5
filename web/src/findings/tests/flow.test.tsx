@@ -150,7 +150,7 @@ describe('composer', () => {
     setup({ selection: null, session: { displayName: 'A' } });
     fireEvent.click(screen.getByRole('button', { name: 'Post finding' }));
     const alerts = await screen.findAllByRole('alert');
-    expect(alerts.map((a) => a.textContent)).toEqual(['Select a point on the map first.', 'Add a short title.']);
+    expect(alerts.map((a) => a.textContent)).toEqual(['Select a point on the map first.', 'Add a short title.', 'Describe what you saw or what you want checked.']);
   });
   it('signed-in post with a mark opens the new thread and refreshes pins', async () => {
     const { spies } = setup({ session: { displayName: 'Ada (fixture)' } });
@@ -169,11 +169,13 @@ describe('composer', () => {
   it('signed-out post keeps the draft through sign-in; expired session keeps it too', async () => {
     const a = setup();
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Draft title' } });
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Draft note' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sign in to post' }));
     expect(a.spies.signIn).toHaveBeenCalled();
     cleanup();
     setup({ session: { displayName: 'A' }, scenario: 'session_expired' });
     expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Draft title');
+    expect((screen.getByLabelText('Note') as HTMLTextAreaElement).value).toBe('Draft note');
     fireEvent.click(screen.getByRole('button', { name: 'Post finding' }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/session expired/);
     expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Draft title');

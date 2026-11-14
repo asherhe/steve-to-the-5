@@ -11,8 +11,8 @@ export const FIXTURE_COMPARISONS = [
   { id: 'cmp_fixture_rwaur', label: 'Synthetic comparison near RW Aurigae', frameIds: ['frm_fixture_rwaur_a', 'frm_fixture_rwaur_b', 'frm_fixture_rwaur_c'] },
 ] as const;
 
-const ADA = { displayName: 'Ada (fixture)' };
-const GRACE = { displayName: 'Grace (fixture)' };
+const ADA = 'Ada (fixture)';
+const GRACE = 'Grace (fixture)';
 
 export const FIXTURE_FINDINGS: FindingDetail[] = [
   {
@@ -26,10 +26,10 @@ export const FIXTURE_FINDINGS: FindingDetail[] = [
       { frameId: 'frm_fixture_barnard_a', ra: 269.4521, dec: 4.6934 },
       { frameId: 'frm_fixture_barnard_b', ra: 269.4519, dec: 4.6941 },
     ],
-    author: ADA,
-    createdAt: '2026-11-14T15:02:00Z',
+    authorDisplayName: ADA,
+    createdAtUtc: '2026-11-14T15:02:00Z',
     replies: [
-      { id: 'rpl_fixture_001', text: 'Synthetic fixture reply. The direction looks consistent with the catalogue proper motion.', author: GRACE, createdAt: '2026-11-14T15:20:00Z' },
+      { id: 'rpl_fixture_001', text: 'Synthetic fixture reply. The direction looks consistent with the catalogue proper motion.', authorDisplayName: GRACE, createdAtUtc: '2026-11-14T15:20:00Z' },
     ],
   },
   {
@@ -40,8 +40,8 @@ export const FIXTURE_FINDINGS: FindingDetail[] = [
     title: 'Faint smudge only in the second frame',
     note: 'Synthetic fixture text. Possibly an artifact; quality flags not yet checked.',
     marks: [{ frameId: 'frm_fixture_barnard_b', ra: 269.4602, dec: 4.7011 }],
-    author: GRACE,
-    createdAt: '2026-11-14T16:00:00Z',
+    authorDisplayName: GRACE,
+    createdAtUtc: '2026-11-14T16:00:00Z',
     replies: [],
   },
   {
@@ -52,8 +52,8 @@ export const FIXTURE_FINDINGS: FindingDetail[] = [
     title: '<b>Markup in a title stays plain text</b>',
     note: 'Synthetic fixture text with <script>alert(1)</script> to check plain-text rendering.',
     marks: [],
-    author: ADA,
-    createdAt: '2026-11-14T16:30:00Z',
+    authorDisplayName: ADA,
+    createdAtUtc: '2026-11-14T16:30:00Z',
     replies: [],
   },
   {
@@ -64,8 +64,8 @@ export const FIXTURE_FINDINGS: FindingDetail[] = [
     title: 'Brightness looks different across three dates',
     note: 'Synthetic fixture text. A question for discussion, not a measured variability claim.',
     marks: [{ frameId: 'frm_fixture_rwaur_c', ra: 76.9563, dec: 30.4014 }],
-    author: GRACE,
-    createdAt: '2026-11-14T17:00:00Z',
+    authorDisplayName: GRACE,
+    createdAtUtc: '2026-11-14T17:00:00Z',
     replies: [],
   },
   {
@@ -76,8 +76,8 @@ export const FIXTURE_FINDINGS: FindingDetail[] = [
     title: 'Neighbouring star for reference',
     note: 'Synthetic fixture text.',
     marks: [],
-    author: ADA,
-    createdAt: '2026-11-14T17:10:00Z',
+    authorDisplayName: ADA,
+    createdAtUtc: '2026-11-14T17:10:00Z',
     replies: [],
   },
 ];

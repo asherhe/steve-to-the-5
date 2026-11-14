@@ -64,7 +64,7 @@ export function createFixtureClient(opts: FixtureClientOptions = {}): FindingsCl
 
   function requireWriter(): NonNullable<FindingsSession> {
     const s = session();
-    if (!s || scenario() === 'session_expired') throw new FindingsApiError(401, 'unauthorized', 'Sign in to post.');
+    if (!s || scenario() === 'session_expired') throw new FindingsApiError(401, 'unauthorized', 'Sign in to post or reply.');
     if (scenario() === 'write_fails') throw new FindingsApiError(503, 'unavailable', 'The findings service is temporarily unavailable.');
     return s;
   }
@@ -99,7 +99,7 @@ export function createFixtureClient(opts: FixtureClientOptions = {}): FindingsCl
     getFinding(id, signal) {
       return respond(() => {
         const f = findings.get(id);
-        if (!f) throw new FindingsApiError(404, 'not_found', 'Finding not found.');
+        if (!f) throw new FindingsApiError(404, 'finding_not_found', 'Finding not found.');
         return structuredClone(f);
       }, signal);
     },
@@ -107,14 +107,15 @@ export function createFixtureClient(opts: FixtureClientOptions = {}): FindingsCl
       return respond(() => {
         const s = requireWriter();
         const cmp = FIXTURE_COMPARISONS.find((c) => c.id === req.comparisonId);
-        if (!cmp) throw new FindingsApiError(400, 'invalid_comparison', 'That comparison does not exist.');
+        if (!cmp) throw new FindingsApiError(422, 'invalid_comparison', 'Choose a saved comparison before posting.');
         if (!isValidSkyPosition(req)) throw new FindingsApiError(400, 'invalid_position', 'Invalid sky position.');
         const title = req.title.trim();
         if (!title || charCount(title) > LIMITS.titleMaxChars) throw new FindingsApiError(400, 'invalid_title', 'Invalid title.');
-        if (charCount(req.note) > LIMITS.noteMaxChars) throw new FindingsApiError(400, 'invalid_note', 'Note is too long.');
+        const note = req.note.trim();
+        if (!note || charCount(note) > LIMITS.noteMaxChars) throw new FindingsApiError(422, 'invalid_request', 'note: invalid length');
         const marks = req.marks ?? [];
         if (marks.some((m) => !(cmp.frameIds as readonly string[]).includes(m.frameId) || !isValidSkyPosition(m)))
-          throw new FindingsApiError(400, 'invalid_mark', 'A mark refers to a frame that is not in this comparison.');
+          throw new FindingsApiError(422, 'invalid_frame', 'Each mark must belong to the saved comparison.');
         const id = `fnd_fixture_new_${++seq}`;
         findings.set(id, {
           id,
@@ -122,10 +123,10 @@ export function createFixtureClient(opts: FixtureClientOptions = {}): FindingsCl
           ra: req.ra,
           dec: req.dec,
           title,
-          note: req.note,
+          note,
           marks: structuredClone(marks),
-          author: { displayName: s.displayName },
-          createdAt: now().toISOString(),
+          authorDisplayName: s.displayName,
+          createdAtUtc: now().toISOString(),
           replies: [],
         });
         return { id };
@@ -138,7 +139,7 @@ export function createFixtureClient(opts: FixtureClientOptions = {}): FindingsCl
         if (!f) throw new FindingsApiError(404, 'not_found', 'Finding not found.');
         const problem = validateReplyText(req.text);
         if (problem) throw new FindingsApiError(400, 'invalid_text', problem);
-        const reply = { id: `rpl_fixture_new_${++seq}`, text: req.text.trim(), author: { displayName: s.displayName }, createdAt: now().toISOString() };
+        const reply = { id: `rpl_fixture_new_${++seq}`, text: req.text.trim(), authorDisplayName: s.displayName, createdAtUtc: now().toISOString() };
         f.replies.push(reply);
         return structuredClone(reply);
       });

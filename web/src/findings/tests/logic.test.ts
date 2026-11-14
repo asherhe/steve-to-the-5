@@ -54,6 +54,8 @@ describe('validation', () => {
     expect(normalizeRa(360)).toBe(0);
     expect(clampViewport({ ra: 0, dec: 91, radiusDeg: 1, zoom: 1 })).toBeNull();
     expect(clampViewport({ ra: 0, dec: 0, radiusDeg: 999, zoom: 1 })?.radiusDeg).toBe(LIMITS.maxRadiusDeg);
+    expect(clampViewport({ ra: 0, dec: 0, radiusDeg: 1, zoom: 7.6 })?.zoom).toBe(8);
+    expect(clampViewport({ ra: 0, dec: 0, radiusDeg: 1, zoom: 99 })?.zoom).toBe(LIMITS.maxZoom);
   });
   it('rejects marks on frames outside the comparison', () => {
     const e = validateFindingDraft({ comparisonId: 'c', selection: { ra: 1, dec: 1 }, title: 't', note: '', marks: [{ frameId: 'x', ra: 1, dec: 1 }], frameIds: ['a'] });
@@ -66,10 +68,11 @@ describe('validation', () => {
 describe('api client', () => {
   it('builds contract query and only sends auth on writes', async () => {
     expect(buildListQuery({ ra: -1, dec: 2, radiusDeg: 0.5, zoom: 8 })).toBe('ra=359&dec=2&radiusDeg=0.5&zoom=8');
+    expect(buildListQuery({ ra: 1, dec: 2, radiusDeg: 0.5, zoom: 8.4 })).toContain('zoom=8');
     const calls: [string, RequestInit][] = [];
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
       calls.push([url, init!]);
-      return new Response(JSON.stringify(url.includes('replies') ? { id: 'r', text: 't', author: { displayName: 'a' }, createdAt: '' } : { items: [] }), { status: 200 });
+      return new Response(JSON.stringify(url.includes('replies') ? { id: 'r', text: 't', authorDisplayName: 'a', createdAtUtc: '' } : { items: [] }), { status: 200 });
     });
     const c = createFindingsClient({ fetch, getAuthHeaders: () => ({ Authorization: 'Bearer t' }) });
     await c.listFindings({ ra: 1, dec: 1, radiusDeg: 1, zoom: 1 });

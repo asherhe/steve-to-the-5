@@ -123,8 +123,16 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): Findings
       return { items: body.items as FindingListResponse['items'] };
     },
     async getFinding(id, signal) {
-      const body = asObject(await request(`/api/findings/${encodeURIComponent(id)}`, { signal }, false), 'finding');
-      if (typeof body.id !== 'string' || typeof body.comparisonId !== 'string') throw invalid('finding');
+      let raw: unknown;
+      try {
+        raw = await request(`/api/findings/${encodeURIComponent(id)}`, { signal }, false);
+      } catch (err) {
+        // The backend rejects malformed (non-UUID) IDs with 422; for a reader that is simply "not found".
+        if (err instanceof FindingsApiError && err.status === 422) throw new FindingsApiError(404, 'finding_not_found', 'Finding not found.');
+        throw err;
+      }
+      const body = asObject(raw, 'finding');
+      if (typeof body.id !== 'string' || typeof body.comparisonId !== 'string' || typeof body.authorDisplayName !== 'string') throw invalid('finding');
       return {
         ...(body as unknown as FindingDetail),
         marks: Array.isArray(body.marks) ? (body.marks as FindingDetail['marks']) : [],
@@ -141,7 +149,7 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): Findings
         await request(`/api/findings/${encodeURIComponent(findingId)}/replies`, { method: 'POST', body: JSON.stringify(req) }, true),
         'reply',
       );
-      if (typeof body.id !== 'string' || typeof body.text !== 'string') throw invalid('reply');
+      if (typeof body.id !== 'string' || typeof body.text !== 'string' || typeof body.authorDisplayName !== 'string') throw invalid('reply');
       return body as unknown as FindingReply;
     },
   };

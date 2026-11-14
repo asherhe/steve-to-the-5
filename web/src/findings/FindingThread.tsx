@@ -90,7 +90,7 @@ export function FindingThread(p: FindingThreadProps) {
       {/* Plain text only: React escapes everything below. */}
       <h3>{f.title}</h3>
       <p className="meta">
-        {f.author.displayName} · {formatUtc(f.createdAt)} · {formatSky(f)}
+        {f.authorDisplayName} · {formatUtc(f.createdAtUtc)} · {formatSky(f)}
       </p>
       {f.note ? <p style={{ whiteSpace: 'pre-wrap' }}>{f.note}</p> : null}
       <p className="hint">An observation or question from a community member, not a validated discovery.</p>
@@ -117,7 +117,7 @@ export function FindingThread(p: FindingThreadProps) {
       <ul>
         {f.replies.map((r) => (
           <li key={r.id}>
-            <strong>{r.author.displayName}</strong> · {formatUtc(r.createdAt)}
+            <strong>{r.authorDisplayName}</strong> · {formatUtc(r.createdAtUtc)}
             <p style={{ whiteSpace: 'pre-wrap' }}>{r.text}</p>
           </li>
         ))}

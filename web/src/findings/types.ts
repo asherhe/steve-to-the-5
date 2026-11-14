@@ -1,7 +1,6 @@
-// PROVISIONAL contract types for the findings UI.
-// Mirrors the shared interface in spherex-agent-handoffs.md. Fields marked
-// ASSUMED are not specified there and must be confirmed by the coordinator.
-// Replace with re-exports of the coordinator's generated OpenAPI types.
+// Contract types for the findings UI. Shapes match the Brief 4 backend
+// (services/findings/models.py and fixtures/responses.json). Replace with
+// re-exports of the coordinator's generated OpenAPI types once they exist.
 
 /** ICRS decimal degrees. */
 export type SkyPosition = { ra: number; dec: number };
@@ -9,19 +8,17 @@ export type SkyPosition = { ra: number; dec: number };
 export type ApiErrorBody = { code: string; message: string };
 
 export type FindingPin = { id: string; ra: number; dec: number; title: string };
-/** ASSUMED: zoomTo is the map zoom level at which this cluster resolves into pins. */
+/** zoomTo: integer map zoom at which this cluster resolves into pins. */
 export type FindingCluster = { ra: number; dec: number; count: number; zoomTo: number };
 export type FindingListItem = FindingPin | FindingCluster;
 export type FindingListResponse = { items: FindingListItem[] };
 
-/** Query for GET /api/findings?ra&dec&radiusDeg&zoom */
+/** Query for GET /api/findings?ra&dec&radiusDeg&zoom (zoom is sent as an integer 0–30). */
 export type FindingsViewport = { ra: number; dec: number; radiusDeg: number; zoom: number };
 
 export type EvidenceMark = { frameId: string; ra: number; dec: number };
 
-// ASSUMED shapes: GET /api/findings/{id} and reply bodies are only described in prose.
-export type Author = { displayName: string };
-export type FindingReply = { id: string; text: string; author: Author; createdAt: string };
+export type FindingReply = { id: string; text: string; authorDisplayName: string; createdAtUtc: string };
 export type FindingDetail = {
   id: string;
   comparisonId: string;
@@ -30,8 +27,8 @@ export type FindingDetail = {
   title: string;
   note: string;
   marks: EvidenceMark[];
-  author: Author;
-  createdAt: string;
+  authorDisplayName: string;
+  createdAtUtc: string;
   replies: FindingReply[];
 };
 

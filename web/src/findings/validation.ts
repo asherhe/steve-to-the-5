@@ -3,10 +3,12 @@ import type { EvidenceMark, FindingsViewport, SkyPosition } from './types.ts';
 /** Client-side limits. The findings backend remains authoritative. */
 export const LIMITS = {
   titleMaxChars: 120,
-  noteMaxChars: 4000,
+  noteMaxChars: 2000,
   replyMaxChars: 2000,
   maxMarks: 20,
   maxRadiusDeg: 180,
+  minZoom: 0,
+  maxZoom: 30,
   maxMarkers: 500,
 } as const;
 
@@ -40,7 +42,8 @@ export function clampViewport(v: FindingsViewport): FindingsViewport | null {
     ra: normalizeRa(v.ra),
     dec: v.dec,
     radiusDeg: Math.min(v.radiusDeg, LIMITS.maxRadiusDeg),
-    zoom: v.zoom,
+    // Backend accepts integer zoom only; Aladin zoom can be fractional.
+    zoom: Math.min(LIMITS.maxZoom, Math.max(LIMITS.minZoom, Math.round(v.zoom))),
   };
 }
 
@@ -61,7 +64,9 @@ export function validateFindingDraft(input: {
   const title = input.title.trim();
   if (!title) errors.title = 'Add a short title.';
   else if (charCount(title) > LIMITS.titleMaxChars) errors.title = `Title is limited to ${LIMITS.titleMaxChars} characters.`;
-  if (charCount(input.note.trim()) > LIMITS.noteMaxChars) errors.note = `Note is limited to ${LIMITS.noteMaxChars} characters.`;
+  const note = input.note.trim();
+  if (!note) errors.note = 'Describe what you saw or what you want checked.';
+  else if (charCount(note) > LIMITS.noteMaxChars) errors.note = `Note is limited to ${LIMITS.noteMaxChars} characters.`;
   if (input.marks.length > LIMITS.maxMarks) errors.marks = `At most ${LIMITS.maxMarks} marks per finding.`;
   else if (input.marks.some((m) => !m.frameId || !isValidSkyPosition(m))) errors.marks = 'A mark has an invalid frame or position.';
   else if (input.frameIds && input.marks.some((m) => !input.frameIds!.includes(m.frameId)))
