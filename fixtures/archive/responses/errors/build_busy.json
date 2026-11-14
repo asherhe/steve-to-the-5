@@ -1,0 +1,7 @@
+{
+  "httpStatus": 429,
+  "body": {
+    "code": "BUILD_BUSY",
+    "message": "Another comparison build is running; retry shortly. Saved comparisons remain available by ID."
+  }
+}

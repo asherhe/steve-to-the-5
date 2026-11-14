@@ -1,0 +1,34 @@
+{
+  "kind": "executed_local_verification",
+  "realFixtureComparisonId": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+  "realFixtureAlignment": "wcs_only_not_empirically_verified",
+  "visibleChange": "not_assessed",
+  "timings": [
+    {
+      "operation": "offline_real_prepare_fresh_store",
+      "seconds": 0.10575887514278293
+    },
+    {
+      "operation": "offline_saved_replay_integrity_checked",
+      "seconds": 0.046563625102862716
+    }
+  ],
+  "timingLimitations": "Local offline I/O/processing only; not a cold live-archive or deployed performance measurement.",
+  "fiveTargetResults": "See coverage-log.json; all attempts ended in upstream failures.",
+  "knownWarning": "Starlette TestClient deprecates HTTPX support; tests currently pass.",
+  "httpSmoke": {
+    "origin": "http://127.0.0.1:8765",
+    "passed": [
+      "saved_replay",
+      "png_asset",
+      "invalid_input",
+      "offline_real_build",
+      "openapi"
+    ],
+    "hostedDeployment": false
+  },
+  "tests": {
+    "command": "services/archive/.venv/bin/python -m pytest services/archive/tests -q",
+    "passed": 27
+  }
+}

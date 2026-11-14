@@ -1,0 +1,7 @@
+{
+  "httpStatus": 404,
+  "body": {
+    "code": "NOT_FOUND",
+    "message": "Unknown comparison ID"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "status": "no_comparable_pair",
+  "comparison": null,
+  "diagnostics": {
+    "schemaVersion": 2,
+    "complete": true,
+    "incompleteStages": [],
+    "coverageThresholds": {
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_fixture_inputs",
+      "totalExposures": 2,
+      "byRelease": {
+        "dr1": 2
+      },
+      "byDetector": {
+        "D2": 2
+      },
+      "byReleaseDetector": {
+        "dr1:D2": 2
+      },
+      "observedTimeRangeUtc": {
+        "dr1": {
+          "start": "2025-11-21T00:00:00Z",
+          "end": "2026-05-20T00:01:26.400000Z"
+        }
+      },
+      "failedReleaseQueries": [],
+      "complete": true
+    },
+    "discoveredExposureCount": 2,
+    "retrieval": {
+      "cutoutSizeDeg": 0.154811,
+      "requestedCutouts": 2,
+      "succeededCutouts": 2,
+      "failedCutouts": 0,
+      "failureCategories": {},
+      "failures": [],
+      "notRequestedExposureCount": 0
+    },
+    "invalidCutouts": [],
+    "rejectedObservations": [],
+    "pairChecks": {
+      "wavelength_mismatch": 1
+    },
+    "usableExposureCount": 2,
+    "alignmentFailures": [],
+    "processedExposureCount": 2,
+    "preparedExposureCount": 2,
+    "selectionScope": "all_discovered_exposures",
+    "sampledExposures": [
+      {
+        "observationId": "synthetic-0",
+        "detector": 2
+      },
+      {
+        "observationId": "synthetic-1",
+        "detector": 2
+      }
+    ]
+  }
+}

@@ -1,0 +1,677 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SPHEREx archive comparisons",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/api/comparisons": {
+      "get": {
+        "tags": [
+          "archive"
+        ],
+        "summary": "Compare",
+        "operationId": "compare_api_comparisons_get",
+        "parameters": [
+          {
+            "name": "ra",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "Ra"
+            }
+          },
+          {
+            "name": "dec",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "Dec"
+            }
+          },
+          {
+            "name": "fovArcmin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 6,
+              "title": "Fovarcmin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/comparisons/{comparison_id}": {
+      "get": {
+        "tags": [
+          "archive"
+        ],
+        "summary": "Replay",
+        "operationId": "replay_api_comparisons__comparison_id__get",
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comparison Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/comparisons/{comparison_id}/assets/{name}": {
+      "get": {
+        "tags": [
+          "archive"
+        ],
+        "summary": "Asset",
+        "operationId": "asset_api_comparisons__comparison_id__assets__name__get",
+        "parameters": [
+          {
+            "name": "comparison_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Comparison Id"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Comparison": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "field": {
+            "$ref": "#/components/schemas/FieldRequest"
+          },
+          "wavelengthRangeUm": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Wavelengthrangeum"
+          },
+          "stretch": {
+            "$ref": "#/components/schemas/Stretch"
+          },
+          "grid": {
+            "$ref": "#/components/schemas/Grid"
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/Frame"
+            },
+            "type": "array",
+            "title": "Frames"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "field",
+          "wavelengthRangeUm",
+          "stretch",
+          "grid",
+          "frames",
+          "config",
+          "provenance",
+          "limitations"
+        ],
+        "title": "Comparison"
+      },
+      "ComparisonResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "single_epoch",
+              "no_coverage",
+              "no_comparable_pair",
+              "upstream_unavailable"
+            ],
+            "title": "Status"
+          },
+          "comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Comparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "diagnostics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diagnostics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ComparisonResponse"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "FieldRequest": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "fovArcmin": {
+            "type": "number",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Fovarcmin",
+            "default": 6
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec"
+        ],
+        "title": "FieldRequest"
+      },
+      "Frame": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "observationId": {
+            "type": "string",
+            "title": "Observationid"
+          },
+          "observedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observedatutc"
+          },
+          "observationStartUtc": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observationstartutc"
+          },
+          "observationEndUtc": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observationendutc"
+          },
+          "wavelengthUm": {
+            "type": "number",
+            "title": "Wavelengthum"
+          },
+          "bandwidthUm": {
+            "type": "number",
+            "title": "Bandwidthum"
+          },
+          "release": {
+            "type": "string",
+            "title": "Release"
+          },
+          "imageUrl": {
+            "type": "string",
+            "title": "Imageurl"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl"
+          },
+          "sourceSha256": {
+            "type": "string",
+            "title": "Sourcesha256"
+          },
+          "processingVersion": {
+            "type": "string",
+            "title": "Processingversion"
+          },
+          "validFraction": {
+            "type": "number",
+            "title": "Validfraction"
+          },
+          "qualityFlags": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Qualityflags"
+          },
+          "alignment": {
+            "type": "string",
+            "title": "Alignment",
+            "default": "wcs_only_not_empirically_verified"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "observationId",
+          "observedAtUtc",
+          "observationStartUtc",
+          "observationEndUtc",
+          "wavelengthUm",
+          "bandwidthUm",
+          "release",
+          "imageUrl",
+          "sourceUrl",
+          "sourceSha256",
+          "processingVersion",
+          "validFraction",
+          "qualityFlags"
+        ],
+        "title": "Frame"
+      },
+      "Grid": {
+        "properties": {
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "pixelScaleArcsec": {
+            "type": "number",
+            "title": "Pixelscalearcsec"
+          },
+          "projection": {
+            "type": "string",
+            "const": "TAN",
+            "title": "Projection",
+            "default": "TAN"
+          },
+          "coordinateFrame": {
+            "type": "string",
+            "const": "ICRS",
+            "title": "Coordinateframe",
+            "default": "ICRS"
+          },
+          "rowOrigin": {
+            "type": "string",
+            "const": "top",
+            "title": "Roworigin",
+            "default": "top"
+          },
+          "fitsHeader": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Fitsheader"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width",
+          "height",
+          "pixelScaleArcsec",
+          "fitsHeader"
+        ],
+        "title": "Grid"
+      },
+      "Stretch": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "asinh",
+            "title": "Type",
+            "default": "asinh"
+          },
+          "lower": {
+            "type": "number",
+            "title": "Lower"
+          },
+          "upper": {
+            "type": "number",
+            "title": "Upper"
+          },
+          "softening": {
+            "type": "number",
+            "title": "Softening"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit",
+            "default": "MJy/sr"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lower",
+          "upper",
+          "softening"
+        ],
+        "title": "Stretch"
+      }
+    }
+  }
+}

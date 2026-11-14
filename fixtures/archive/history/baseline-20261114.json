@@ -1,0 +1,44 @@
+{
+  "kind": "baseline_before_archive_repairs",
+  "recordedAtUtc": "2026-11-14",
+  "gitHead": "135ffef3c494dd24d7948acabff900041a71f987",
+  "note": "Archive slice was untracked at this point. Hashes are SHA-256 of file bytes, lowercase hex, taken before any processing change. Blobs and manifests under real/ and synthetic/ are immutable and must keep these hashes.",
+  "tests": {
+    "command": "services/archive/.venv/bin/python -m pytest services/archive/tests -q",
+    "result": "27 passed, 1 warning"
+  },
+  "preservedCopies": {
+    "coverage-log.json": "history/coverage-log-20261114T1932Z.json",
+    "verification.json": "history/verification-20261114-v1.json",
+    "openapi.json": "history/openapi-v1.json"
+  },
+  "sha256": {
+    "coverage-log.json": "25bb0dbeffe5c7489737fc4ad72b58ee9634d8a6dc20e72e6abbd473d0abbdf2",
+    "openapi.json": "4efc554b480a0a9b077cf74b3847d3b47bb1322d43375227caca4a219109e902",
+    "real/evidence/blobs/0aef9ee1131341f5586a9a4b91fb25fe02f432a3f1a01d620f67de368e63db44": "0aef9ee1131341f5586a9a4b91fb25fe02f432a3f1a01d620f67de368e63db44",
+    "real/evidence/blobs/8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222": "8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222",
+    "real/evidence/blobs/9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64": "9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64",
+    "real/evidence/blobs/d5a9dccb5b0b19ef39bd74c9a76071b67260fc8d39c719b5f2a79d8f9deebbc2": "d5a9dccb5b0b19ef39bd74c9a76071b67260fc8d39c719b5f2a79d8f9deebbc2",
+    "real/evidence/manifests/4f49c08637df23b60b710ff16c3847e94929f3c66804bac4f81aec6629630f41.json": "4aad9f8144761da0ec4e31f6dd760fa3563534239650f5e710826d3bdce65e68",
+    "real/evidence/manifests/c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31.json": "0297f1d2f9fbdbe5a60f9d8831b28583dceed5b15dc4e6f6c8d3980ed1d7377c",
+    "real/evidence/manifests/e80c2117dabee95797868c3f71bc956de97d860599adb4c4acb67339942e5ef0.json": "21e9b51b562b131051583486d00f903864fd9c1657e9d5b0b98711c3c20fa3dd",
+    "real/evidence/manifests/ea85c9ee65efbe00c6adb8c62503670cfc76ceffebdce7426c15e2eb8ab362c3.json": "ae8f3592e9469db1e26ad3cc4dfc41344368b12f2b10cb9f2e197b89942fa5d9",
+    "real/response.json": "749f3263c8d741ec19a7e787197515675386787600548bbe1ae16d04bbb723a6",
+    "real/sources.json": "470f769635b2dce949df985f7eac05c0094977d677fb77021631d85e8688107c",
+    "responses/no_comparable_pair.json": "fb0488305ad615d080550844c65526c948f9a52d02f58dcec636cfb3e3940483",
+    "responses/no_coverage.json": "418341ac63c7fbef5c2dfe268741832deda5edf2b4b305ceefcbc062b78c94bf",
+    "responses/ready.json": "7476bf44a61d9fb6cb41130abccd9611fd95242e6d8b6912b7264f2baf916f53",
+    "responses/single_epoch.json": "df9374e595b5c602f12024dd4db018e955c14c45bf7d2b32923fb8566c7c7a81",
+    "responses/upstream_unavailable.json": "1ad63b36c116306f8cf1836635d5f2cadedd8c2ff77333f1e8d95b10e734edc9",
+    "synthetic/evidence/blobs/189b0728a533f09cc5b5d443c28d0e8ff47c483a3a78dd3005c505e52528d9f9": "189b0728a533f09cc5b5d443c28d0e8ff47c483a3a78dd3005c505e52528d9f9",
+    "synthetic/evidence/blobs/34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972": "34231fd3055e579976adec21c46b10512e2c020a5edd6747a255abde702a4972",
+    "synthetic/evidence/blobs/3f6e98bc208a8bd5fded2f275d582bc0ac8464783af21b70a3efb34836e3092a": "3f6e98bc208a8bd5fded2f275d582bc0ac8464783af21b70a3efb34836e3092a",
+    "synthetic/evidence/blobs/67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f",
+    "synthetic/evidence/manifests/290506d3bea413523ef626a4ab9c00278a8e899ce405ad978707bc831533513f.json": "157921cfc959b419e850869c193ba98189dca2ec55543ff4eff92ddf7bb06570",
+    "synthetic/evidence/manifests/474c951aad65c67977da87089272a1540c4992115cf82b6440437957ffc7afd7.json": "69358b8e013094d4e6ec5a460e9fecf5614665128bec162d51d0bffb49cf67af",
+    "synthetic/evidence/manifests/97b4929e8b7766773433339746c3eb05cde2b25edabc1ed46c3cc56df18ac444.json": "600a4fb78055fdaf09bbbf8b58a4e1706cc3eed5576ee4b224df6a77372d9117",
+    "synthetic/evidence/manifests/b377bad6250ffbf82ff23b446cdc5558683aeae901e392f05e14aa486e798f59.json": "cca09ccec484af8402bc65006062bcb1a00181829c018c3542fcfa73e9630d60",
+    "targets.json": "36cf5149445abfc0712ad932dda54c16eedd0c49296f9a29cdbed0951f5d5c4b",
+    "verification.json": "01e8564c55219513754897441fe6318e440970c56f599cf48d16fbdd3473cf94"
+  }
+}

@@ -1,0 +1,7 @@
+[
+  {"name":"Barnard's Star","ra":"17h57m48.5s","dec":"+04d41m36s","provenance":"Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field."},
+  {"name":"RW Aurigae","ra":"05h07m49.6s","dec":"+30d24m05s","provenance":"Approximate J2000 finding position; verify source identification in the displayed field."},
+  {"name":"Epsilon Indi B","ra":"22h04m10.5s","dec":"-56d46m58s","provenance":"Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry."},
+  {"name":"WISE 0855","ra":"08h55m10.831s","dec":"-07d14m42.53s","provenance":"Coordinates supplied by the NASA challenge; epoch unspecified; not propagated."},
+  {"name":"R Draconis","ra":"16h32m40.2s","dec":"+66d45m17s","provenance":"Approximate J2000 finding position; verify source identification in the displayed field."}
+]
