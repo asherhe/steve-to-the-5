@@ -52,8 +52,7 @@ export function FieldSearch({
   }
 
   return (
-    <section aria-labelledby="search-heading">
-      <h2 id="search-heading">Compare a field</h2>
+    <div>
       <form className="field-form" onSubmit={submit} noValidate>
         <label>
           Right ascension
@@ -96,6 +95,6 @@ export function FieldSearch({
         </label>
         <button type="submit" disabled={!name.trim()}>Resolve and compare</button>
       </form>
-    </section>
+    </div>
   );
 }

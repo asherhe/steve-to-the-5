@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Comparison, ComparisonResult, Field, SkyPosition } from "../comparison";
 import { CatalogApiError, createCatalogClient, SourceInspector, type MarkAction } from "../../inspector";
@@ -30,6 +30,8 @@ type Request =
   | { kind: "name"; name: string; fovArcmin: number }
   | { kind: "saved"; id: string };
 
+type Panel = "search" | "comparison" | "gaia";
+
 type Preview =
   | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" }
   | { kind: "error"; message: string }
@@ -43,11 +45,24 @@ function Harness() {
     return id ? { kind: "saved", id } : null;
   });
   const [focus, setFocus] = useState<Field | null>(null);
+  const [panel, setPanel] = useState<Panel | null>(() =>
+    new URLSearchParams(location.search).has("comparison") ? "comparison" : null);
+  const panelButtons = useRef<Partial<Record<Panel, HTMLButtonElement>>>({});
   const [mapNotice, setMapNotice] = useState("");
   const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
   const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [copyStatus, setCopyStatus] = useState("");
+
+  function closePanel(current: Panel) {
+    setPanel(null);
+    panelButtons.current[current]?.focus();
+  }
+
+  function inspect(position: SkyPosition) {
+    setInspecting(position);
+    setPanel("gaia");
+  }
 
   useEffect(() => {
     if (!request) {
@@ -110,6 +125,7 @@ function Harness() {
     setMapNotice("");
     setFocus(field);
     setRequest({ kind: "field", field });
+    setPanel("comparison");
   }
 
   function compareViewport(field: Field) {
@@ -119,6 +135,7 @@ function Harness() {
     }
     setMapNotice("");
     setRequest({ kind: "field", field });
+    setPanel("comparison");
   }
 
   const comparison =
@@ -160,84 +177,103 @@ function Harness() {
   }
 
   return (
-    <main>
-      <header>
-        <h1>SPHEREx viewer</h1>
-        {fixtureMode && <p>Development fixtures. Comparison images and metadata are synthetic.</p>}
-      </header>
+    <main className="sky-workspace" onKeyDown={(event) => {
+      if (event.key === "Escape" && !event.defaultPrevented && panel) closePanel(panel);
+    }}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={setInspecting} catalogMark={catalogMark} />
-      {catalogMark && (
-        <p role="status">
-          Marked Gaia source {catalogMark.sourceId} at RA {catalogMark.ra.toFixed(6)}°, Dec {catalogMark.dec.toFixed(6)}°.{" "}
-          <button type="button" onClick={() => setCatalogMark(null)}>Clear mark</button>
-        </p>
-      )}
-      {inspecting && (
-        <section aria-labelledby="gaia-heading" className="gaia-panel">
-          <div className="sky-heading">
-            <h2 id="gaia-heading">Gaia source inspector</h2>
-            <button type="button" onClick={() => setInspecting(null)}>Close inspector</button>
-          </div>
-          <SourceInspector skyPosition={inspecting} client={catalogClient} onMark={setCatalogMark} />
-        </section>
-      )}
-      {mapNotice && <p role="status">{mapNotice}</p>}
-      <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
-        onResolve={(name, fovArcmin) => {
-          setMapNotice("");
-          setRequest({ kind: "name", name, fovArcmin });
-        }} />
-      <h2>Comparison</h2>
-      {fixtureMode && <div className="controls">
-        <label>
-          Archive response
-          <select value={scenario} onChange={(event) => {
-            setScenario(event.target.value as Scenario);
-            setRequest((current) => current?.kind === "field" ? current : { kind: "field", field: initialField });
-          }}>
-            {Object.entries(scenarios).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </label>
-        <button onClick={openExample}>Open saved fixture</button>
-        <button onClick={() => setRequest({ kind: "saved", id: "missing-fixture" })}>Try missing ID</button>
-        {request?.kind === "saved" && <button onClick={() => setRequest(null)}>Back to search</button>}
-      </div>}
-      <p role="status">{status}</p>
-      {preview.kind === "loading" && request?.kind !== "saved" && <p>An archive search can take a few minutes.</p>}
-      {typeof diagnostics?.message === "string" && <p>{diagnostics.message}</p>}
-      {comparison && diagnostics?.complete === false && <p>This comparison comes from an incomplete archive search.</p>}
-      {fallbackAvailable && request && (
-        <div className="controls">
-          <button type="button" onClick={() => setRequest({ ...request })}>Retry</button>
-          {request.kind !== "saved" && <button type="button" onClick={openExample}>
-            {fixtureMode ? "Open saved fixture" : "Open saved real example"}
-          </button>}
+        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice} />
+      <header className="viewer-bar">
+        <h1>SPHEREx viewer</h1>
+        <nav className="panel-buttons" aria-label="Viewer panels">
+          {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
+            <button key={id} type="button" ref={(button) => {
+              if (button) panelButtons.current[id] = button;
+            }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
+              onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
+          ))}
+        </nav>
+      </header>
+      <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
+        <div className="panel-heading">
+          <h2 id="gaia-heading">Gaia source inspector</h2>
+          <button type="button" onClick={() => closePanel("gaia")}>Close</button>
         </div>
-      )}
-      {!fixtureMode && preview.kind === "idle" && (
-        <button type="button" onClick={openExample}>Open saved real example</button>
-      )}
-      {preview.kind === "search" && (
-        <p>
-          Requested RA {preview.field.ra.toFixed(6)}°, Dec {preview.field.dec.toFixed(6)}°,
-          width {preview.field.fovArcmin.toFixed(2)} arcmin.
-        </p>
-      )}
-      {comparison && (
-        <>
-          <p>{fixtureMode || kind === "synthetic_fixture" ? "Synthetic comparison" :
-            kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
-          <ComparisonPlayback key={comparison.id} comparison={comparison} />
+        <SourceInspector skyPosition={inspecting} client={catalogClient} onMark={setCatalogMark} />
+        {catalogMark && (
+          <p role="status">
+            Marked Gaia source {catalogMark.sourceId} at RA {catalogMark.ra.toFixed(6)}°, Dec {catalogMark.dec.toFixed(6)}°.{" "}
+            <button type="button" onClick={() => setCatalogMark(null)}>Clear mark</button>
+          </p>
+        )}
+      </section>
+      <section id="search-panel" aria-labelledby="search-heading" className="floating-panel panel-left" hidden={panel !== "search"}>
+        <div className="panel-heading">
+          <h2 id="search-heading">Compare a field</h2>
+          <button type="button" onClick={() => closePanel("search")}>Close</button>
+        </div>
+        <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
+          onResolve={(name, fovArcmin) => {
+            setMapNotice("");
+            setRequest({ kind: "name", name, fovArcmin });
+            setPanel("comparison");
+          }} />
+      </section>
+      <section id="comparison-panel" aria-labelledby="comparison-heading" className="floating-panel panel-right" hidden={panel !== "comparison"}>
+        <div className="panel-heading">
+          <h2 id="comparison-heading">Comparison</h2>
+          <button type="button" onClick={() => closePanel("comparison")}>Close</button>
+        </div>
+        {fixtureMode && <p>Development fixtures. Comparison images and metadata are synthetic.</p>}
+        {fixtureMode && <div className="controls">
+          <label>
+            Archive response
+            <select value={scenario} onChange={(event) => {
+              setScenario(event.target.value as Scenario);
+              setRequest((current) => current?.kind === "field" ? current : { kind: "field", field: initialField });
+            }}>
+              {Object.entries(scenarios).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </label>
+          <button onClick={openExample}>Open saved fixture</button>
+          <button onClick={() => setRequest({ kind: "saved", id: "missing-fixture" })}>Try missing ID</button>
+          {request?.kind === "saved" && <button onClick={() => setRequest(null)}>Back to search</button>}
+        </div>}
+        <p role="status">{status}</p>
+        {preview.kind === "loading" && request?.kind !== "saved" && <p>An archive search can take a few minutes.</p>}
+        {typeof diagnostics?.message === "string" && <p>{diagnostics.message}</p>}
+        {comparison && diagnostics?.complete === false && <p>This comparison comes from an incomplete archive search.</p>}
+        {fallbackAvailable && request && (
           <div className="controls">
-            <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
-            <button type="button" onClick={() => void copyLink(comparison.id)}>Copy comparison link</button>
+            <button type="button" onClick={() => setRequest({ ...request })}>Retry</button>
+            {request.kind !== "saved" && <button type="button" onClick={openExample}>
+              {fixtureMode ? "Open saved fixture" : "Open saved real example"}
+            </button>}
           </div>
-          {copyStatus && <p role="status">{copyStatus}</p>}
-        </>
-      )}
+        )}
+        {!fixtureMode && preview.kind === "idle" && (
+          <button type="button" onClick={openExample}>Open saved real example</button>
+        )}
+        {preview.kind === "search" && (
+          <p>
+            Requested RA {preview.field.ra.toFixed(6)}°, Dec {preview.field.dec.toFixed(6)}°,
+            width {preview.field.fovArcmin.toFixed(2)} arcmin.
+          </p>
+        )}
+        {comparison && (
+          <>
+            <p>{fixtureMode || kind === "synthetic_fixture" ? "Synthetic comparison" :
+              kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
+            <ComparisonPlayback key={comparison.id} comparison={comparison} visible={panel === "comparison"} />
+            <div className="controls">
+              <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
+              <button type="button" onClick={() => void copyLink(comparison.id)}>Copy comparison link</button>
+            </div>
+            {copyStatus && <p role="status">{copyStatus}</p>}
+          </>
+        )}
+      </section>
     </main>
   );
 }

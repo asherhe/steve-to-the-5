@@ -28,6 +28,10 @@ declare module "aladin-lite" {
         showProjectionControl: boolean;
         showLayersControl: boolean;
         showZoomControl: boolean;
+        showFullscreenControl: boolean;
+        showSettingsControl: boolean;
+        showCooLocation: boolean;
+        showFov: boolean;
         showSimbadPointerControl: boolean;
       },
     ): AladinView;

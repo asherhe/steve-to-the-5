@@ -8,7 +8,7 @@ const alignmentLabels: Record<string, string> = {
   single_frame_not_applicable: "Single frame",
 };
 
-export function ComparisonPlayback({ comparison }: { comparison: Comparison }) {
+export function ComparisonPlayback({ comparison, visible = true }: { comparison: Comparison; visible?: boolean }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -20,13 +20,17 @@ export function ComparisonPlayback({ comparison }: { comparison: Comparison }) {
   const multi = frames.length > 1;
 
   useEffect(() => {
-    if (!playing || failed || !multi || loadedFrame !== frame.id) return;
+    if (!visible) setPlaying(false);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !playing || failed || !multi || loadedFrame !== frame.id) return;
     const timer = setTimeout(() => {
       setLoadedFrame(null);
       setIndex((current) => (current + 1) % frames.length);
     }, 1000 / speed);
     return () => clearTimeout(timer);
-  }, [playing, failed, multi, frames.length, speed, frame.id, loadedFrame]);
+  }, [visible, playing, failed, multi, frames.length, speed, frame.id, loadedFrame]);
 
   function select(next: number) {
     setPlaying(false);

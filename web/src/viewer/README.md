@@ -9,6 +9,8 @@ npm.cmd run dev
 
 Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. **All sky** shows a 360° Hammer–Aitoff overview. The DSS2 HiPS tiles require network access and are credited to STScI/NASA and CDS.
 
+The sky fills the viewport. Open **Search**, **Comparison**, or **Gaia** in the top bar to show its panel. The panels become bottom sheets on narrow screens. Use **Close** or Escape to return to the sky. Closing the comparison panel pauses playback and keeps your place.
+
 Pan and zoom, then select **Compare this field** once the map width is within the archive's 1–30 arcmin range. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
 Open `/?fixtures=1` in development to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.

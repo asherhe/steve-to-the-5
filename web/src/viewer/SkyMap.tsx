@@ -10,12 +10,14 @@ export function SkyMap({
   onCompare,
   onInspect,
   catalogMark,
+  notice,
 }: {
   initialCenter: SkyPosition;
   focus: Field | null;
   onCompare: (field: Field) => void;
   onInspect: (position: SkyPosition) => void;
   catalogMark: SkyPosition | null;
+  notice: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const view = useRef<AladinView | null>(null);
@@ -41,7 +43,11 @@ export function SkyMap({
           fov: globeFovDeg,
           showProjectionControl: false,
           showLayersControl: false,
-          showZoomControl: true,
+          showZoomControl: false,
+          showFullscreenControl: false,
+          showSettingsControl: false,
+          showCooLocation: false,
+          showFov: false,
           showSimbadPointerControl: false,
         });
         view.current.gotoRaDec(initialCenter.ra, initialCenter.dec);
@@ -105,14 +111,26 @@ export function SkyMap({
     onCompare({ ra: ((ra % 360) + 360) % 360, dec, fovArcmin: width * 60 });
   }
 
+  function zoom(factor: number) {
+    const sky = view.current;
+    if (sky) sky.setFoV(Math.min(allSky ? 360 : globeFovDeg, sky.getFoV()[0] * factor));
+  }
+
   return (
     <section className="sky-section" aria-label="Reference sky map">
-      <div className="sky-heading">
-        <div>
-          <h2>Sky map</h2>
-          <p>DSS2 reference imagery · STScI/NASA and CDS</p>
-        </div>
+      <div className="sky-map">
+        <div ref={container} className="aladin-host" />
+        {state !== "ready" && (
+          <p className="map-status" role="status">
+            {state === "loading" ? "Loading sky map…" : "Sky map unavailable. Search using coordinates or a preset."}
+          </p>
+        )}
+      </div>
+      <div className="sky-tools">
+        {notice && <p className="sky-notice" role="status">{notice}</p>}
         <div className="controls">
+          <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={state !== "ready"}>+</button>
+          <button type="button" aria-label="Zoom out" onClick={() => zoom(2)} disabled={state !== "ready"}>−</button>
           <button type="button" onClick={toggleProjection} disabled={state !== "ready"}>
             {allSky ? "Globe view" : "All sky"}
           </button>
@@ -126,14 +144,7 @@ export function SkyMap({
             Inspect map center
           </button>
         </div>
-      </div>
-      <div className="sky-map">
-        <div ref={container} className="aladin-host" />
-        {state !== "ready" && (
-          <p className="map-status" role="status">
-            {state === "loading" ? "Loading sky map…" : "Sky map unavailable. Search below using coordinates or a preset."}
-          </p>
-        )}
+        <small>DSS2 reference imagery · STScI/NASA and CDS</small>
       </div>
     </section>
   );
