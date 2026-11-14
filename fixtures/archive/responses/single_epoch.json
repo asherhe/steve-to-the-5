@@ -1,7 +1,7 @@
 {
   "status": "single_epoch",
   "comparison": {
-    "id": "b53ad94c36f9c24d3f5a71cbbeee98d3c4c074169a55566f92c0d52f5a1d9843",
+    "id": "c497bd5ad0d8c3cf2a8cf51d50e1f7a723a437322c8bf11770938f7c7df7c172",
     "field": {
       "ra": 10.0,
       "dec": 20.0,
@@ -53,7 +53,7 @@
         "wavelengthUm": 1.25,
         "bandwidthUm": 0.03,
         "release": "dr1",
-        "imageUrl": "/api/comparisons/b53ad94c36f9c24d3f5a71cbbeee98d3c4c074169a55566f92c0d52f5a1d9843/assets/d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d.png",
+        "imageUrl": "/api/comparisons/c497bd5ad0d8c3cf2a8cf51d50e1f7a723a437322c8bf11770938f7c7df7c172/assets/d180d5f4d4dec279a363b9ec8c6ce75fc56874d58d5ab21cc92c0af2c106308d.png",
         "sourceUrl": "https://example.invalid/synthetic-0.fits",
         "sourceSha256": "67fa08775838fbd00bf4c422912d498c45ed5f3385f827b9d5f6dc79b786c35f",
         "processingVersion": "synthetic-v1",
@@ -111,7 +111,7 @@
     "provenance": {
       "schemaVersion": 2,
       "implementation": {
-        "sourceSha256": "b7a0c0f4b1f5a9d1f783dcf634d3ca07c7f710580e51e34abf17fd0ae29ffd81",
+        "sourceSha256": "1e1848aaab05827720f34a5ab0bf99ee11db7cbdb777522c3d058efaec171e2b",
         "python": "3.13.14",
         "packages": {
           "numpy": "2.5.4",
@@ -205,8 +205,8 @@
     "pairChecks": {},
     "usableExposureCount": 1,
     "alignmentFailures": [],
-    "processedExposureCount": 1,
     "preparedExposureCount": 1,
+    "processedExposureCount": 1,
     "selectionScope": "all_discovered_exposures",
     "sampledExposures": [
       {

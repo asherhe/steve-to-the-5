@@ -1,9 +1,0 @@
-{
-  "status": "upstream_unavailable",
-  "comparison": null,
-  "diagnostics": {
-    "code": "UPSTREAM_ERROR",
-    "message": "Synthetic simulated archive failure",
-    "complete": false
-  }
-}

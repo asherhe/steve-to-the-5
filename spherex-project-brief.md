@@ -12,8 +12,60 @@ Keep the map as the workspace. Use Aladin for navigation, show dated SPHEREx cut
 
 - **Core challenge.** RA/Dec input, adjustable field, fetch and play real dated SPHEREx images, shared brightness scale, timestamps and wavelength labels. Use one matched monochrome wavelength range per comparison in the MVP. Show coverage and quality issues where they affect interpretation.
 - **Team MVP.** Add a Gaia inspector, optional activity layer, public candidate threads and reproducible comparison links. No separate feed or invitation inbox. Start the demo with a known object so users can practice reviewing evidence.
-- **Later.** Wavelength slider, verified false-color presets, a spectrum panel, difference images, WISE historical imagery and a curated NEOSSat example. The map agent owns any display preset UX. A future preset should carry explicit channel assignments and shared per-channel stretches across dates. SPLICES supplies likely ice-feature targets. A validated molecular detection product would be required for a chemical map. WISE infrared brightness is a useful historical observable. Physical temperature requires further inference. [SPLICES](https://irsa.ipac.caltech.edu/data/SPHEREx/SPLICES/index.html) · [unWISE](https://irsa.ipac.caltech.edu/data/WISE/unWISE/overview.html) · [CADC NEOSSat](https://cadcftp.cadc.hia.nrc-cnrc.gc.ca/en/neossat/)
+- **Later.** Wavelength slider, verified false-color presets, a spectrum panel, difference images, WISE historical imagery and a curated NEOSSat example. The map agent owns any display preset UX. A future preset should carry explicit channel assignments and shared per-channel stretches across dates. SPLICES supplies likely ice-feature targets. A validated molecular detection product would be required for a chemical map. WISE infrared brightness is a useful historical observable. Physical temperature requires further inference. An exploratory engagement and education layer is also under discussion; see "Engagement and education (exploratory, deferred)" below. [SPLICES](https://irsa.ipac.caltech.edu/data/SPHEREx/SPLICES/index.html) · [unWISE](https://irsa.ipac.caltech.edu/data/WISE/unWISE/overview.html) · [CADC NEOSSat](https://cadcftp.cadc.hia.nrc-cnrc.gc.ca/en/neossat/)
 - **Time and wavelength.** DR1 was released November 12, 2026, and covers Surveys 1 and 2, roughly May 2025 to mid-May 2026. QR3 provides later observations using the same improved pipeline. Query both and use actual timestamps. The 102-layer DR1 mosaic is a wavelength product formed from combined observations. Dated Spectral Images power playback. Gaia DR3 supplies astrometry referenced to 2016.0. Any Gaia position propagated to a SPHEREx date must be labeled as a prediction. [IRSA releases](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/) · [Gaia DR3](https://www.cosmos.esa.int/web/gaia/dr3)
+
+## Engagement and education (exploratory, deferred)
+
+This section records an early brainstorm about making the viewer more interactive and
+educational for citizen scientists. It is **exploratory and deferred**: not part of the MVP,
+not scheduled, and not a committed contract change. Nothing here is a scientific claim. These
+are engagement and learning mechanics layered on top of real data, and they do not relabel a
+reproducible observation or question as a validated discovery. Treat anything below as a
+proposal under discussion until the coordinator adopts it.
+
+Guiding constraints for any later work on these ideas:
+
+- Keep the core deliverable unchanged: coordinate-based viewing of real, dated SPHEREx
+  observations with matched monochrome playback, understandable metadata, and reproducible
+  evidence.
+- Frame "rare" or "interesting" as engagement and teaching cues, not statements about
+  physical rarity, variability, or detection. Labels seen by the public must not imply a
+  discovery.
+- Build on existing labeled data (observed frames, catalog lookups, wavelength labels) and
+  keep predicted, observed, and reference products distinct, as the rest of the brief requires.
+
+Ideas captured, each deliberately scoped small:
+
+- **Motion, kept minimal.** Add a basic motion/time-stepping view only to satisfy the
+  requirement, and do not extend it. The available time series is short (roughly two to three
+  dated points per target in current data), so a thin time axis cannot support strong motion
+  or variability conclusions. Preserve that limitation in any wording.
+- **Two ways to explore a target.** Let a user switch freely between the dated SPHEREx
+  spectral view and the time-lapse imagery view for the same sky position. Offering two
+  complementary views of one target is a more interactive way to explore and compare, without
+  changing what either product scientifically represents.
+- **Educational infrared wavelength exploration.** A wavelength slider (already deferred
+  under "Later") where moving across infrared wavelengths changes which features look brighter
+  or dimmer. With no artificial cooldown, users learn by trial and error how the same patch of
+  sky looks at different wavelengths (for example, something prominent near ~1042 nm). The
+  value here is teaching how objects appear across infrared bands, not scoring or ranking
+  objects. This remains deferred and depends on the verified false-color / per-channel stretch
+  work noted under "Later".
+- **More hints and context per object.** Surface additional per-object information and hints
+  (for example, catalog context and wavelength labels) so that exploring one object after
+  another stays engaging and users can form their own exploration strategies. This reuses
+  existing labeled evidence rather than introducing new claims.
+- **Optional discovery/trivia framing.** A possible game-like wrapper that invites users to
+  seek out niche or unusual-looking objects as an engagement hook. If pursued, it must stay
+  clearly separated from reproducible findings, must not present engagement outcomes as
+  scientific results, and would be designed and owned separately. We are not building this
+  yet, so this brief intentionally does not name or specify such a product.
+
+Open questions before any of this leaves the exploratory stage: whether the short time series
+makes the motion and time-lapse views worthwhile, how to word "rare"/"interesting" cues so
+they never read as discoveries, and how the slider interacts with the deferred per-channel
+stretch work. Route adoption and any resulting contract change through the coordinator.
 
 ## Architecture and integration
 

@@ -357,7 +357,8 @@ def test_incomplete_search_never_claims_absence(tmp_path, field, config):
     with pytest.raises(ArchiveError) as exc:
         make_pipeline(tmp_path, limited, [synthetic_cutout(wavelength=w) for w in (1, 2, 3)]).build(field)
     assert exc.value.code == "PROCESSING_LIMIT" and exc.value.details["limit"] == "cutout_budget"
-    assert exc.value.details["diagnostics"]["incompleteStages"] == ["sampling"]
+    assert exc.value.details["diagnostics"]["incompleteStages"] == ["sampling", "cutout_budget"]
+    assert exc.value.details["diagnostics"]["pairChecks"] == {"wavelength_mismatch": 1}
 
 
 def test_failed_release_query_with_no_rows_is_not_no_coverage(tmp_path, field, config):

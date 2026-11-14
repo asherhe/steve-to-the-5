@@ -1,0 +1,3 @@
+# Content-addressed FITS/PNG evidence has hash-only filenames.
+# Preserve bytes exactly and suppress meaningless text diffs/merges.
+fixtures/archive/**/evidence/blobs/* binary

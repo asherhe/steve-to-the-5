@@ -78,6 +78,9 @@ class Pipeline:
         try:
             return self._build(field, Deadline(config.build_deadline_seconds, self.clock), diagnostics)
         except ArchiveError as exc:
+            if (exc.details or {}).get("limit") and exc.details["limit"] not in diagnostics["incompleteStages"]:
+                diagnostics["incompleteStages"].append(exc.details["limit"])
+            diagnostics.update({"complete": False, "code": exc.code, "message": exc.message})
             exc.details = {**(exc.details or {}), "diagnostics": diagnostics}
             raise
 
@@ -152,6 +155,9 @@ class Pipeline:
                     rejected.append({**observation_ref(observation), "reason": exc.message})
             deadline.check("selection")
             selected, selection, alignment = select(prepared, config, cache)
+            # Keep the latest selection record even if a later stage hits a limit.
+            diagnostics.update(selection)
+            diagnostics["preparedExposureCount"] = len(prepared)
             if len(selected) >= 2:
                 break
         self.last_timings["retrievalAndPreparationSeconds"] = self.clock() - downloading
