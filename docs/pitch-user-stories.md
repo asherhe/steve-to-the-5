@@ -158,6 +158,10 @@ shipped, and do not name it as a product.
 **Pitch beat:** One sentence of vision at the end: "and because it runs on real labeled data,
 the same viewer becomes a teaching tool." Then stop.
 
+For a fuller exploration of how this engagement layer could integrate with the social
+findings platform (quests, verification credit, collections) and the user stories that go
+with it, see `docs/engagement-social-integration.md`. It is exploratory and deferred.
+
 ---
 
 ## One-line throughline for the pitch
