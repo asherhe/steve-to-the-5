@@ -1,153 +1,267 @@
-# Engagement layer × social findings: integration concept and user stories
+# A rarity-hunting sky game on real NASA data, integrated with the findings platform
 
-Status: **exploratory, deferred.** This document explores how the deferred engagement/game
-layer could connect to the social findings platform. It is a proposal for discussion, not a
-committed contract change. Adoption and any resulting schema or route change go through the
-coordinator.
+Status: **exploratory, deferred.** This explores the team's game concept and how it connects
+to the social findings platform. It is a proposal for discussion, not a committed contract
+change. Any new schema, route, or persisted field is a coordinator-owned change.
 
-Sources and constraints: `spherex-project-brief.md` ("Engagement and education (exploratory,
-deferred)", demo acceptance), `spherex-agent-handoffs.md` (findings backend/UI and shared
-interface), and `AGENTS.md` (a finding is a reproducible observation or question, not a
-validated discovery).
+Sources and constraints: `spherex-project-brief.md`, `spherex-agent-handoffs.md`, `AGENTS.md`
+(a finding is a reproducible observation or question, not a validated discovery; no claim of
+water, composition, temperature, or detection from imagery alone).
 
-## The core design rule
+## The game loop (inspired by Krillion)
 
-Keep two layers separate and join them only by reference:
+Krillion is a short daily game that rewards the *rarest valid answer*, not the correct one:
+open prompts are scored against a familiarity database and mapped onto rarity tiers, shown as
+a deep-sea dive, with the thrill of a rare hit bringing players back the next day.
+([Krillion](https://krillionhq.com/), [rarity tiers](https://krilliongame.org/). Content was
+rephrased for compliance with licensing restrictions.)
 
-- **Evidence layer (unchanged, authoritative).** Comparisons, findings, replies, catalog
-  lookups. Immutable, reproducible, scientific. A finding is an observation or a question.
-- **Engagement layer (new, non-authoritative).** Progress, prompts, streaks, collections, and
-  learning signals that reward *participating and learning*, never the *truth of a finding*.
+Our version keeps that loop and puts it on the real sky:
 
-The rule, stated plainly: **gamify the act of looking, verifying, and explaining. Never
-gamify whether a finding is real.** Points must not attach to being "right" about a
-discovery, because the product deliberately does not adjudicate discoveries. This keeps the
-integration honest and, for the pitch, more defensible than a plain leaderboard.
+1. **Scan one area of sky at a time** using NASA SPHEREx and other data, the same map the
+   viewer already uses.
+2. **Select a star or candidate object.** The game assigns a **point value** from the object's
+   observable properties and its catalog status: a well-known, densely catalogued object
+   scores low (the common, "obvious" pick); an unusual-looking or sparsely catalogued one
+   scores high (the rare hit).
+3. **Hunt the rarest object you can** in a short session, using real tools as the gameplay
+   mechanics: the SPHEREx infrared bands, the WISE blink, field-of-view and wavelength
+   controls, and the catalog inspector.
+4. **Come back daily** to beat your best find. Chasing rarer objects nudges players to learn
+   real astronomy on their own so they can recognize what is worth selecting.
 
-## How the two could connect
+The excitement is the rare hit. The daily return is the habit. The learning is the by-product.
 
-Each idea reuses existing contract objects (comparisons, findings, replies, marks, the
-five-target coverage log) and adds only engagement metadata that points at them.
+## The one principle that keeps it honest (and keeps the pitch strong)
 
-- **Quests over real sky, not over claims.** A quest is "open a comparison for each of the
-  five challenge targets and log an honest outcome" or "find a patch with a coverage gap and
-  record it." Completion is awarded for the *act* (opening, comparing, recording an honest
-  state such as `single_epoch` or `no_coverage`), never for asserting a change. This rides on
-  the existing coverage log and comparison states.
-- **Wavelength-exploration challenges (educational).** Using the deferred infrared wavelength
-  slider, a prompt asks "find where this feature looks brightest." The reward is for
-  exploring the band and explaining what they saw, so the slider teaches how the infrared sky
-  behaves. Depends on the deferred per-channel stretch work; stays educational, not scored on
-  correctness of a physical claim.
-- **Verification credit, the social hook.** The most valuable social action is checking
-  someone else's work. A contributor earns recognition for opening another user's shared
-  comparison, restoring the exact evidence, and replying with a substantive observation or a
-  reasoned "I can't reproduce this." This directly strengthens the existing public-read /
-  authenticated-reply loop and rewards reproducibility rather than spectacle.
-- **Collections instead of a leaderboard.** Rather than ranking users by "discoveries," let
-  people assemble labeled collections ("objects I compared across dates", "coverage gaps I
-  found", "catalog checks I ran"). Collections reference findings and comparisons by ID and
-  carry no scientific weight on their own.
-- **Streaks for habits, not for being right.** Reward consistent reviewing (e.g. replying to
-  N threads this week) to build the community habit, decoupled from whether any finding holds
-  up.
-- **Gentle onboarding via a known object.** The demo already starts with a known object;
-  framed as a tutorial quest, a newcomer practices the full loop (compare → inspect catalog →
-  mark → post → share) before exploring freely.
+Krillion rewards answers that are **valid and rare**, not merely bold. Our equivalent of
+"valid" is set by the brief: we do not claim a discovery, a composition, or a temperature from
+an image. So the score is built on **"how unusual and under-explored this is to investigate,"**
+framed as a game signal, **not** on "this is a watery planet."
 
-## Boundaries carried from the brief and AGENTS.md
+- Rarity means **unusual in the data and/or sparsely catalogued**, which is exactly what makes
+  a find exciting anyway, and it is defensible to NASA judges.
+- A property that *could* indicate something interesting (for example, a spectral feature often
+  associated with ices) raises the game score as a **flag worth investigating**, phrased with
+  "possible / candidate," never as a confirmed property.
+- The **game score is its own layer.** If a player turns a find into a shared scientific
+  **finding**, that finding stays an observation or a question, separate from points.
 
-- Engagement metadata never mutates image evidence, a saved comparison, or a finding's
-  content; it only references them. This matches the reproducibility invariants.
-- Public labels keep "rare"/"interesting" as teaching cues. No engagement outcome is shown as
-  a scientific result or a discovery.
-- Emails and private identity stay private; engagement surfaces only the public display name,
-  same as findings today.
-- Points and progress are not evidence and must be visually and structurally distinct from
-  findings, replies, and catalog data.
-- Any new persisted field, route, or schema change is a coordinator-owned contract change,
-  not something an individual slice invents.
+Stated plainly: **gamify the hunt for the rare and the act of investigating it. Never score a
+player for a claim being true.** This preserves the full Krillion-style thrill while staying
+inside what the data honestly supports.
+
+## How scoring could work (sketch)
+
+A transparent, explainable score so players can learn from it and so it never reads as a
+scientific verdict. Each component is a game signal with a shown reason:
+
+- **Catalog familiarity.** Densely catalogued and well-studied object → low (common). Sparse or
+  no catalog match → high (rare). This mirrors Krillion's familiarity-database idea, using the
+  Gaia DR3 inspector and other catalog lookups the viewer already has.
+- **Observable distinctiveness.** Unusual behavior across SPHEREx infrared bands, or a change
+  under the WISE blink, raises the score as "interesting to look at," with the specific reason
+  surfaced ("stands out at ~1042 nm", "moves between epochs").
+- **Candidate-feature bonus.** A spectral feature *possibly* linked to something notable adds
+  points as a clearly-labeled **candidate flag**, never a confirmed property.
+- **Rarity tiers.** Like Krillion's surface-to-trench tiers, map the total onto named tiers
+  (common → extremely rare) with an astronomy-flavored theme, so a rare hit feels like an
+  event.
+- **Honesty guards.** Coverage gaps, low quality, or missing data cap or withhold a score
+  rather than inventing one; "not enough data to score" is a legitimate, non-punishing outcome.
+
+All scoring factors are game mechanics defined by us, shown transparently, and labeled as such
+in the UI. They are not published as measurements.
+
+## Integrating the game with the social findings platform
+
+The game and the platform reinforce each other: the game generates interesting candidates; the
+platform is where players turn a candidate into shared, reproducible evidence and collaborate.
+
+- **"Promote a find to a finding."** From a scored object, a signed-in player can post a
+  finding on that exact sky position: the game captures the comparison, the active frame/band,
+  and the catalog check, and the finding is created through the normal findings flow. The
+  score travels as engagement metadata that **references** the finding; it is not part of the
+  evidence.
+- **Verify and co-op.** Another player opens the shared link, restores the exact comparison,
+  and replies confirming or disputing it. This earns verification standing. Rare finds that
+  others successfully reproduce are the community's highlights, rewarding reproducibility
+  rather than spectacle.
+- **Daily challenge over a shared region.** Everyone gets the same patch of sky for the day (a
+  Krillion-style shared prompt); players compete on the rarest well-supported find and compare
+  notes in a thread.
+- **Collections and streaks.** Players assemble labeled collections of their finds (referenced
+  by comparison/finding ID) and keep a streak for consistent reviewing of others' threads.
+  Neither carries scientific weight; both build the habit.
+- **Learning hooks.** When a score cites a reason ("rare band behavior", "no catalog match"),
+  offer a short explainer and a link to dig deeper, which is how the uninterested player starts
+  researching astronomy on their own.
+
+## The permanent rarity leaderboard (the bridge to real discovery)
+
+The leaderboard is where the game stops being disposable fun and becomes useful to science.
+The rarest finds stay up **permanently**, with their ranks catalogued, so other players and
+even professional astronomers can revisit the top candidates and investigate them further. It
+is the connective tissue between the game loop and the findings platform.
+
+How it works, kept consistent with the reproducible-comparison contract:
+
+- **An entry references evidence; it is not new evidence.** Each leaderboard entry stores its
+  rank, its game rarity score and the reasons behind it, and a pointer to the **immutable saved
+  comparison and finding** for that sky position. Reopening an entry restores the exact frames,
+  bands, grid, dates and catalog check, which is precisely what an astronomer needs to
+  investigate it. "Position catalogued permanently" is implemented through the existing
+  immutable manifest and share-link guarantees, not a mutable copy.
+- **Ranked by game rarity, labeled as a candidate.** The ordering is the game's rarity signal
+  (unusual and/or under-explored), and every entry carries the "possible / candidate" framing.
+  The leaderboard is a list of *interesting things worth investigating*, never a list of
+  discoveries.
+- **A discussion forum under each entry.** Each top entry has its own thread, built on the
+  existing findings-reply mechanism, to prompt curiosity and let players and astronomers
+  compare notes, propose follow-up observations, or flag an artifact. Public read for everyone;
+  authenticated posting; emails private.
+- **Investigation outcomes live in the thread, not in the score.** If someone later confirms or
+  refutes something about a top candidate, that real-world outcome is recorded as discussion
+  and evidence in the thread. It does not retroactively turn the game score into a scientific
+  claim, and it does not mutate the original saved comparison.
+- **Persistence and integrity.** Entries are durable and their referenced evidence is immutable;
+  a republished archive or a changed default does not alter a ranked entry's frames. The
+  coordinator owns any hide/moderation action, as with findings.
+
+This is the payoff of the whole concept: a casual five-minute dive can surface a genuinely
+unusual object, that object earns a permanent, reproducible spot on the leaderboard, and the
+discussion forum beneath it invites the crowd, and eventually an expert, to dig in. A possible
+candidate, clearly labeled, that anyone can reopen and check.
+
+### What stays separated (carried from the brief and AGENTS.md)
+
+- Two layers joined only by reference: **evidence** (comparisons, findings, replies, catalog
+  lookups: immutable, reproducible) and **engagement** (scores, tiers, streaks, collections,
+  leaderboard entries: non-authoritative). Engagement never mutates a saved comparison or a
+  finding.
+- The leaderboard ranks on the game rarity signal and references immutable evidence; it never
+  presents a ranked entry as a discovery, and a later investigation outcome is recorded as
+  discussion, not as a change to the score or the saved comparison.
+- Public labels keep "rare/interesting" and candidate flags as game-and-teaching cues, with
+  "possible/candidate" wording. No engagement output is shown as a scientific result.
+- Emails and private identity stay private; only the public display name appears.
+- Any persisted field, route, or schema change for scoring, challenges, or collections is a
+  coordinator-owned contract change, not something an individual slice invents.
 
 ## User stories
 
-Written for citizen scientists, amateur astronomers, and classrooms. Each keeps the
-engagement reward on the *action*, not on a claim.
+Written for the target audience: casual players, amateur astronomers, and classrooms. The
+reward is always on hunting and investigating, never on a claim being true.
 
-### A. Tolu completes the "Five Targets" quest
+### A. Marcus plays a five-minute daily dive and hits a rare one
 
-**Who:** Tolu, new to the platform, wants a reason to explore beyond one click.
-**Story:** A tutorial quest asks Tolu to open a comparison for each of the five challenge
-targets and record an honest outcome. For two targets he sees a real matched pair; for
-another the tool reports a coverage gap, and recording that gap still completes the step. He
-finishes the quest having learned to read dates, wavelength labels, and coverage states.
-**Reward:** Progress for completing the loop and for logging honest outcomes, including the
-gaps. Nothing is awarded for claiming a change.
-**Why it matters:** Teaches the core workflow and reinforces that "no comparison possible" is
-a valid, respectable result.
+**Who:** Marcus, a casual player with no astronomy background, on his phone at lunch.
+**Story:** Marcus opens today's region, scans with the infrared bands and the blink, and taps
+a few objects. Most come back common (brightly catalogued, low points). Then he taps one with
+no catalog match and odd band behavior; the game lights up a high rarity tier and shows why.
+He logs off thrilled and comes back tomorrow.
+**Why it matters:** This is the Krillion hook on the real sky, short session, rare-hit dopamine,
+daily return, and it runs entirely on real NASA data.
 
-### B. Priya earns verification credit for checking a stranger's finding
+### B. A rare hit becomes a shared finding
 
-**Who:** Priya, browsing a thread a friend shared.
-**Story:** Priya opens the link anonymously, then signs in. She restores the exact comparison,
-steps the blink, and replies either confirming what she sees or explaining why she can't
-reproduce it. Her substantive reply earns verification credit.
-**Reward:** Recognition for reproducing and reviewing, the highest-value social act.
-**Why it matters:** Makes peer review the thing the community celebrates, which is exactly the
-reproducibility the product is built around.
+**Who:** Marcus again, now curious enough to share.
+**Story:** From his rare find, Marcus hits "share this as a finding." The game hands the exact
+comparison, band, and catalog check to the findings flow; he adds a one-line question ("why
+does this one stand out at this wavelength?") and posts. The score tags along as engagement
+metadata, the finding itself is a reproducible question.
+**Why it matters:** Shows the game feeding the social platform without ever dressing a score
+up as a discovery.
 
-### C. A classroom runs a wavelength-exploration challenge
+### C. Priya verifies someone's rare find
 
-**Who:** A teacher with a small group.
-**Story:** Each student takes a target and a prompt: slide across infrared wavelengths and
-find where a feature looks brightest, then post a short note on what changed and why that is
-interesting to look at. With no cooldown, they learn by trial and error.
-**Reward:** Credit for exploring the band and explaining the observation, not for a correct
-physical answer.
-**Why it matters:** Turns the deferred slider into a genuine teaching tool while staying
-explicitly non-scientific in its claims.
+**Who:** Priya, opening Marcus's shared link.
+**Story:** She restores the exact comparison, steps the blink, and replies that she sees the
+same standout band behavior but notes it could be an artifact near a coverage edge. Her
+substantive reply earns verification standing; Marcus's find is marked community-reviewed.
+**Why it matters:** The most valuable social act is reproducing and sanity-checking a rare
+hit, which is exactly the reproducibility the product is built on.
 
-### D. Dev builds a collection instead of chasing a score
+### D. Dina chases rarity and ends up learning spectroscopy
 
-**Who:** Dev, a regular contributor.
-**Story:** Over several sessions Dev groups his work into labeled collections, "objects I
-compared across dates" and "coverage gaps I found", each referencing saved comparisons and
-findings by ID. He shares a collection link; others open it and review individual items.
-**Reward:** A tidy, shareable body of participation, with no ranking of users by "discoveries."
-**Why it matters:** Encourages sustained, honest participation without creating pressure to
-overclaim.
+**Who:** Dina, competitive, wants the top find of the day.
+**Story:** To find rarer objects she starts reading the score reasons ("rare band behavior",
+"sparse catalog") and follows the explainer links, then experiments with specific infrared
+bands on purpose. Within a week she is choosing targets with real intuition about what looks
+unusual.
+**Why it matters:** This is the educational payoff the team wants: the game turns idle
+curiosity into self-directed astronomy learning.
 
-### E. Sam is nudged toward rigor, not spectacle
+### E. A classroom runs the daily shared region
 
-**Who:** Sam, a careful reviewer wary of gamified tools.
-**Story:** When Sam posts a finding, the platform prompts him to attach the exact comparison
-and, optionally, a catalog check from the inspector. Completing these strengthens the thread
-and earns engagement credit for *evidence quality of the post*, never for the conclusion.
-**Why it matters:** Aligns the incentive with reproducibility and catalog context, the
-opposite of rewarding bold claims.
+**Who:** A teacher and a small group.
+**Story:** Everyone plays the same daily region. Students compare which objects scored rare and
+why, use the bands and blink to justify their picks, and post short notes. The lesson is how
+the infrared sky behaves and how catalogs work, taught through play.
+**Why it matters:** The shared-prompt format plus transparent scoring makes a natural,
+low-friction classroom activity.
 
-### F. The community keeps an honest streak
+### F. Sam trusts it because it refuses to overclaim
 
-**Who:** A returning amateur astronomer.
-**Story:** A weekly habit track rewards reviewing and replying to others' threads. The streak
-is about showing up to verify, not about being right, so it never pressures anyone to assert a
-change they didn't see.
-**Why it matters:** Builds the collaborative habit that makes a findings platform alive, while
-staying decoupled from scientific correctness.
+**Who:** Sam, a careful amateur wary of gamified science.
+**Story:** Sam picks an object in a coverage gap. Instead of a fake score, the game says there
+is not enough data to score it and explains why, and when he posts a finding it is framed as a
+question, not a result. The candidate flags all read "possible," never "confirmed."
+**Why it matters:** The honesty guards are a feature, not a limitation, and they are what make
+the whole concept credible to judges.
+
+### G. Marcus's rare find lands on the permanent leaderboard
+
+**Who:** Marcus, after sharing his rare hit as a finding.
+**Story:** His find's rarity score is high enough to enter today's leaderboard. The entry
+shows its rank, the rarity tier and the reasons, and links straight back to his immutable
+comparison. Weeks later it is still there, and still reopens the exact frames he saw.
+**Why it matters:** The permanence is the hook that gives a casual find lasting value and makes
+it worth an expert's time later. It rides on the reproducible-comparison guarantees.
+
+### H. An astronomer investigates a top leaderboard candidate
+
+**Who:** Dr. Okafor, a professional who browses the top of the leaderboard.
+**Story:** She opens a high-rarity entry, restores the exact comparison and catalog context,
+and recognizes it as worth a real follow-up observation. She posts in the entry's discussion
+thread with what she'd check next. The entry stays a labeled candidate; her note is recorded
+as evidence and discussion.
+**Why it matters:** This is the concept's ultimate payoff, a crowd-surfaced candidate drawing
+expert attention, without the game ever claiming the discovery itself.
+
+### I. A discussion thread turns curiosity into a group investigation
+
+**Who:** A mix of players and enthusiasts under one leaderboard entry.
+**Story:** The forum beneath a striking entry fills with questions: is it an artifact near a
+coverage edge, a known variable, something genuinely odd? People restore the evidence, compare
+bands, and link catalog checks. The thread becomes a small, open investigation.
+**Why it matters:** The per-entry forum is what converts a leaderboard position into sustained,
+collaborative curiosity, exactly the behavior the platform exists to support.
 
 ## Open questions before this leaves the exploratory stage
 
-- Does the short real time series (roughly two to three dated points per target) make
-  quest-style motion exploration worthwhile, or should quests center on catalog checks and
-  verification instead?
-- How is engagement data stored and surfaced so it is structurally impossible to mistake for
-  evidence? (Separate tables/namespaces, distinct UI, reference-only links.)
-- What is the minimum coordinator-owned schema addition, if any, to support quests, credit,
-  and collections without touching the findings evidence schema?
-- How do we word every engagement label so it never reads as a discovery claim in public view?
+- Does the short real time series (roughly two to three dated points per target) support a
+  motion/blink-based rarity signal, or should early scoring lean on catalog familiarity and
+  band distinctiveness?
+- What exact, defensible inputs define the score, and how do we show every factor so it never
+  reads as a measurement?
+- What is the minimum coordinator-owned schema to carry scores, daily challenges, collections,
+  and **permanent leaderboard entries** (rank, score, reasons, reference to the immutable
+  comparison/finding) without touching the findings evidence schema?
+- Leaderboard design: how many entries persist, is there an all-time board plus daily/weekly
+  boards, and how are ties and re-scoring handled without mutating a ranked entry's evidence?
+- How do we moderate leaderboard entries and their forums (coordinator-owned hide action) and
+  keep emails private while surfacing display names?
+- How do we word every rarity and candidate label so it never implies a discovery in public
+  view?
+- Rate/daily-cap design: one dive a day (habit) vs. an endless mode (engagement), as Krillion
+  offers both.
 
 ## Relationship to the pitch
 
-If the pitch wants a forward-looking beat, use these as "where this goes next": a social
-platform that rewards *looking carefully and verifying each other*, built on real labeled
-SPHEREx data. Keep it after the core demo and clearly framed as exploratory. See
-`docs/pitch-user-stories.md` story 6 for the one-sentence version.
+Lead the core demo first (coordinate to trustworthy comparison, honest coverage, catalog
+inspector). Then present this as the vision: a five-minute daily rarity hunt on real NASA
+SPHEREx data that quietly teaches astronomy, surfaces genuinely unusual candidates onto a
+permanent leaderboard, and gathers players and astronomers in a discussion under each top
+find. Keep it framed as exploratory. See `docs/pitch-user-stories.md` story 6 for the one-line
+version.
