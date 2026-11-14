@@ -7,7 +7,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. **All sky** shows a 360° Hammer–Aitoff overview. The DSS2 HiPS tiles require network access and are credited to STScI/NASA and CDS.
+Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. **All sky** shows a 360° Hammer–Aitoff overview. DSS2 HiPS tiles come from the [CDS-listed mirrors](https://aladin.cds.unistra.fr/) and are credited to STScI/NASA and CDS. If the mirrors are unavailable, select **Retry imagery** or use Search to look up coordinates or a preset.
 
 The sky fills the viewport. Open **Search**, **Comparison**, or **Gaia** in the top bar to show its panel. The panels become bottom sheets on narrow screens. Use **Close** or Escape to return to the sky. Closing the comparison panel pauses playback and keeps your place.
 

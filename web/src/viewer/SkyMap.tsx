@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
+import { findDssSurvey } from "./dssSurvey";
 
 const globeFovDeg = 180;
 
@@ -24,21 +25,30 @@ export function SkyMap({
   const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [surveyAttempt, setSurveyAttempt] = useState(0);
   const [allSky, setAllSky] = useState(false);
 
   useEffect(() => {
     const host = container.current;
     if (!host) return;
-    let disposed = false;
+    const controller = new AbortController();
+    setState("loading");
 
     async function initialize(element: HTMLElement) {
       try {
-        const { default: Aladin } = await import("aladin-lite");
+        const [{ default: Aladin }, survey] = await Promise.all([
+          import("aladin-lite"), findDssSurvey(controller.signal),
+        ]);
+        if (controller.signal.aborted) return;
+        if (!survey) {
+          setState("unavailable");
+          return;
+        }
         await Aladin.init;
-        if (disposed) return;
+        if (controller.signal.aborted) return;
         view.current = Aladin.aladin(element, {
           cooFrame: "ICRSd",
-          survey: "CDS/P/DSS2/color",
+          survey,
           projection: "SIN",
           fov: globeFovDeg,
           showProjectionControl: false,
@@ -59,7 +69,7 @@ export function SkyMap({
         };
         setState("ready");
       } catch (error) {
-        if (disposed) return;
+        if (controller.signal.aborted) return;
         console.error("Could not initialize Aladin Lite", error);
         setState("unavailable");
       }
@@ -67,11 +77,11 @@ export function SkyMap({
 
     void initialize(host);
     return () => {
-      disposed = true;
+      controller.abort();
       view.current = null;
       markPosition.current = null;
     };
-  }, [initialCenter]);
+  }, [initialCenter, surveyAttempt]);
 
   useEffect(() => {
     if (!focus || state !== "ready" || !view.current) return;
@@ -122,7 +132,7 @@ export function SkyMap({
         <div ref={container} className="aladin-host" />
         {state !== "ready" && (
           <p className="map-status" role="status">
-            {state === "loading" ? "Loading sky map…" : "Sky map unavailable. Search using coordinates or a preset."}
+            {state === "loading" ? "Loading DSS2 imagery…" : "Sky map unavailable. Search using coordinates or a preset."}
           </p>
         )}
       </div>
@@ -144,7 +154,10 @@ export function SkyMap({
             Inspect map center
           </button>
         </div>
-        <small>DSS2 reference imagery · STScI/NASA and CDS</small>
+        {state === "unavailable" && (
+          <button type="button" onClick={() => setSurveyAttempt((attempt) => attempt + 1)}>Retry imagery</button>
+        )}
+        {state === "ready" && <small>DSS2 reference imagery · STScI/NASA and CDS</small>}
       </div>
     </section>
   );
