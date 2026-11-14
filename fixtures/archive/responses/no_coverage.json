@@ -1,0 +1,26 @@
+{
+  "status": "no_coverage",
+  "comparison": null,
+  "diagnostics": {
+    "schemaVersion": 2,
+    "complete": true,
+    "incompleteStages": [],
+    "coverageThresholds": {
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "minCommonValidCoverage": 0.75,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_fixture_inputs",
+      "totalExposures": 0,
+      "byRelease": {},
+      "byDetector": {},
+      "byReleaseDetector": {},
+      "observedTimeRangeUtc": {},
+      "failedReleaseQueries": [],
+      "complete": true
+    },
+    "discoveredExposureCount": 0
+  }
+}

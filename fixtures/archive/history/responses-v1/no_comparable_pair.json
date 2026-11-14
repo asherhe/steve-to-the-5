@@ -1,0 +1,20 @@
+{
+  "status": "no_comparable_pair",
+  "comparison": null,
+  "diagnostics": {
+    "rejectedObservations": [],
+    "pairChecks": {
+      "wavelength_mismatch": 1
+    },
+    "usableExposureCount": 2,
+    "invalidCutouts": [],
+    "discoveredExposureCount": 2,
+    "processedExposureCount": 2,
+    "complete": true,
+    "selectionScope": "all_discovered_exposures",
+    "sampledObservationIds": [
+      "synthetic-0",
+      "synthetic-1"
+    ]
+  }
+}

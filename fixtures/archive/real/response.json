@@ -1,0 +1,195 @@
+{
+  "status": "ready",
+  "comparison": {
+    "id": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+    "field": {
+      "ra": 304.693508808,
+      "dec": 42.4436872991,
+      "fovArcmin": 1.0
+    },
+    "wavelengthRangeUm": [
+      0.8450069912687401,
+      0.8684309527769692
+    ],
+    "stretch": {
+      "type": "asinh",
+      "lower": 0.24292663974208217,
+      "upper": 1.3048535225021662,
+      "softening": 0.1,
+      "unit": "MJy/sr"
+    },
+    "grid": {
+      "width": 10,
+      "height": 10,
+      "pixelScaleArcsec": 6.2,
+      "projection": "TAN",
+      "coordinateFrame": "ICRS",
+      "rowOrigin": "top",
+      "fitsHeader": {
+        "WCSAXES": 2,
+        "CRPIX1": 5.5,
+        "CRPIX2": 5.5,
+        "CDELT1": -0.0017222222222222,
+        "CDELT2": 0.0017222222222222,
+        "CUNIT1": "deg",
+        "CUNIT2": "deg",
+        "CTYPE1": "RA---TAN",
+        "CTYPE2": "DEC--TAN",
+        "CRVAL1": 304.693508808,
+        "CRVAL2": 42.4436872991,
+        "LONPOLE": 180.0,
+        "LATPOLE": 42.4436872991,
+        "MJDREF": 0.0,
+        "RADESYS": "ICRS"
+      }
+    },
+    "frames": [
+      {
+        "id": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
+        "observationId": "2025W44_2B_0052_2",
+        "observedAtUtc": "2025-10-30T17:30:35.064000Z",
+        "observationStartUtc": "2025-10-30T17:29:37.478400Z",
+        "observationEndUtc": "2025-10-30T17:31:32.649600Z",
+        "wavelengthUm": 0.8579755309914022,
+        "bandwidthUm": 0.02091084357113395,
+        "release": "dr1",
+        "imageUrl": "/api/comparisons/c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31/assets/87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d.png",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0052_2D1_spx_l2b-v27-2026-246.fits",
+        "sourceSha256": "8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222",
+        "processingVersion": "7.0.5",
+        "validFraction": 0.91,
+        "qualityFlags": {
+          "inputPixels": 121,
+          "flaggedInputPixels": 121,
+          "qualityRejectedInputPixels": 0,
+          "informationalFlagMask": 2101248,
+          "invalidInputPixels": 0,
+          "invalidOutputPixels": 9
+        },
+        "alignment": "wcs_only_not_empirically_verified"
+      },
+      {
+        "id": "ca200998ccbcf9c5d1b7ae255407b5d5452b34f01e205f89e2b44c0034e71ca2",
+        "observationId": "2025W44_2B_0768_4",
+        "observedAtUtc": "2025-11-02T14:03:31.737600Z",
+        "observationStartUtc": "2025-11-02T14:02:34.195200Z",
+        "observationEndUtc": "2025-11-02T14:04:29.280000Z",
+        "wavelengthUm": 0.85573227696671,
+        "bandwidthUm": 0.021450571395939682,
+        "release": "dr1",
+        "imageUrl": "/api/comparisons/c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31/assets/ca200998ccbcf9c5d1b7ae255407b5d5452b34f01e205f89e2b44c0034e71ca2.png",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0768_4D1_spx_l2b-v27-2026-246.fits",
+        "sourceSha256": "9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64",
+        "processingVersion": "7.0.5",
+        "validFraction": 0.91,
+        "qualityFlags": {
+          "inputPixels": 121,
+          "flaggedInputPixels": 121,
+          "qualityRejectedInputPixels": 0,
+          "informationalFlagMask": 2101248,
+          "invalidInputPixels": 0,
+          "invalidOutputPixels": 9
+        },
+        "alignment": "wcs_only_not_empirically_verified"
+      }
+    ],
+    "config": {
+      "pixelScaleArcsec": 6.2,
+      "minimumCoverage": 0.9,
+      "wavelengthToleranceBandwidth": 0.25,
+      "maxFrames": 12,
+      "maxCandidates": 1000,
+      "maxCutouts": 120,
+      "batchSize": 24,
+      "maxDownloadBytes": 20000000,
+      "timeoutSeconds": 30.0,
+      "attempts": 2,
+      "concurrency": 3,
+      "lowerPercentile": 1.0,
+      "upperPercentile": 99.5,
+      "asinhSoftening": 0.1,
+      "cutoutMarginFraction": 0.1,
+      "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+      "backgroundPolicy": "subtract_zodi",
+      "resampling": "bilinear_with_full_valid_support"
+    },
+    "provenance": {
+      "schemaVersion": 1,
+      "implementation": {
+        "sourceSha256": "0df1a7a05f15b14c196c96eb6b07e4390e33ac6188930b61ec04f2ff7b78bd80",
+        "python": "3.13.14",
+        "packages": {
+          "numpy": "2.5.4",
+          "astropy": "8.0.2",
+          "reproject": "0.21.0",
+          "pillow": "13.0.0"
+        }
+      },
+      "evidenceKind": "saved_real_example",
+      "discoveryScope": "curated_recorded_subset_not_exhaustive",
+      "inputs": [
+        {
+          "observation": {
+            "observationId": "2025W44_2B_0052_2",
+            "detector": 1,
+            "release": "dr1",
+            "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0052_2D1_spx_l2b-v27-2026-246.fits",
+            "startMjd": 60978.728906,
+            "endMjd": 60978.730239
+          },
+          "sourceSha256": "8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222"
+        },
+        {
+          "observation": {
+            "observationId": "2025W44_2B_0768_4",
+            "detector": 1,
+            "release": "dr1",
+            "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0768_4D1_spx_l2b-v27-2026-246.fits",
+            "startMjd": 60981.585118,
+            "endMjd": 60981.58645
+          },
+          "sourceSha256": "9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64"
+        }
+      ],
+      "acknowledgement": "This publication makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.",
+      "releaseDocumentation": "https://irsa.ipac.caltech.edu/Missions/spherex.html",
+      "timestampPolicy": "midpoint_of_SIA_UTC_MJD_bounds",
+      "alignmentChecks": {
+        "8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222": {
+          "status": "wcs_only_not_empirically_verified",
+          "matchedSources": 0
+        },
+        "9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64": {
+          "status": "wcs_only_not_empirically_verified",
+          "matchedSources": 0
+        }
+      }
+    },
+    "limitations": [
+      "Quick-look visualization, not significant motion or variability measurement.",
+      "Selection scope and completeness are recorded in diagnostics; bounded samples do not prove absence or maximize the full-archive time baseline.",
+      "No PSF homogenization or precision photometry; one exposure per frame.",
+      "Only SOURCE/FULLSAMPLE flags allowed; ZODI subtracted, no frame-wise normalization.",
+      "Wavelength labels describe the target; response varies spatially.",
+      "PNG rows are flipped relative to FITS: fitsY=height-1-pngY (zero-based)."
+    ]
+  },
+  "diagnostics": {
+    "rejectedObservations": [],
+    "pairChecks": {
+      "compatible": 1
+    },
+    "usableExposureCount": 2,
+    "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id",
+    "notSelectedExposureIds": [],
+    "invalidCutouts": [],
+    "discoveredExposureCount": 2,
+    "processedExposureCount": 2,
+    "complete": true,
+    "selectionScope": "all_discovered_exposures",
+    "sampledObservationIds": [
+      "2025W44_2B_0052_2",
+      "2025W44_2B_0768_4"
+    ]
+  }
+}

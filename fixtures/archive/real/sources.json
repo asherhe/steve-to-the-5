@@ -1,0 +1,78 @@
+{
+  "evidenceKind": "saved_real_example",
+  "field": {
+    "ra": 304.693508808,
+    "dec": 42.4436872991,
+    "fovArcmin": 1.0
+  },
+  "source": "Official IRSA tutorial field, curated DR1 D1 subset",
+  "selectionScope": "Two compatible exposures selected from a curated subset; not an exhaustive archive search.",
+  "visibleChange": "not_assessed",
+  "sources": [
+    {
+      "observation": {
+        "observationId": "2025W44_2B_0052_2",
+        "detector": 1,
+        "release": "dr1",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0052_2D1_spx_l2b-v27-2026-246.fits",
+        "startMjd": 60978.728906,
+        "endMjd": 60978.730239
+      },
+      "sha256": "8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222",
+      "path": "evidence/blobs/8cca15e1baa5ddafb6df0f7921cfb711fc32188afd10338950ff61c68239b222"
+    },
+    {
+      "observation": {
+        "observationId": "2025W44_2B_0768_4",
+        "detector": 1,
+        "release": "dr1",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0768_4D1_spx_l2b-v27-2026-246.fits",
+        "startMjd": 60981.585118,
+        "endMjd": 60981.58645
+      },
+      "sha256": "9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64",
+      "path": "evidence/blobs/9fa3bfef99398985cd9e88d8c41985648793a7bfd85b0fa62c7d41869a191a64"
+    }
+  ],
+  "curationDiagnostics": {
+    "rejectedObservations": [
+      {
+        "observationId": "2025W44_2B_0052_3",
+        "reason": "insufficient_valid_coverage"
+      },
+      {
+        "observationId": "2025W44_2B_0414_1",
+        "reason": "insufficient_valid_coverage"
+      },
+      {
+        "observationId": "2025W44_2B_0470_2",
+        "reason": "insufficient_valid_coverage"
+      },
+      {
+        "observationId": "2025W44_2B_0470_3",
+        "reason": "insufficient_valid_coverage"
+      },
+      {
+        "observationId": "2025W44_2B_0768_1",
+        "reason": "insufficient_valid_coverage"
+      },
+      {
+        "observationId": "2025W44_2B_0768_3",
+        "reason": "insufficient_valid_coverage"
+      }
+    ],
+    "pairChecks": {
+      "insufficient_common_coverage": 12,
+      "compatible": 1,
+      "wavelength_mismatch": 2
+    },
+    "usableExposureCount": 6,
+    "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id",
+    "notSelectedExposureIds": [
+      "2025W44_2B_0052_4",
+      "2025W44_2B_0470_4",
+      "2025W44_2B_0768_2",
+      "2025W45_1A_0423_1"
+    ]
+  }
+}
