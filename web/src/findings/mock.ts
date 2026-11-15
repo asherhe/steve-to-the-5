@@ -80,6 +80,7 @@ async function scoreWithLocalService(req: PointReviewInput, signal?: AbortSignal
     });
   } catch {
     aborted(signal);
+    if (req.wiseComparisonId) throw new FindingsApiError(0, 'network_error', 'Could not reach the demo scoring service. Start npm run dev:scoring or npm run dev.');
     return null;
   }
   const body: unknown = await response.json().catch(() => null);
@@ -87,13 +88,14 @@ async function scoreWithLocalService(req: PointReviewInput, signal?: AbortSignal
     let review: PointReview;
     try { review = parsePointReview(body); }
     catch (error) { throw new FindingsApiError(502, 'invalid_response', error instanceof Error ? error.message : 'The local scoring service returned an invalid point review.'); }
-    if (review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== req.radiusArcsec || !sameFrame(review.frame, req.frame))
+    if (review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== req.radiusArcsec || !sameFrame(review.frame, req.frame) || (review.scoreVersion === 'point-check-v4' && review.wiseComparisonId !== req.wiseComparisonId))
       throw new FindingsApiError(502, 'invalid_response', 'The local scoring service returned a different point.');
     return review;
   }
   const error = body && typeof body === 'object' ? body as { code?: unknown; message?: unknown } : null;
   if (response.status !== 404 && typeof error?.code === 'string' && typeof error.message === 'string')
     throw new FindingsApiError(response.status, error.code, error.message);
+  if (req.wiseComparisonId) throw new FindingsApiError(response.status, 'scoring_unavailable', 'The demo scoring service is unavailable. Start npm run dev:scoring or npm run dev.');
   return null;
 }
 
@@ -177,7 +179,7 @@ export const mockFindings: ReviewClient = {
     if (!review) throw new Error('Run the local simulated review first.');
     if (review.ra !== req.ra || review.dec !== req.dec) throw new FindingsApiError(422, 'invalid_review', 'Check this point again before submitting.');
     const existing = read();
-    if (review.scoreVersion === 'point-check-v3') {
+    if (review.scoreVersion === 'point-check-v3' || review.scoreVersion === 'point-check-v4') {
       const duplicate = duplicateOf(review as PointReview, existing);
       if (duplicate) throw new FindingsApiError(409, 'already_on_leaderboard', `This point is already on the leaderboard: “${duplicate.title}” by ${duplicate.displayName}. Join its discussion.`);
     }

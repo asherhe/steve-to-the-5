@@ -46,67 +46,16 @@ class FindingsRoute(APIRoute):
         return handle
 
 
-def evidence_loader(load_saved_comparison, load_wise_comparison):
-    """Loads a frame's saved comparison from its survey's service and checks it is that one."""
-    async def evidence(identifier, survey):
-        loader = load_wise_comparison if survey == "wise" else load_saved_comparison
-        if loader is None:
-            raise ApiError(503, "comparison_unavailable", "This survey's saved evidence service is not configured.")
-        comparison = await loader(identifier)
-        if comparison is None:
-            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
-        if not isinstance(comparison, dict) or comparison.get("id") != identifier:
-            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
-        return comparison
-    return evidence
+LOCAL_DEMO_NOTE = ("LOCAL DEMO: real survey measurements; posts and rankings are saved only in this browser.")
 
 
-LOCAL_DEMO_NOTE = ("LOCAL DEMO: scored by the local findings service with the same rules as the live service, "
-                   "but nothing is stored and there is no sign-in. Posts exist only in this browser.")
+def create_local_demo_router(load_saved_comparison: ComparisonLoader, **loaders) -> APIRouter:
+    """Compatibility entry point for the explicit local measurement-only factory."""
+    return create_router(None, load_saved_comparison, local_demo=True, **loaders)
 
 
-def create_local_demo_router(load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None,
-                             load_catalog_review=None, load_cutouts=None, load_asset=None,
-                             spectral_store=None) -> APIRouter:
-    """Point scoring without Supabase, for the local demo (FINDINGS_LOCAL_DEMO=1).
-
-    Runs exactly the live point review (catalog chain, survey cutouts, brightness, SPHEREx
-    spectra and the required WISE blink), so every score is possible, but requires no session,
-    writes nothing to a database and checks no leaderboard duplicates; the browser keeps the
-    demo's posts. Spectral evidence is still saved locally, as the live rules require. Not for
-    deployment: it is unauthenticated.
-    """
-    router = APIRouter(
-        prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
-        responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
-    )
-    evidence = evidence_loader(load_saved_comparison, load_wise_comparison)
-    review_slots = asyncio.Semaphore(2)
-
-    @router.post("/demo/points/review", response_model=PointReviewResponse,
-                 responses={429: {"model": ErrorResponse}})
-    async def demo_point_review(data: PointReviewInput):
-        """Scores a marked point for the local demo; nothing is stored."""
-        if load_catalog_review is None or load_cutouts is None:
-            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
-        if review_slots.locked():
-            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
-        async with review_slots:
-            if not data.wiseComparisonId:
-                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
-            wise_comparison = await evidence(data.wiseComparisonId, "wise")
-            validate_blink(wise_comparison, data)
-            response, _, _ = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence,
-                                                        spectral_store, wise_comparison, load_asset)
-        response.duplicate = None  # the browser checks its own demo posts
-        response.limitations = [LOCAL_DEMO_NOTE, *response.limitations]
-        return response
-
-    return router
-
-
-def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
-                  load_asset=None, load_cutouts=None, spectral_store=None) -> APIRouter:
+def create_router(supabase: Supabase | None, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
+                  load_asset=None, load_cutouts=None, spectral_store=None, local_demo=False) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
         responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
@@ -117,7 +66,16 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
             raise ApiError(401, "unauthorized", "Sign in to post or reply.")
         return await supabase.user(credentials.credentials)
 
-    evidence = evidence_loader(load_saved_comparison, load_wise_comparison)
+    async def evidence(identifier, survey):
+        loader = load_wise_comparison if survey == "wise" else load_saved_comparison
+        if loader is None:
+            raise ApiError(503, "comparison_unavailable", "This survey's saved evidence service is not configured.")
+        comparison = await loader(identifier)
+        if comparison is None:
+            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
+        if not isinstance(comparison, dict) or comparison.get("id") != identifier:
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        return comparison
 
     review_slots = asyncio.Semaphore(2)
 
@@ -134,6 +92,29 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
             raise ApiError(503, "evidence_unavailable", "Spectral evidence storage is not configured.")
         payload = await asyncio.to_thread(spectral_store.asset, evidence_id, sha)
         return Response(payload, media_type="application/fits", headers={"ETag": f'"{sha}"', "Cache-Control": "public, max-age=31536000, immutable"})
+
+    async def measure_point(data):
+        if load_catalog_review is None or load_cutouts is None:
+            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
+        if review_slots.locked():
+            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
+        async with review_slots:
+            if not data.wiseComparisonId:
+                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
+            wise_comparison = await evidence(data.wiseComparisonId, "wise")
+            validate_blink(wise_comparison, data)
+            return await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
+
+    if local_demo:
+        @router.post("/demo/points/review", response_model=PointReviewResponse)
+        async def demo_point_review(data: PointReviewInput):
+            response, _, _ = await measure_point(data)
+            response.limitations.insert(0, LOCAL_DEMO_NOTE)
+            return response
+
+        # The demo factory has measurements and immutable evidence only: no auth,
+        # database writes, public leaderboard or discussion routes.
+        return router
 
     @router.get("/auth/config", response_model=PublicAuthConfig)
     async def auth_config():
@@ -178,25 +159,16 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
                  responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}})
     async def point_review(data: PointReviewInput, author=Depends(signed_in)):
         """Scores a marked point; the server runs the catalog chain and fetches survey cutouts."""
-        if load_catalog_review is None or load_cutouts is None:
-            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
-        if review_slots.locked():
-            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
-        async with review_slots:
-            if not data.wiseComparisonId:
-                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
-            wise_comparison = await evidence(data.wiseComparisonId, "wise")
-            validate_blink(wise_comparison, data)
-            response, candidate_key, key = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
-            response.duplicate = await existing_entry(data.ra, data.dec, key)
-            await supabase.request("POST", "spherex_candidate_reviews", json={
-                "id": str(response.id), "author_id": author.id,
-                "comparison_id": data.frame.comparisonId if data.frame else None,
-                "survey": data.frame.survey if data.frame else "spherex",
-                "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key, "object_key": key,
-                "fov_arcmin": None, "score": response.score, "report": response.model_dump(mode="json"),
-            })
-            return response
+        response, candidate_key, key = await measure_point(data)
+        response.duplicate = await existing_entry(data.ra, data.dec, key)
+        await supabase.request("POST", "spherex_candidate_reviews", json={
+            "id": str(response.id), "author_id": author.id,
+            "comparison_id": data.frame.comparisonId if data.frame else None,
+            "survey": data.frame.survey if data.frame else "spherex",
+            "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key, "object_key": key,
+            "fov_arcmin": None, "score": response.score, "report": response.model_dump(mode="json"),
+        })
+        return response
 
     @router.get("", response_model=Viewport)
     async def viewport(

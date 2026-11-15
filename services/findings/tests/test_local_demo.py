@@ -96,7 +96,8 @@ class LocalDemoTests(unittest.TestCase):
     def test_demo_mode_needs_no_supabase_and_exposes_only_scoring(self):
         with mock.patch.dict(os.environ, {"FINDINGS_LOCAL_DEMO": "1"}, clear=True):
             paths = [p for p in create_app().openapi()["paths"] if p.startswith("/api")]
-        self.assertEqual(paths, ["/api/findings/demo/points/review"])
+        self.assertEqual(set(paths), {"/api/findings/demo/points/review", "/api/findings/spectral/{evidence_id}",
+                                     "/api/findings/spectral/{evidence_id}/assets/{sha}.fits"})
         with mock.patch.dict(os.environ, {}, clear=True):
             with self.assertRaises(RuntimeError):
                 create_app()  # without the flag the live service still requires Supabase

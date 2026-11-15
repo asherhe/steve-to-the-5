@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 const origin = process.env.VIEWER_TEST_URL ?? 'http://127.0.0.1:5192';
+const demo = process.env.DEMO_SCORING === '1';
 const fixture = JSON.parse(await readFile(new URL('../services/findings/fixtures/spectral-flow.json', import.meta.url)));
 const wise = JSON.parse(await readFile(new URL('../fixtures/wise/real-wise0855/evidence/manifests/69b16206d33440bb0cda45fc473b46d926c7cddd0e586aea646a0059712eed9a.json', import.meta.url))).response;
 const output = new URL('../.local-test-temp/spectral-browser/', import.meta.url);
@@ -44,8 +45,9 @@ await page.route('**/*', async route => {
   if(url.pathname==='/api/wise/comparisons') { blinkRequests++; return route.fulfill({json:wise}); }
   if(url.pathname===`/api/wise/comparisons/${wise.comparison.id}`) return route.fulfill({json:wise});
   if(url.pathname.endsWith('.png')) return route.fulfill({contentType:'image/png',body:blank});
-  if(url.pathname==='/api/findings/points/review') {
-    const body=req.postDataJSON(); assert.equal(body.wiseComparisonId,wise.comparison.id); assert(req.headers().authorization);
+  if(url.pathname===(demo?'/api/findings/demo/points/review':'/api/findings/points/review')) {
+    const body=req.postDataJSON(); assert.equal(body.wiseComparisonId,wise.comparison.id);
+    assert.equal(!!req.headers().authorization, !demo);
     scoreRequests++; return route.fulfill({status:201,json:report});
   }
   if(url.pathname==='/api/findings/leaderboard') return route.fulfill({json:{board:'daily',placeholder:false,entries:[]}});
@@ -56,10 +58,11 @@ try {
   await page.goto(`${origin}/?reviewRa=${fixture.request.ra}&reviewDec=${fixture.request.dec}&reviewRadius=30`);
   const pane=page.locator('#review-panel');
   await pane.getByRole('button',{name:'Get WISE blink',exact:true}).waitFor();
-  assert(await pane.getByRole('button',{name:'Sign in to submit',exact:true}).isDisabled());
+  assert(await pane.getByRole('button',{name:demo?'Check and score this point':'Sign in to submit',exact:true}).isDisabled());
   await pane.getByRole('button',{name:'Get WISE blink',exact:true}).press('Enter');
   await pane.getByText('WISE blink ready. Its saved first and last visits will be measured.',{exact:true}).waitFor();
   assert.equal(blinkRequests,1); assert.equal(scoreRequests,0);
+  if (!demo) {
   await pane.getByRole('button',{name:'Sign in to submit',exact:true}).press('Enter');
   const auth=page.locator('#account-panel');
   await auth.getByLabel('Email',{exact:true}).fill('synthetic@example.test');
@@ -70,6 +73,7 @@ try {
   assert.equal(new URL(page.url()).searchParams.get('reviewWise'),wise.comparison.id);
   await page.reload();
   await pane.getByText('WISE blink ready. Its saved first and last visits will be measured.',{exact:true}).waitFor();
+  }
   await pane.getByRole('button',{name:'Check and score this point',exact:true}).press('Enter');
   await pane.getByRole('heading',{name:/^30 points/}).waitFor();
   await pane.getByText(/Possibly contains water/).waitFor();
@@ -81,6 +85,16 @@ try {
   await pane.screenshot({path:new URL('mobile-evidence.png',output).pathname.replace(/^\/(?=[A-Z]:)/,'')});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
   assert.deepEqual(errors,[]);
-  await writeFile(new URL('result.json',output),JSON.stringify({kind:'synthetic_browser',checks:['WISE prerequisite blocks scoring','WISE blink loads','sign-in preserves blink and point','saved blink restored after reload','spectral and variability evidence render','mobile has no page overflow'],blinkRequests,scoreRequests,errors},null,2));
-  console.log('Browser passed: WISE prerequisite, sign-in/reload, score and evidence, desktop/mobile.');
+  if (demo) {
+    await pane.getByLabel('Title',{exact:true}).fill('Demo spectral bonus');
+    await pane.getByLabel('Note',{exact:true}).fill('Synthetic transport tests the local scoring workflow.');
+    await pane.getByRole('button',{name:'Post finding',exact:true}).press('Enter');
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem('spherex.local-demo.findings.v1')||'[]').length === 1);
+    const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('spherex.local-demo.findings.v1'))[0]);
+    assert.equal(saved.candidateReview.score,30);
+    await page.reload();
+    assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('spherex.local-demo.findings.v1'))[0].candidateReview.score),30);
+  }
+  await writeFile(new URL(demo?'demo-result.json':'result.json',output),JSON.stringify({kind:'synthetic_browser',demo,checks:['WISE prerequisite blocks scoring','WISE blink loads',demo?'no login; bonus score persists in local post':'sign-in and reload preserve blink and point','spectral and variability evidence render','mobile has no page overflow'],blinkRequests,scoreRequests,errors},null,2));
+  console.log(`Browser passed (${demo?'demo':'authenticated'}): WISE prerequisite, score and evidence, desktop/mobile, posting or sign-in/reload.`);
 } finally { await browser.close(); }

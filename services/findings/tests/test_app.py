@@ -56,6 +56,11 @@ class StandaloneAppTest(unittest.TestCase):
             self.assertNotIn("server-key", response.text)
             self.assertEqual(self.requests, [])
 
+    def test_saved_http_response_envelope_is_unwrapped(self):
+        self.archive_response = httpx.Response(200, json={"status": "ready", "comparison": FIXTURES["comparison"]})
+        with TestClient(self.app) as client:
+            self.assertEqual(self.post(client).status_code, 201)
+
     def test_missing_unavailable_and_malformed_archive(self):
         with TestClient(self.app) as client:
             for response, status, code in (

@@ -24,8 +24,13 @@ def local_demo() -> bool:
     return os.environ.get("FINDINGS_LOCAL_DEMO", "").strip() == "1"
 
 
-def create_app() -> FastAPI:
-    demo = local_demo()
+def create_demo_app() -> FastAPI:
+    """Explicit loopback demo factory, independent of Supabase configuration."""
+    return create_app(local_demo_mode=True)
+
+
+def create_app(*, local_demo_mode=None) -> FastAPI:
+    demo = local_demo() if local_demo_mode is None else local_demo_mode
     required = () if demo else ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
     missing = [name for name in required if not os.environ.get(name, "").strip()]
     if missing:

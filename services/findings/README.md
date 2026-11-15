@@ -201,9 +201,13 @@ posting also returns 409 `already_on_leaderboard` if another user wins the race.
 known duplicates, links their discussions and keeps drafts after a racing 409. No hosted
 migration is applied by local verification.
 
-The demo follows the same point-only flow, queries the live catalog service when available,
-awards only known-object 10 or unmeasured 0, and stores posts in localStorage. It never
-simulates 20-point brightness. Same-object/15-arcsec duplicate checks are serialized with a
+The demo follows the same point-only flow and uses the same v4 survey measurements,
+spectral screens and WISE variability scoring as production, without Supabase.
+`npm run dev` starts `create_demo_app` on loopback port 8014; standalone viewers
+can start it with `npm run dev:scoring`. A real saved WISE blink is required. The
+demo factory exposes only measurement and immutable spectral evidence routes;
+posts and rankings stay in localStorage. `VITE_LIVE_FINDINGS=1` switches the dev
+scoring runner to the configured authenticated production factory. Same-object/15-arcsec duplicate checks are serialized with a
 same-origin Web Lock where supported; this is browser-local simulation, not public database
 enforcement. The production flow derives identity from real authenticated sessions.
 
@@ -235,8 +239,8 @@ reasons under the existing point-check-v3 participation score contract.
 
 ## Local demo scoring (no Supabase)
 
-`FINDINGS_LOCAL_DEMO=1` starts this service without Supabase and exposes a single route,
-`POST /api/findings/demo/points/review`. It runs the same point review as the live
+`FINDINGS_LOCAL_DEMO=1` starts this service without Supabase and exposes `POST /api/findings/demo/points/review` plus the two read-only spectral
+manifest/FITS routes. It runs the same point review as the live
 `/points/review`: the six-catalog check, survey cutouts and brightness, SPHEREx spectra and the
 required WISE blink. So the local demo can award every score, including 20 points and the
 bonuses. It needs no sign-in, writes nothing to a database and does no leaderboard duplicate
@@ -244,8 +248,10 @@ check; the browser keeps the demo's posts. Spectral evidence is still saved unde
 `SPHEREX_POINT_EVIDENCE_DIR`, as the scoring rules require. `SPHEREX_COMPARISON_BASE_URL`
 defaults to `http://127.0.0.1:8000` in this mode.
 
-`npm run dev` starts this service in demo mode whenever `SUPABASE_URL` is not set, and
-`npm run dev:findings` does the same. If it is not running, the browser demo falls back to a
+`npm run dev` starts the explicit demo scoring factory by default;
+`VITE_LIVE_FINDINGS=1` selects the configured authenticated production factory.
+`npm run dev:findings` retains `FINDINGS_LOCAL_DEMO=1` auto-selection when Supabase
+is absent. Legacy catalog-only calls without a WISE selection can fall back to a
 catalog-only simulation and says why.
 
 The demo route is unauthenticated and fetches survey images on request. It is for local
