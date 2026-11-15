@@ -2,7 +2,7 @@
 // The result is a PREDICTED position and is always labelled predicted by callers.
 // Perspective (parallax / radial-velocity) terms are omitted for the MVP marker.
 
-import type { CatalogAstrometry, PredictedPosition } from "./types";
+import type { CatalogAstrometry, PredictedPosition, SkyPosition } from "./types";
 
 const MAS_PER_DEG = 3_600_000;
 
@@ -20,6 +20,13 @@ export function predictAtObservation(source: CatalogAstrometry, observedAtUtc: s
   const epoch = isoToDecimalYear(observedAtUtc);
   if (!Number.isFinite(epoch)) return null;
   return propagate(source.ra, source.dec, source.refEpoch, epoch, source.pmRaCosDecMasYr, source.pmDecMasYr);
+}
+
+export function angularSeparationArcsec(a: SkyPosition, b: SkyPosition): number {
+  const radians = Math.PI / 180;
+  const haversine = Math.sin((a.dec - b.dec) * radians / 2) ** 2 +
+    Math.cos(a.dec * radians) * Math.cos(b.dec * radians) * Math.sin((a.ra - b.ra) * radians / 2) ** 2;
+  return 2 * Math.asin(Math.sqrt(Math.min(1, Math.max(0, haversine)))) / radians * 3600;
 }
 
 export function propagate(

@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { SourceInspector } from "../SourceInspector";
-import { ambiguousSources, knownSource, makeFixtureClient, states } from "../fixtures";
+import { createCatalogClient } from "../api";
+import { ambiguousSources, knownDetail, knownSource, makeFixtureClient, states } from "../fixtures";
 import { isoToDecimalYear, propagate } from "../propagate";
 import type { MarkAction } from "../types";
 
@@ -148,6 +149,61 @@ describe("mark action", () => {
 });
 
 describe("self-fetching flow", () => {
+  it("finds Barnard's Star on the mosaic using its propagated position", async () => {
+    const source = {
+      ...knownSource,
+      ra: 269.44850252543836,
+      dec: 4.739420051112412,
+      pmRaCosDecMasYr: -801.5509783684709,
+      pmDecMasYr: 10362.394206546573,
+    };
+    const center = { ra: 269.44630202, dec: 4.76777074 };
+    const nearby = vi.fn().mockResolvedValue({ catalogMode: "live", sources: [
+      { ...source, sourceId: "42", pmRaCosDecMasYr: 0, pmDecMasYr: 0 },
+    ] });
+    const detail = vi.fn().mockResolvedValue({ ...knownDetail, ...source });
+    const onMark = vi.fn();
+    render(
+      <SourceInspector
+        client={{ ...client, nearby, detail }}
+        skyPosition={center}
+        mosaicGuideTimeUtc="2025-11-07T00:00:00Z"
+        mosaicGuideSourceId={source.sourceId}
+        requireLiveCatalog
+        onMark={onMark}
+      />
+    );
+    await userEvent.click(await screen.findByRole("button", { name: /mark approximate mosaic position/i }));
+    expect(nearby).toHaveBeenCalledWith(center.ra, center.dec, 150);
+    expect(detail).toHaveBeenCalledTimes(1);
+    expect(detail).toHaveBeenCalledWith(source.sourceId);
+    const mark = onMark.mock.calls[0][0] as MarkAction;
+    expect(mark).toMatchObject({ sourceId: source.sourceId, frameId: null, predicted: true });
+    expect(mark.ra).toBeCloseTo(center.ra, 6);
+    expect(mark.dec).toBeCloseTo(center.dec, 6);
+    expect(screen.getByText(/mosaic combines many exposure dates/i)).toBeInTheDocument();
+  });
+
+  it.each([
+    [{ "X-SPHEREx-Catalog-Mode": "fixture" }, /synthetic test data/i],
+    [{}, /did not report its data mode/i],
+  ] as const)("blocks unverified catalog markers with headers %j", async (headers, message) => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({ sources: [knownSource] }, { headers })
+    );
+    render(
+      <SourceInspector
+        client={createCatalogClient({ fetchImpl })}
+        skyPosition={{ ra: knownSource.ra, dec: knownSource.dec }}
+        requireLiveCatalog
+        onMark={noMark}
+      />
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(screen.queryByRole("button", { name: /mark/i })).not.toBeInTheDocument();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it("fetches, matches a single source and loads detail", async () => {
     render(
       <SourceInspector

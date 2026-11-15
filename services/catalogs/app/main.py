@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
         allow_methods=["GET"],
         allow_headers=["*"],
+        expose_headers=["X-SPHEREx-Catalog-Mode"],
     )
 
     register_error_handlers(app)

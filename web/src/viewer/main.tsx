@@ -8,7 +8,7 @@ import retainedExample from "../../../fixtures/archive/real/response.json";
 const dataSource = createViewerDataSource();
 const catalogClient = createCatalogClient();
 function Inspector(props: Omit<ComponentProps<typeof SourceInspector>, "client">) {
-  return <SourceInspector {...props} client={catalogClient} />;
+  return <SourceInspector {...props} client={catalogClient} requireLiveCatalog />;
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Viewer root is missing.");

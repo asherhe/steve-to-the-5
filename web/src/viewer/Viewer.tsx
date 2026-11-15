@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
-import { CatalogApiError, predictAtObservation, type CatalogAstrometry, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
-import { targetPresets } from "./coordinates";
+import { angularSeparationArcsec, CatalogApiError, predictAtObservation, type CatalogAstrometry, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
+import { barnardGaiaSourceId, targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { SkyMap } from "./SkyMap";
 import { SearchBox } from "./SearchBox";
@@ -11,6 +11,7 @@ import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
 import { ComparisonPlayback } from "./ComparisonPlayback";
 import { cutoutWcs } from "./cutoutWcs";
+import { spherexMosaicGuideTimeUtc } from "./spherexSurvey";
 import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
 import "./styles.css";
 
@@ -67,7 +68,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const timeButton = useRef<HTMLButtonElement>(null);
   const panelButtons = useRef<Partial<Record<Panel, HTMLElement>>>({});
   const [mapNotice, setMapNotice] = useState("");
-  const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
+  const [inspecting, setInspecting] = useState<{ position: SkyPosition; onSpherexMosaic: boolean } | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
     comparisonId: string; position: SkyPosition; frame: SelectedFrameMeta;
   } | null>(null);
@@ -94,8 +95,8 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
     panelButtons.current[current]?.focus();
   }
 
-  function inspect(position: SkyPosition) {
-    setInspecting(position);
+  function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
+    setInspecting({ position, onSpherexMosaic });
     setInspectFrame(false);
     openPanel("gaia");
   }
@@ -219,6 +220,9 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   } : null;
   const markedSourceId = inspectingCutout ? markedSource?.sourceId : catalogMark?.sourceId;
   const markedPosition = inspectingCutout ? prediction : catalogMark;
+  const mosaicInspection = !inspectFrame && inspecting?.onSpherexMosaic ? inspecting : null;
+  const mosaicGuideSourceId = mosaicInspection && angularSeparationArcsec(mosaicInspection.position, initialCenter) <= 60
+    ? barnardGaiaSourceId : undefined;
 
   const status =
     preview.kind === "search" ? scenarios[preview.result.status] :
@@ -278,15 +282,18 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         {inspectingCutout && <p>Selected SPHEREx frame <time dateTime={inspectingCutout.frame.observedAtUtc}>
           {inspectingCutout.frame.observedAtUtc}
         </time> · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec {inspectingCutout.position.dec.toFixed(6)}°</p>}
-        <Inspector skyPosition={inspectFrame ? selection?.position ?? null : inspecting}
+        <Inspector skyPosition={inspectFrame ? selection?.position ?? null : inspecting?.position ?? null}
           selectedFrame={inspectingCutout ? inspectingCutout.frame : null}
+          mosaicGuideTimeUtc={mosaicInspection ? spherexMosaicGuideTimeUtc : undefined}
+          mosaicGuideSourceId={mosaicGuideSourceId}
           onMark={(mark) => {
             if (inspectingCutout) setComparisonMark({ comparisonId: inspectingCutout.comparisonId, source: mark.astrometry });
             else setCatalogMark(mark);
           }} />
         {markedSourceId && (
           <p role="status">
-            {inspectingCutout ? "Predicted Gaia position" : "Gaia catalog position"} for {markedSourceId}
+            {inspectingCutout ? "Predicted Gaia position" :
+              catalogMark?.predicted ? "Approximate Gaia position on the SPHEREx mosaic" : "Gaia catalog position"} for {markedSourceId}
             {markedPosition && <>{" at RA "}{markedPosition.ra.toFixed(6)}°, Dec {markedPosition.dec.toFixed(6)}°</>}.{" "}
             <button type="button" onClick={() => {
               if (inspectingCutout) setComparisonMark(null);

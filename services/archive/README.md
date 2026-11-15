@@ -6,10 +6,11 @@ Gaia service, auth, discussion system, or hosted deployment.
 
 ## Run from the repository root
 
-Python 3.11 or later is required. The checked environment used Python 3.13 on macOS
-arm64. `requirements.in` lists direct dependencies; `requirements.lock` records the
-complete tested environment. The coordinator can integrate these into root dependency
-management without changing this module's public interfaces.
+Python 3.12 or later is required by the dependency lockfile. The checked environment
+used Python 3.13 on macOS arm64. `requirements.in` lists direct dependencies and
+`requirements.lock` records the complete tested environment. The coordinator can
+integrate these into root dependency management without changing this module's
+public interfaces.
 
 ```sh
 python3 -m venv services/archive/.venv

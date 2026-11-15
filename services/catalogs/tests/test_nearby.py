@@ -29,6 +29,7 @@ def _get(client, ra, dec, radius=120.0):
 def test_known_single_match(client):
     resp = _get(client, *KNOWN)
     assert resp.status_code == 200, resp.text
+    assert resp.headers["X-SPHEREx-Catalog-Mode"] == "fixture"
     sources = resp.json()["sources"]
     assert len(sources) == 1
     assert set(sources[0].keys()) == FIELDS

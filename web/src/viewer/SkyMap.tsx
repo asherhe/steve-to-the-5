@@ -31,9 +31,9 @@ export function SkyMap({
   initialCenter: SkyPosition;
   focus: Field | null;
   onCompare: (field: Field) => void;
-  onInspect: (position: SkyPosition) => void;
+  onInspect: (position: SkyPosition, onSpherexMosaic: boolean) => void;
   onAdvancedSearch: () => void;
-  catalogMark: SkyPosition | null;
+  catalogMark: (SkyPosition & { predicted: boolean }) | null;
   notice: string;
   dated?: DatedLayer | null;
   onInspectDated?: (position: SkyPosition) => void;
@@ -212,15 +212,15 @@ export function SkyMap({
       if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) {
         const point=dated && cutoutWcs(dated.comparison.grid)?.toImage({ra,dec});
         if(point && point.x>=-0.5 && point.y>=-0.5 && point.x<dated!.comparison.grid.width-0.5 && point.y<dated!.comparison.grid.height-0.5 && dated!.assets[dated!.frame.id]?.state==="ready")onInspectDated?.({ra,dec});
-        else onInspect({ra,dec});
+        else onInspect({ra,dec}, imagery === "spherex");
       }
     });
     return () => sky.on("click", () => {});
-  }, [onInspect, onInspectDated, dated, viewStatus]);
+  }, [onInspect, onInspectDated, dated, imagery, viewStatus]);
 
   useEffect(() => {
-    markPosition.current?.(catalogMark);
-  }, [catalogMark, viewStatus]);
+    markPosition.current?.(catalogMark?.predicted === (imagery === "spherex") ? catalogMark : null);
+  }, [catalogMark, imagery, viewStatus]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -342,7 +342,7 @@ export function SkyMap({
           </button>
           <button type="button" disabled={!mapUsable} onClick={() => {
             const center = view.current?.getRaDec();
-            if (center) onInspect({ ra: normalizeRa(center[0]), dec: center[1] });
+            if (center) onInspect({ ra: normalizeRa(center[0]), dec: center[1] }, imagery === "spherex");
             setMenuOpen(false);
           }}>
             Inspect map center

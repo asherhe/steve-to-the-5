@@ -32,7 +32,9 @@ try {
    return hash?route.fulfill({contentType:'image/png',body:await readFile(new URL(`synthetic/evidence/blobs/${hash}`,fixtures))}):route.fulfill({status:404});
   }
   if(u.pathname==='/api/resolve')return route.fulfill({json:{name:'Contract field',...ready.comparison.field}});
-  if(u.pathname==='/api/catalogs/nearby')return route.fulfill({json:{sources:[catalogSource]}});
+  if(u.pathname==='/api/catalogs/nearby')return route.fulfill({
+   headers:{'X-SPHEREx-Catalog-Mode':'live'},json:{sources:[catalogSource]},
+  });
   if(u.pathname===`/api/catalogs/gaia/${source.sourceId}`)return route.fulfill({json:{
    ...catalogSource,provenance:{dataRelease:'Gaia DR3',sourceDetailUrl:'https://example.invalid/gaia'},
   }});
