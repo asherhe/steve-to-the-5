@@ -1,4 +1,4 @@
-"""Server-calculated points for a marked sky point (point-check-v3). No saved comparison needed.
+"""Server-calculated points for a marked sky point (point-check-v4).
 
 - 10 points: a known object. Any of the six catalogs lists a source in the cone.
 - 20 points: no returned catalog matches, at most two of the other catalogs unavailable, and the
@@ -6,6 +6,10 @@
   (brightness.BRIGHT_SNR) in at least MIN_BRIGHT_SURVEYS of SPHEREx, WISE, DSS and NEOSSat,
   measured here on cutouts this service fetches itself (cutouts.py).
 - 0 points otherwise; the point can still be posted for discussion.
+
+The API requires a real saved WISE blink. Known and unlisted sources can add 10
+for a usable SPHEREx aperture signal, 5 each for tentative water/methane/hydrogen
+patterns, and 5 for possible WISE variability. Bonuses require retained evidence.
 
 Gaia DR3 is not required for 20 points: a Gaia check that could not complete neither blocks
 them nor counts toward the two unavailable catalogs. A Gaia source in the cone still makes the
@@ -27,15 +31,15 @@ import math
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from . import brightness
+from . import brightness, spectral, wise_variability
 from .cutouts import SURVEY_LABELS
-from .models import CatalogIdentity, PointReviewInput, PointReviewResponse, SourceMeasurement
+from .models import CatalogIdentity, PointReviewInput, PointReviewResponse, SourceMeasurement, ScorePart, SpectralReview
 from .review import CATALOG_NAMES, REAL_EVIDENCE, evidence_position, valid_frames
 from .supabase import ApiError
 
 # Catalogs whose check may fail without blocking points. A match in them still counts.
 OPTIONAL_CATALOGS = frozenset({"Gaia DR3"})
-SCORE_VERSION = "point-check-v3"
+SCORE_VERSION = "point-check-v4"
 MIN_BRIGHT_SURVEYS = 2
 DUPLICATE_RADIUS_ARCSEC = 15.0
 
@@ -123,7 +127,7 @@ async def measure_sources(results, ra: float, dec: float) -> list[SourceMeasurem
     return measurements
 
 
-async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_loader, frame_loader=None):
+async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_loader, frame_loader=None, spectral_store=None, wise_comparison=None, asset_loader=None):
     """Returns (response, candidate_key, object_key). Duplicate detection is left to the caller."""
     observed = None
     if data.frame is not None:
@@ -165,6 +169,10 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
     if len(unavailable) > 2:
         unchecked += unavailable
     identity, measurements = None, []
+    sources = []
+    if listed or not unchecked:
+        sources = await cutout_loader(data.ra, data.dec) or []
+        measurements = await measure_sources(sources, data.ra, data.dec)
     if listed:
         classification, score = "known", 10
         identity = known_identity(checks, data.ra, data.dec)
@@ -175,7 +183,6 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
         reasons = [f"+0: no catalog lists a source so far, but {', '.join(unchecked)} could not be checked. Check again for points."]
     else:
         classification = "uncatalogued"
-        measurements = await measure_sources(await cutout_loader(data.ra, data.dec), data.ra, data.dec)
         bright = [s for s in SURVEY_LABELS if any(m.bright for m in measurements if m.survey == s)]
         names_bright = " and ".join(SURVEY_LABELS[s] for s in bright) or "none"
         if len(bright) >= MIN_BRIGHT_SURVEYS:
@@ -194,6 +201,34 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
 
     if optional_unchecked and not listed:
         reasons.append(f"{', '.join(optional_unchecked)} could not be checked. It is not required for points.")
+    breakdown = [ScorePart(key="base", points=score, reason=reasons[0])]
+    if classification == "incomplete":
+        spectrum = SpectralReview(status="not_eligible", message="Complete the applicable catalog checks before spectral scoring.")
+    else:
+        source = next((s for s in sources if s.survey == "spherex"), None)
+        spectrum = await asyncio.to_thread(spectral.analyze, source, data.ra, data.dec)
+        if spectrum.samples:
+            if spectral_store is None:
+                raise ApiError(503, "evidence_unavailable", "Durable spectral evidence storage is not configured.")
+            try:
+                spectrum = await asyncio.to_thread(spectral_store.save, spectrum, source.frames, data.ra, data.dec)
+            except OSError as error:
+                raise ApiError(503, "evidence_unavailable", "Spectral evidence could not be saved. Retry before claiming points.") from error
+    detected = spectrum.sourceDetected
+    breakdown.append(ScorePart(key="spherex", points=10 if detected else 0,
+        reason="+10: SPHEREx aperture signal passes the 5σ screen; spectral bonuses are eligible." if detected else "+0: no usable SPHEREx aperture signal above 5σ; spectral bonuses are not yet eligible."))
+    for feature in spectrum.features:
+        breakdown.append(ScorePart(key=feature.key, points=feature.points,
+            reason=f"+5: possible {feature.label} absorption pattern; both required regions pass. Follow-up is needed." if feature.points else
+            f"+0: {feature.label} pattern {'lacks suitable wavelength coverage' if feature.status == 'insufficient' else 'does not pass the screen'}."))
+    wise_result = await wise_variability.analyze(wise_comparison, data, asset_loader) if wise_comparison else None
+    if wise_result:
+        wise_result.points = 5 if detected and wise_result.status == "candidate" else 0
+        breakdown.append(ScorePart(key="wise_variability", points=wise_result.points,
+            reason="+5: possible variable brightness across the saved WISE blink." if wise_result.points else
+            f"+0: WISE variability — {wise_result.message}" + (" SPHEREx eligibility is also required." if not detected else "")))
+    score = sum(part.points for part in breakdown)
+    reasons.extend(part.reason for part in breakdown[1:])
     if unavailable:
         reasons.append(f"Unavailable: {', '.join(unavailable)}. Up to two unavailable catalogs are allowed only when no returned rows list a source; these missing checks do not establish novelty.")
 
@@ -203,6 +238,7 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
         reviewedAtUtc=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         scoreVersion=SCORE_VERSION, score=score, classification=classification, reasons=reasons,
         identity=identity, catalogReview=report, brightness=measurements,
+        scoreBreakdown=breakdown, spectral=spectrum, wiseVariability=wise_result,
         limitations=[
             "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
             "Uncatalogued candidate means no returned catalog matches, with at most two unavailable catalogs; missing checks, depth, epoch and coverage limit this classification.",

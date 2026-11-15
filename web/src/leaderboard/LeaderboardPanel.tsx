@@ -52,7 +52,7 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence, ref
         <p className="leaderboard-notice">Development fixture data. These entries are invented and do not appear on the public board.</p>
       )}
       <p className="leaderboard-caption">
-        Ranked by points: 10 for a known object, 20 for a point no catalog lists that is bright in any two of SPHEREx, WISE, DSS and NEOSSat, otherwise 0. Points are not a discovery. Today uses UTC. Each entry opens its sky position and public discussion; saved images are shown when attached.
+        Base points: 10 for a catalog-listed source, otherwise 20 if bright in two surveys, or 0. New reviews require a WISE blink. Bonuses: +10 for a SPHEREx signal, +5 per tentative water, methane or hydrogen pattern, and +5 for possible WISE variability. Older entries keep their saved scores. Points are not confirmed composition or a discovery. Today uses UTC.
       </p>
 
       {state.kind === "loading" && <p role="status">Loading leaderboard…</p>}

@@ -1,10 +1,10 @@
 """Fetch image cutouts at one sky point from four surveys, for the brightness rule.
 
-Each survey answers independently with up to MAX_FRAMES FITS images that cover the point,
+Each survey answers independently with up to MAX_FRAMES FITS images (48 for SPHEREx),
 an explicit "no_coverage", or "unavailable" when its archive fails. Nothing here decides
 brightness; `brightness.measure` does, on the returned bytes.
 
-- SPHEREx: IRSA SIA (`spherex_dr1`), then IBE cutouts of the newest L2 images
+- SPHEREx: IRSA SIA (DR1/QR3), then a bounded detector-balanced sample of L2 images
   (IMAGE/VARIANCE/FLAGS, MJy/sr), as the archive service requests them.
 - WISE: IRSA IBE AllWISE Atlas W2 (4.6 um) coadd covering the point, cutout in DN.
 - DSS: STScI DSS cutout service, POSS-II/UKST red plates, with a TAN WCS.
@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import gzip
+import hashlib
 import io
 import re
 from dataclasses import dataclass, field
@@ -25,7 +26,10 @@ from urllib.parse import urlencode
 import httpx
 
 MAX_FRAMES = 2
+MAX_SPECTRAL_FRAMES = 48
+MAX_SPECTRAL_BYTES = 64_000_000
 CUTOUT_ARCSEC = 120
+SPHEREX_CUTOUT_ARCSEC = 180  # full 49.6-arcsec background ring plus native-pixel rounding margin
 MAX_BYTES = 12_000_000
 SOURCE_DEADLINE_S = 45
 SURVEY_LABELS = {"spherex": "SPHEREx", "wise": "WISE", "dss": "DSS", "neossat": "NEOSSat"}
@@ -43,6 +47,9 @@ class Frame:
     source_url: str
     fits: bytes
     observed_at_utc: str | None = None
+    observed_until_utc: str | None = None
+    observation_id: str | None = None
+    release: str | None = None
 
 
 @dataclass
@@ -51,6 +58,7 @@ class SourceResult:
     status: str  # "ok", "no_coverage" or "unavailable"
     frames: list[Frame] = field(default_factory=list)
     message: str | None = None
+    discovery: dict = field(default_factory=dict)
 
 
 class SourceUnavailable(Exception):
@@ -71,7 +79,8 @@ async def get_bytes(client: httpx.AsyncClient, url: str, params=None, *, fits: b
                 if len(content) > MAX_BYTES:
                     raise SourceUnavailable("Response exceeded the size limit.")
     except httpx.HTTPError as error:
-        raise SourceUnavailable(f"{type(error).__name__} from {httpx.URL(url).host}") from error
+        status = f" {error.response.status_code}" if isinstance(error, httpx.HTTPStatusError) else ""
+        raise SourceUnavailable(f"{type(error).__name__}{status} from {httpx.URL(url).host}") from error
     if fits and content[:2] == b"\x1f\x8b":
         try:
             with gzip.GzipFile(fileobj=io.BytesIO(content)) as compressed:
@@ -87,33 +96,78 @@ async def get_bytes(client: httpx.AsyncClient, url: str, params=None, *, fits: b
 
 async def spherex(client, ra, dec) -> SourceResult:
     from astropy.io.votable import parse
-    content = await get_bytes(client, f"{IRSA}/SIA", {
-        "COLLECTION": "spherex_dr1", "POS": f"CIRCLE {ra} {dec} 0.0005", "MAXREC": 200})
-    document = parse(io.BytesIO(content))
-    statuses = {str(info.value).upper() for resource in document.resources for info in resource.infos if info.name == "QUERY_STATUS"}
-    if "ERROR" in statuses:
-        raise SourceUnavailable("SPHEREx discovery was rejected by the archive.")
-    limited = "OVERFLOW" in statuses
-    tables = list(document.iter_tables())
-    if not tables:
-        raise SourceUnavailable("SPHEREx returned no discovery table.")
-    table = tables[0].to_table(use_names_over_ids=True)
-    rows = sorted(table, key=lambda row: float(row["t_min"]), reverse=True)[:MAX_FRAMES]
+    from astropy.table import vstack
+    async def discover(release):
+        params = {"COLLECTION": f"spherex_{release}", "POS": f"CIRCLE {ra} {dec} 0.0005", "MAXREC": 2000}
+        content = await get_bytes(client, f"{IRSA}/SIA", params)
+        document = parse(io.BytesIO(content))
+        statuses = {str(info.value).upper() for resource in document.resources for info in resource.infos if info.name == "QUERY_STATUS"}
+        if "ERROR" in statuses:
+            raise SourceUnavailable("SPHEREx discovery was rejected by the archive.")
+        tables = list(document.iter_tables())
+        if not tables:
+            raise SourceUnavailable("SPHEREx returned no discovery table.")
+        return tables[0].to_table(use_names_over_ids=True), "OVERFLOW" in statuses, {"params": params, "responseSha256": hashlib.sha256(content).hexdigest()}
+    discoveries = await asyncio.gather(*(discover(release) for release in ("dr1", "qr3")), return_exceptions=True)
+    available = [d for d in discoveries if not isinstance(d, Exception)]
+    if not available:
+        details = "; ".join(f"{release}: {type(error).__name__}" + (f" ({error})" if isinstance(error, SourceUnavailable) else "")
+                            for release, error in zip(("dr1", "qr3"), discoveries))
+        raise SourceUnavailable(f"SPHEREx discovery unavailable. {details}")
+    limited = any(d[1] for d in available) or len(available) < 2
+    table = vstack([d[0] for d in available])
+    record = {"queries": [d[2] for d in available], "incomplete": limited, "maxFrames": MAX_SPECTRAL_FRAMES,
+              "maxTotalBytes": MAX_SPECTRAL_BYTES, "cutoutArcsec": SPHEREX_CUTOUT_ARCSEC,
+              "selection": "newest within each detector; round-robin detectors; unique source URLs"}
+    # Round-robin across detectors, newest first within each. Do not mistake the
+    # detector-wide em_min/em_max for the wavelength at the requested position.
+    groups = {}
+    seen = set()
+    for row in sorted(table, key=lambda row: (-float(row["t_min"]), str(row["access_url"]))):
+        url = str(row["access_url"])
+        if url in seen:
+            continue
+        seen.add(url)
+        groups.setdefault(str(row["energy_bandpassname"]), []).append(row)
+    rows = []
+    while any(groups.values()) and len(rows) < MAX_SPECTRAL_FRAMES:
+        for name in sorted(groups):
+            if groups[name] and len(rows) < MAX_SPECTRAL_FRAMES:
+                rows.append(groups[name].pop(0))
     if not rows:
         if limited:
             raise SourceUnavailable("SPHEREx returned an empty, incomplete discovery result.")
         return SourceResult("spherex", "no_coverage")
     frames = []
-    for row in rows:
+    failures = []
+    remaining = MAX_SPECTRAL_BYTES
+    slots = asyncio.Semaphore(4)
+    async def fetch(row):
+        nonlocal remaining
         url = str(row["access_url"])
         if not url.startswith(f"{IRSA}/ibe/data/spherex/"):
             raise SourceUnavailable("Unexpected SPHEREx image URL.")
-        query = urlencode({"center": f"{ra},{dec}", "size": f"{CUTOUT_ARCSEC / 3600}"})
-        frames.append(Frame(f"SPHEREx {row['energy_bandpassname']}", url,
-                            await get_bytes(client, f"{url}?{query}", fits=True), mjd_to_utc(row["t_min"])))
-    return SourceResult("spherex", "ok", frames, message=(
-        f"Discovery was capped at {len(table)} records; only {len(frames)} images from that sample were checked. This is not an exhaustive image search."
-        if limited else None))
+        query = urlencode({"center": f"{ra},{dec}", "size": f"{SPHEREX_CUTOUT_ARCSEC / 3600}"})
+        async with slots:
+            if remaining <= 0:
+                raise SourceUnavailable("SPHEREx total cutout byte budget reached.")
+            content = await get_bytes(client, f"{url}?{query}", fits=True)
+            remaining -= len(content)
+            if remaining < 0:
+                raise SourceUnavailable("SPHEREx total cutout byte budget reached.")
+            return Frame(f"SPHEREx {row['energy_bandpassname']}", url, content, mjd_to_utc(row["t_min"]),
+                         mjd_to_utc(row["t_max"]) if "t_max" in table.colnames else None,
+                         str(row["obs_id"]) if "obs_id" in table.colnames else None,
+                         "dr1" if "/dr1/" in url else "qr3")
+    for value in await asyncio.gather(*(fetch(row) for row in rows), return_exceptions=True):
+        if isinstance(value, Exception):
+            failures.append(type(value).__name__)
+        else:
+            frames.append(value)
+    return SourceResult("spherex", "ok" if frames else "unavailable", frames, message=(
+        f"Measured {len(frames)} of {len(rows)} selected images from {len(table)} discovery rows"
+        f"{' (discovery incomplete/capped)' if limited else ''}; {len(failures)} downloads failed. This is not an exhaustive image search."),
+        discovery={**record, "selectedUrls": [str(r["access_url"]) for r in rows], "downloadFailures": len(failures)})
 
 
 async def wise(client, ra, dec) -> SourceResult:
@@ -171,7 +225,7 @@ FETCHERS = {"spherex": spherex, "wise": wise, "dss": dss, "neossat": neossat}
 async def fetch_all(client: httpx.AsyncClient, ra: float, dec: float) -> list[SourceResult]:
     async def one(survey, fetcher):
         try:
-            return await asyncio.wait_for(fetcher(client, ra, dec), SOURCE_DEADLINE_S)
+            return await asyncio.wait_for(fetcher(client, ra, dec), 120 if survey == "spherex" else SOURCE_DEADLINE_S)
         except (SourceUnavailable, TimeoutError) as error:
             return SourceResult(survey, "unavailable", message=str(error) or "No response in time.")
         except Exception as error:  # malformed metadata never counts as coverage

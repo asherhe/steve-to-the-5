@@ -1,0 +1,93 @@
+{
+  "checkedAtUtc": "2026-11-15T17:54:38.505121+00:00",
+  "kind": "live_archive_probe",
+  "maxFramesPerTarget": 12,
+  "limitations": "Bounded source-format/coverage check; not a complete spectrum, chemical validation, hosted auth or deployed test.",
+  "targets": [
+    {
+      "target": "Barnard's Star",
+      "ra": 269.44630202,
+      "dec": 4.76777074,
+      "archiveStatus": "ok",
+      "message": "Measured 7 of 12 selected images from 119 discovery rows (discovery incomplete/capped); 5 downloads failed. This is not an exhaustive image search.",
+      "spectralStatus": "insufficient",
+      "sampleCount": 7,
+      "usableCount": 0,
+      "rejections": [
+        "Flags or missing pixels in aperture/background"
+      ],
+      "wavelengthsUm": [],
+      "features": [
+        {
+          "key": "water",
+          "status": "insufficient"
+        },
+        {
+          "key": "methane",
+          "status": "insufficient"
+        },
+        {
+          "key": "hydrogen",
+          "status": "insufficient"
+        }
+      ],
+      "evidenceId": "ea606f74df3e7bf24c05bde91851d08a48ed8ee776287b10510bd973ac016b5c"
+    },
+    {
+      "target": "Epsilon Indi B",
+      "ra": 331.0656,
+      "dec": -56.7901,
+      "archiveStatus": "ok",
+      "message": "Measured 6 of 12 selected images from 341 discovery rows (discovery incomplete/capped); 6 downloads failed. This is not an exhaustive image search.",
+      "spectralStatus": "insufficient",
+      "sampleCount": 6,
+      "usableCount": 5,
+      "rejections": [
+        "Flags or missing pixels in aperture/background"
+      ],
+      "wavelengthsUm": [
+        1.0641165105118937,
+        3.6332881747011325,
+        4.3170264570851,
+        2.876553911180338,
+        4.4256983272061845
+      ],
+      "features": [
+        {
+          "key": "water",
+          "status": "insufficient"
+        },
+        {
+          "key": "methane",
+          "status": "insufficient"
+        },
+        {
+          "key": "hydrogen",
+          "status": "insufficient"
+        }
+      ],
+      "evidenceId": "7921bd43a862e54c049a1c9d0a32ac0d1629b6bea2a486edca31eb70639e428c"
+    },
+    {
+      "target": "WISE 0855-0714",
+      "ra": 133.79512916666667,
+      "dec": -7.245147222222222,
+      "archiveStatus": "unavailable",
+      "error": "SourceUnavailable: SPHEREx discovery unavailable. dr1: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu); qr3: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu)"
+    },
+    {
+      "target": "RW Aurigae",
+      "ra": 76.95625,
+      "dec": 30.40138888888889,
+      "archiveStatus": "unavailable",
+      "error": "SourceUnavailable: SPHEREx discovery unavailable. dr1: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu); qr3: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu)"
+    },
+    {
+      "target": "R Draconis",
+      "ra": 248.1676075,
+      "dec": 66.75498416666667,
+      "archiveStatus": "unavailable",
+      "error": "SourceUnavailable: SPHEREx discovery unavailable. dr1: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu); qr3: SourceUnavailable (HTTPStatusError 502 from irsa.ipac.caltech.edu)"
+    }
+  ]
+}

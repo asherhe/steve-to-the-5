@@ -173,6 +173,7 @@ class PointReviewInput(Coordinates):
     model_config = ConfigDict(extra="forbid")
     radiusArcsec: float = Field(default=30, ge=5, le=300, allow_inf_nan=False)
     frame: FrameRef | None = None
+    wiseComparisonId: EvidenceId | None = None
 
 
 class SourceMeasurement(BaseModel):
@@ -200,6 +201,65 @@ class ExistingEntry(BaseModel):
     sameObject: bool = False
 
 
+class ScorePart(BaseModel):
+    key: Literal["base", "spherex", "water", "methane", "hydrogen", "wise_variability"]
+    points: int = Field(ge=0, le=20)
+    reason: str
+
+
+class SpectralSample(BaseModel):
+    sourceSha256: str
+    sourceUrl: str
+    assetUrl: str | None = None
+    observationId: str | None = None
+    observedAtUtc: str | None = None
+    observedUntilUtc: str | None = None
+    release: str | None = None
+    processingVersion: str | None = None
+    detector: int | None = None
+    status: Literal["measured", "rejected"]
+    reason: str | None = None
+    wavelengthUm: float | None = None
+    bandwidthUm: float | None = None
+    brightnessMjySr: float | None = None
+    uncertaintyMjySr: float | None = None
+    snr: float | None = None
+
+
+class SpectralBandTest(BaseModel):
+    name: str
+    status: Literal["supported", "not_supported", "insufficient"]
+    message: str
+    sampleHashes: list[str]
+    startUm: float
+    endUm: float
+    depthFraction: float | None = None
+    significance: float | None = None
+
+
+class SpectralFeature(BaseModel):
+    key: Literal["water", "methane", "hydrogen"]
+    label: str
+    status: Literal["supported", "not_supported", "insufficient"]
+    points: int = Field(ge=0, le=5)
+    sourceUrl: str
+    bands: list[SpectralBandTest]
+
+
+class SpectralReview(BaseModel):
+    status: Literal["not_eligible", "unavailable", "no_coverage", "insufficient", "measured"]
+    message: str
+    evidenceId: str | None = None
+    manifestUrl: str | None = None
+    method: str = "fixed-aperture-v1"
+    config: dict = Field(default_factory=dict)
+    sourceDetected: bool = False
+    independentChannels: int = 0
+    samples: list[SpectralSample] = Field(default_factory=list)
+    features: list[SpectralFeature] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
 class PointReviewResponse(PointReviewInput):
     id: UUID
     observedAtUtc: str | None = None
@@ -213,3 +273,27 @@ class PointReviewResponse(PointReviewInput):
     brightness: list[SourceMeasurement] = Field(default_factory=list)
     duplicate: ExistingEntry | None = None
     limitations: list[str]
+    scoreBreakdown: list[ScorePart] = Field(default_factory=list)
+    spectral: SpectralReview | None = None
+    wiseVariability: "WiseVariability | None" = None
+
+
+class WiseEpoch(BaseModel):
+    frameId: str
+    observedStartUtc: str
+    observedEndUtc: str
+    relativeFlux: float
+    uncertainty: float
+    exposures: list[dict]
+
+
+class WiseVariability(BaseModel):
+    comparisonId: str
+    status: Literal["candidate", "stable", "insufficient", "unavailable"]
+    message: str
+    points: int = Field(default=0, ge=0, le=5)
+    fractionalChange: float | None = None
+    significance: float | None = None
+    epochs: list[WiseEpoch] = Field(default_factory=list)
+    config: dict = Field(default_factory=dict)
+    limitations: list[str] = Field(default_factory=list)

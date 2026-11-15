@@ -191,6 +191,13 @@ reprocessing is available through `scripts/reproduce_wise_example.py`.
 
 ## Point-check-v3 completion (2026-11-15)
 
+Superseded for new reviews by the user-authorized spectral/WISE extension on
+`feat/spherex-spectral-points`: see `docs/spectral-points.md`. The additive request
+field is `wiseComparisonId` (required at the v4 endpoint); response adds typed
+`scoreBreakdown`, `spectral` and `wiseVariability`. Original v3 reports remain
+readable and ranked. Shared OpenAPI, generated types and synthetic spectral
+fixtures are updated together. No hosted migration or deployment was performed.
+
 The current viewer uses `PointSubmissionPane`, not the historical comparison-based review
 screen. `POST /api/findings/points/review` accepts `{ra, dec, radiusArcsec=30, frame?}`;
 `frame` is optional `{survey, comparisonId, frameId}` used only for a validated original

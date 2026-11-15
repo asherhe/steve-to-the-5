@@ -5,6 +5,115 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/findings/spectral/{evidence_id}": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Spectral Manifest",
+        "operationId": "spectral_manifest_api_findings_spectral__evidence_id__get",
+        "parameters": [
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Evidence Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/findings/spectral/{evidence_id}/assets/{sha}.fits": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Spectral Asset",
+        "operationId": "spectral_asset_api_findings_spectral__evidence_id__assets__sha__fits_get",
+        "parameters": [
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "sha",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sha"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/api/findings/auth/config": {
       "get": {
         "tags": [
@@ -1283,6 +1392,19 @@
                 "type": "null"
               }
             ]
+          },
+          "wiseComparisonId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wisecomparisonid"
           }
         },
         "additionalProperties": false,
@@ -1323,6 +1445,19 @@
                 "type": "null"
               }
             ]
+          },
+          "wiseComparisonId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wisecomparisonid"
           },
           "id": {
             "type": "string",
@@ -1406,6 +1541,33 @@
             },
             "type": "array",
             "title": "Limitations"
+          },
+          "scoreBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/ScorePart"
+            },
+            "type": "array",
+            "title": "Scorebreakdown"
+          },
+          "spectral": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpectralReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wiseVariability": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WiseVariability"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -1680,6 +1842,39 @@
         ],
         "title": "ReviewResponse"
       },
+      "ScorePart": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "base",
+              "spherex",
+              "water",
+              "methane",
+              "hydrogen",
+              "wise_variability"
+            ],
+            "title": "Key"
+          },
+          "points": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Points"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "points",
+          "reason"
+        ],
+        "title": "ScorePart"
+      },
       "SourceMeasurement": {
         "properties": {
           "survey": {
@@ -1771,6 +1966,385 @@
         ],
         "title": "SourceMeasurement"
       },
+      "SpectralBandTest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "not_supported",
+              "insufficient"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "sampleHashes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Samplehashes"
+          },
+          "startUm": {
+            "type": "number",
+            "title": "Startum"
+          },
+          "endUm": {
+            "type": "number",
+            "title": "Endum"
+          },
+          "depthFraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depthfraction"
+          },
+          "significance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Significance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "status",
+          "message",
+          "sampleHashes",
+          "startUm",
+          "endUm"
+        ],
+        "title": "SpectralBandTest"
+      },
+      "SpectralFeature": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "water",
+              "methane",
+              "hydrogen"
+            ],
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "not_supported",
+              "insufficient"
+            ],
+            "title": "Status"
+          },
+          "points": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Points"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl"
+          },
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/SpectralBandTest"
+            },
+            "type": "array",
+            "title": "Bands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "status",
+          "points",
+          "sourceUrl",
+          "bands"
+        ],
+        "title": "SpectralFeature"
+      },
+      "SpectralReview": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_eligible",
+              "unavailable",
+              "no_coverage",
+              "insufficient",
+              "measured"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "evidenceId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidenceid"
+          },
+          "manifestUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifesturl"
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "default": "fixed-aperture-v1"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "sourceDetected": {
+            "type": "boolean",
+            "title": "Sourcedetected",
+            "default": false
+          },
+          "independentChannels": {
+            "type": "integer",
+            "title": "Independentchannels",
+            "default": 0
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/SpectralSample"
+            },
+            "type": "array",
+            "title": "Samples"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/SpectralFeature"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "SpectralReview"
+      },
+      "SpectralSample": {
+        "properties": {
+          "sourceSha256": {
+            "type": "string",
+            "title": "Sourcesha256"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "title": "Sourceurl"
+          },
+          "assetUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asseturl"
+          },
+          "observationId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observationid"
+          },
+          "observedAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedatutc"
+          },
+          "observedUntilUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observeduntilutc"
+          },
+          "release": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release"
+          },
+          "processingVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processingversion"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "measured",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "wavelengthUm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wavelengthum"
+          },
+          "bandwidthUm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bandwidthum"
+          },
+          "brightnessMjySr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brightnessmjysr"
+          },
+          "uncertaintyMjySr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertaintymjysr"
+          },
+          "snr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceSha256",
+          "sourceUrl",
+          "status"
+        ],
+        "title": "SpectralSample"
+      },
       "Viewport": {
         "properties": {
           "items": {
@@ -1793,6 +2367,125 @@
           "items"
         ],
         "title": "Viewport"
+      },
+      "WiseEpoch": {
+        "properties": {
+          "frameId": {
+            "type": "string",
+            "title": "Frameid"
+          },
+          "observedStartUtc": {
+            "type": "string",
+            "title": "Observedstartutc"
+          },
+          "observedEndUtc": {
+            "type": "string",
+            "title": "Observedendutc"
+          },
+          "relativeFlux": {
+            "type": "number",
+            "title": "Relativeflux"
+          },
+          "uncertainty": {
+            "type": "number",
+            "title": "Uncertainty"
+          },
+          "exposures": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Exposures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frameId",
+          "observedStartUtc",
+          "observedEndUtc",
+          "relativeFlux",
+          "uncertainty",
+          "exposures"
+        ],
+        "title": "WiseEpoch"
+      },
+      "WiseVariability": {
+        "properties": {
+          "comparisonId": {
+            "type": "string",
+            "title": "Comparisonid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "stable",
+              "insufficient",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "points": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Points",
+            "default": 0
+          },
+          "fractionalChange": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fractionalchange"
+          },
+          "significance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Significance"
+          },
+          "epochs": {
+            "items": {
+              "$ref": "#/components/schemas/WiseEpoch"
+            },
+            "type": "array",
+            "title": "Epochs"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "comparisonId",
+          "status",
+          "message"
+        ],
+        "title": "WiseVariability"
       }
     },
     "securitySchemes": {

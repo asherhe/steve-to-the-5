@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from . import cutouts
 from .api import create_local_demo_router, create_router
 from .supabase import ApiError, Supabase
+from .spectral_store import SpectralStore
 
 
 def saved_comparison(body):
@@ -102,13 +103,15 @@ def create_app() -> FastAPI:
         # Same client; cutout requests set their own timeouts and follow archive redirects.
         return await cutouts.fetch_all(client, ra, dec)
 
+    spectral_store = SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))
     app = FastAPI(lifespan=lifespan)
     if demo:
         app.include_router(create_local_demo_router(load_saved_comparison, load_wise_comparison=load_wise_comparison,
-            load_catalog_review=load_catalog_review, load_cutouts=load_cutouts))
+            load_catalog_review=load_catalog_review, load_cutouts=load_cutouts, load_asset=load_asset,
+            spectral_store=spectral_store))
         return app
     app.include_router(create_router(supabase, load_saved_comparison,
         load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
-        load_cutouts=load_cutouts))
+        load_cutouts=load_cutouts, spectral_store=spectral_store))
 
     return app

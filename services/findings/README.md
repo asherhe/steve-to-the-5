@@ -149,6 +149,12 @@ This complements browser contract tests and is not hosted Auth/PostgREST verific
 
 ## Point scoring — point-check-v3 (2026-11-15)
 
+New point reviews now use v4: a saved real WISE blink is required; known objects
+can earn SPHEREx, tentative absorption-pattern and WISE variability bonuses.
+See [spectral points](../../docs/spectral-points.md) for the current contract,
+thresholds, required durable evidence directory and additive migration. The v3
+details below describe historical reports, which remain readable and ranked.
+
 `POST /api/findings/points/review` takes `{ra, dec, radiusArcsec=30, frame?}`. `frame`, when
 present, is `{survey, comparisonId, frameId}` and supplies the saved observation time for
 SkyBoT and supported stellar proper-motion checks after the server verifies the real frame and point. No loaded frames are required for
@@ -169,8 +175,7 @@ does not establish identity, novelty, motion or scientific significance.
 Gaia DR3 is optional for the 20-point rule. A Gaia check that could not complete (ESA down,
 or the AIP mirror rate-limiting) neither blocks the points nor counts toward the two
 tolerated outages; the review says Gaia could not be checked. A Gaia source in the cone still
-classifies the point as a known object (10). The rule keeps the `point-check-v3` label: the
-database accepts only that version, and changing it needs a migration.
+classifies the point as a known object (10). This rule is part of `point-check-v4`.
 
 `cutouts.py` fetches bounded FITS directly: SPHEREx DR1 SIA/IBE, AllWISE W2 IBE, STScI DSS2 red,
 and calibrated NEOSSat COR/CORD through CADC. Capped SPHEREx metadata can supply a bounded image sample, labeled as incomplete in each
@@ -227,3 +232,21 @@ Missing motion components, UltracoolSheet and VizieR AllWISE retain published co
 this is a bounded review aid, not a complete epoch-correct cross-identification.
 Historical saved reports remain unchanged; the updated tolerance is recorded in new report
 reasons under the existing point-check-v3 participation score contract.
+
+## Local demo scoring (no Supabase)
+
+`FINDINGS_LOCAL_DEMO=1` starts this service without Supabase and exposes a single route,
+`POST /api/findings/demo/points/review`. It runs the same point review as the live
+`/points/review`: the six-catalog check, survey cutouts and brightness, SPHEREx spectra and the
+required WISE blink. So the local demo can award every score, including 20 points and the
+bonuses. It needs no sign-in, writes nothing to a database and does no leaderboard duplicate
+check; the browser keeps the demo's posts. Spectral evidence is still saved under
+`SPHEREX_POINT_EVIDENCE_DIR`, as the scoring rules require. `SPHEREX_COMPARISON_BASE_URL`
+defaults to `http://127.0.0.1:8000` in this mode.
+
+`npm run dev` starts this service in demo mode whenever `SUPABASE_URL` is not set, and
+`npm run dev:findings` does the same. If it is not running, the browser demo falls back to a
+catalog-only simulation and says why.
+
+The demo route is unauthenticated and fetches survey images on request. It is for local
+development only: never set `FINDINGS_LOCAL_DEMO` on a deployed server.
