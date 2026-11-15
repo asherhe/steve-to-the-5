@@ -14,7 +14,7 @@ declare module "aladin-lite" {
     setOverlayImageLayer(image: AladinImage | AladinImageSurvey, id: string): void;
     getOverlayImageLayer(id: string): AladinImage | AladinImageSurvey | undefined;
     getStackLayers(): string[];
-    view: { swapLayers(first: string, second: string): void };
+    view: { swapLayers(first: string, second: string): void; requestRedraw(): void };
     removeImageLayer(id: string): void;
     /** Aladin's built-in right-click menu; set to null to disable it. */
     contextMenu: unknown;
@@ -26,10 +26,19 @@ declare module "aladin-lite" {
     setBaseImageLayer(layer: AladinImageSurvey): void;
     on(event: "click", callback: (position: { ra: number; dec: number; isDragging: boolean }) => void): void;
     on(event: "positionChanged", callback: (position: { ra: number; dec: number; dragging: boolean }) => void): void;
+    /** Fires, throttled, with the new field of view in degrees. */
     on(event: "zoomChanged", callback: (fovDegrees: number) => void): void;
     on(event: "resizeChanged", callback: (width: number, height: number) => void): void;
     on(event: "projectionChanged", callback: (projection: string) => void): void;
     addCatalog(catalog: AladinCatalog): void;
+    addOverlay(overlay: AladinOverlay): void;
+    /** Replaces the base image layer; the view's centre, zoom and projection are kept. */
+    setBaseImageLayer(survey: AladinImageSurvey): void;
+  }
+
+  interface AladinOverlay {
+    removeAll(): void;
+    add(shape: unknown): void;
   }
 
   interface AladinCatalog {
@@ -52,6 +61,8 @@ declare module "aladin-lite" {
     }): AladinImageSurvey;
     catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" | "cross"; displayLabel?: boolean; labelColumn?: string; labelColor?: string; labelFont?: string }): AladinCatalog;
     source(ra: number, dec: number, data?: Record<string, string>): unknown;
+    graphicOverlay(options: { name: string; color: string; lineWidth: number }): AladinOverlay;
+    polygon(corners: [number, number][]): unknown;
     aladin(
       element: HTMLElement,
       options: {

@@ -70,7 +70,7 @@ def create_app(pipeline=None):
         root = Path(os.environ.get("SPHEREX_STORAGE_DIR", Path(__file__).parent / ".local-data"))
         config = ProcessingConfig()
         examples = Path(__file__).resolve().parents[2] / "fixtures" / "archive" / "real" / "evidence"
-        pipeline = Pipeline(IRSAClient(config, root / "cache"), LocalStore(root / "evidence", examples), config)
+        pipeline = Pipeline(IRSAClient(config, root / "cache", search_attempts=6, cutout_attempts=5), LocalStore(root / "evidence", examples), config)
     app.include_router(create_router(pipeline))
     install_error_handlers(app)
     return app

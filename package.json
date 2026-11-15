@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex \"npm:dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\"",
+    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"npm:dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",
     "dev:spherex": "node scripts/dev-backend.mjs spherex",
+    "dev:wise": "node scripts/dev-backend.mjs wise",
     "dev:findings": "node scripts/dev-backend.mjs findings",
     "preview": "vite preview web/src/viewer --strictPort",
     "check": "tsc --project web/src/viewer/tsconfig.json",

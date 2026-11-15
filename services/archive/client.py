@@ -37,7 +37,12 @@ class IRSAClient:
     endpoint = "https://irsa.ipac.caltech.edu/SIA"
     releases = ("dr1", "qr3")
 
-    def __init__(self, config, cache_dir, transport=None, sleep=time.sleep, jitter=random.random):
+    def __init__(self, config, cache_dir, transport=None, sleep=time.sleep, jitter=random.random,
+                 search_attempts=None, cutout_attempts=None):
+        """`search_attempts` and `cutout_attempts` raise the retry count for those requests
+        above `config.attempts` without changing the resolved config saved in manifests.
+        IRSA answers a share of requests with an instant 502 or 503, so retrying is cheap."""
+        self.search_attempts, self.cutout_attempts = search_attempts, cutout_attempts
         self.config = config
         self.cache_dir = cache_dir
         self.transport = transport
@@ -48,8 +53,9 @@ class IRSAClient:
         return ArchiveError(code, message, details={
             "category": category, "attempts": attempts, "httpStatus": status})
 
-    def _get(self, url, params=None, deadline=None):
+    def _get(self, url, params=None, deadline=None, attempts=None):
         """Return (content, attempts). Failures carry category and attempt count."""
+        limit = max(attempts or 0, self.config.attempts)
         attempt = 0
         while True:
             if deadline is not None and deadline.expired():
@@ -85,7 +91,7 @@ class IRSAClient:
                 category = "timeout"
             except httpx.TransportError:
                 category = "transport"
-            if attempt >= self.config.attempts:
+            if attempt >= limit:
                 raise self._failure("UPSTREAM_ERROR", "IRSA request failed after bounded retries",
                                     category, attempt, status)
             # Exponential backoff with jitter in [0.5, 1.0) of the step, never
@@ -102,7 +108,7 @@ class IRSAClient:
             "COLLECTION": f"spherex_{release}",
             "POS": f"CIRCLE {field.ra} {field.dec} {radius_deg}",
             "MAXREC": self.config.max_candidates + 1,
-        }, deadline)
+        }, deadline, attempts=self.search_attempts)
         observations = []
         try:
             document = parse(BytesIO(content))
@@ -134,14 +140,20 @@ class IRSAClient:
         return observations
 
     def discover(self, field, deadline=None):
-        """Query every release. One release failing does not discard the other."""
-        observations, failures, errors = [], [], []
-        for release in self.releases:
+        """Query every release at once. One release failing does not discard the other."""
+        def one(release):
             try:
-                observations += self._discover_release(release, field, deadline)
+                return self._discover_release(release, field, deadline), None
             except ArchiveError as exc:
+                return [], exc
+        with ThreadPoolExecutor(max_workers=len(self.releases)) as pool:
+            results = list(pool.map(one, self.releases))
+        observations, failures, errors = [], [], []
+        for release, (found, exc) in zip(self.releases, results):
+            observations += found
+            if exc is not None:
                 if exc.code == "PROCESSING_LIMIT":
-                    raise
+                    raise exc
                 errors.append(exc)
                 failures.append({"release": release, **failure_record(exc)})
         if len(errors) == len(self.releases):
@@ -170,7 +182,7 @@ class IRSAClient:
         path = self.cache_dir / f"{key}.fits"
         if path.exists():
             return path.read_bytes(), 0
-        data, attempts = self._get(url, deadline=deadline)
+        data, attempts = self._get(url, deadline=deadline, attempts=self.cutout_attempts)
         # Never cache an HTML error page as a successful FITS response.
         if not data.startswith(b"SIMPLE"):
             raise self._failure("UPSTREAM_DATA", "IRSA did not return an uncompressed FITS cutout",

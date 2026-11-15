@@ -4,6 +4,7 @@ import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 import { bandColors } from "./SpectralRuler";
 import { bandForWavelength } from "./spherexSurvey";
 import { InfoTip } from "./InfoTip";
+import { wiseBandName, type SkyView } from "./wiseSurvey";
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -13,10 +14,12 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, playback, selectedPosition, frameMark, savedMarks = [], onInspect,
+  comparison, playback, survey = "spherex", selectedPosition, frameMark, savedMarks = [], onInspect,
 }: {
   comparison: Comparison;
   playback: Playback;
+  /** Survey the frames come from; it changes labels only. */
+  survey?: SkyView;
   selectedPosition: SkyPosition | null;
   frameMark: SkyPosition | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
@@ -43,7 +46,9 @@ export function ComparisonPlayback({
     );
   }
 
-  const band = bandForWavelength(frame.wavelengthUm);
+  const wise = survey === "wise";
+  const band = wise ? null : bandForWavelength(frame.wavelengthUm);
+  const combined = frame.qualityFlags.combinedExposures;
 
   return (
     <section aria-label="Comparison playback" className="playback">
@@ -57,7 +62,7 @@ export function ComparisonPlayback({
           ) : (
             <>
               <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={width}
-                height={height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
+                height={height} alt={`${wise ? "WISE" : "SPHEREx"} frame ${index + 1} of ${frames.length}`}
                 onError={playback.fail} />
               {canInspect && (
                 <button type="button" className="cutout-inspect" aria-label="Inspect image. Press Enter to inspect its center."
@@ -89,17 +94,27 @@ export function ComparisonPlayback({
           <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
           <span className="frame-meta">
             {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}
-            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm{" "}
-            <InfoTip term="Wavelength (µm)">
-              The color of infrared light being shown, in micrometres (µm, millionths of a metre).
-              SPHEREx sees infrared, which is beyond what human eyes detect. Different wavelengths
-              make different objects stand out.
-            </InfoTip>
+            {band ? `Band ${band} · ` : ""}
+            {wise ? (
+              `${wiseBandName(frame.wavelengthUm)} broad band · ${frame.wavelengthUm.toFixed(2)} µm`
+            ) : (
+              <>
+                {frame.wavelengthUm.toFixed(4)} µm{" "}
+                <InfoTip term="Wavelength (µm)">
+                  The color of infrared light being shown, in micrometres (µm, millionths of a metre).
+                  SPHEREx sees infrared, which is beyond what human eyes detect. Different wavelengths
+                  make different objects stand out.
+                </InfoTip>
+              </>
+            )}
             {" · "}{frame.release.toUpperCase()}
-            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>{wise ? "First source exposure" : "Source observation"}</a></>}
           </span>
           {frame.observationStartUtc && frame.observationEndUtc && (
-            <span className="frame-meta">Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</span>
+            <span className="frame-meta">
+              {wise ? `Median of ${combined ?? "several"} exposures taken (UTC)` : "Exposure interval (UTC)"}
+              {" "}{frame.observationStartUtc} to {frame.observationEndUtc}
+            </span>
           )}
         </figcaption>
       </figure>

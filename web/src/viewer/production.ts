@@ -1,4 +1,5 @@
 import { createArchiveDataSource } from "./archive.ts";
+export { createWiseDataSource } from "./archive.ts";
 import { CatalogApiError, createCatalogClient } from "../inspector/api.ts";
 import { localTarget, nameIssue, partialNameIssue, validIdentity } from "./targetNames.ts";
 import type { ViewerDataSource } from "./comparison";

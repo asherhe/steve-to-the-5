@@ -1,24 +1,29 @@
 import { DatedSkyOverlay, type DatedLayer } from "./DatedSkyOverlay";
 import { cutoutWcs } from "./cutoutWcs";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import type { AladinView } from "aladin-lite";
 import type { MarkAction, ResolveResult } from "../inspector/types";
 import type { Field, SkyPosition } from "./comparison";
 import { formatAngularSize, formatDec, formatRa, normalizeRa } from "./coordinates";
 import {
-  dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, loadSpherexOverview, spherexBandChannel,
-  spherexMosaicDoi, spherexSliceFrequencyHz, spherexSliceWavelength,
+  dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, isSpherexTileUrl, loadSpherexOverview, spherexBandChannel,
+  spherexMosaicDoi, spherexSliceFrequencyHz, spherexSliceWavelength, spherexTileBase,
   type SpherexCube,
 } from "./spherexSurvey";
+import { watchTiles, type TileWatch } from "./tileWatch";
+import { findWiseSurvey, wiseMap, type SkyView } from "./wiseSurvey";
+import type { FieldLimits } from "./FieldSearch";
+import { compareReachDeg, fieldWidthFromView } from "./compareField";
 
 type AladinModule = typeof import("aladin-lite").default;
-type Imagery = "spherex" | "dss";
+/** Map imagery. WISE is a false-colour reference layer, like DSS. */
+type Imagery = "spherex" | "dss" | "wise";
 type LayerStatus = "loading" | "ready" | "unavailable";
 
 const globeFovDeg = 180;
 const referenceLayerId = "reference-sky";
 const spherexDetailLayerId = "spherex-detail";
-const imageryLabels: Record<Imagery, string> = { spherex: "SPHEREx", dss: "DSS" };
+const imageryLabels: Record<Imagery, string> = { spherex: "SPHEREx", dss: "DSS", wise: "WISE" };
 
 function placeReferenceLayer(sky: AladinView, layerId: string) {
   const stack = sky.getStackLayers();
@@ -53,7 +58,12 @@ export function SkyMap({
   catalogMark,
   target,
   notice,
-  dated, onInspectDated, slice, onStateChange, dock,
+  dated, onInspectDated, slice,
+  survey = "spherex",
+  compareLimits,
+  tiles,
+  pinnedField = null,
+  onStateChange, dock,
 }: {
   initialCenter: SkyPosition;
   focus: Field | null;
@@ -67,6 +77,14 @@ export function SkyMap({
   onInspectDated?: (position: SkyPosition) => void;
   /** Cube slice shown as the SPHEREx reference layer. */
   slice: number;
+  /** Survey the comparison view is on. "wise" starts the map on WISE imagery. */
+  survey?: SkyView;
+  /** Field widths the current comparison service accepts, in arcmin. */
+  compareLimits: FieldLimits;
+  /** Set to a watcher of the map's tile requests, which a wavelength scan uses to load ahead. */
+  tiles?: MutableRefObject<TileWatch | null>;
+  /** Field being fetched. It is drawn at its sky position and stays there as the map moves. */
+  pinnedField?: Field | null;
   /** Reports the SPHEREx layer: `ready` only while it is the visible imagery and its wavelength can change. */
   onStateChange?: (state: LayerStatus) => void;
   /** Rendered below the map tools, across the bottom of the map. */
@@ -80,6 +98,7 @@ export function SkyMap({
   const layerToken = useRef(0);
   const markPosition = useRef<((position: MarkAction | null) => void) | null>(null);
   const targetPosition = useRef<((target: ResolveResult | null) => void) | null>(null);
+  const outline = useRef<((field: Field | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
   const menu = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -87,7 +106,7 @@ export function SkyMap({
   const [viewStatus, setViewStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [attempt, setAttempt] = useState(0);
   const [cube, setCube] = useState<SpherexCube | "unavailable" | null>(null);
-  const [imagery, setImagery] = useState<Imagery>("spherex");
+  const [imagery, setImagery] = useState<Imagery>(survey === "wise" ? "wise" : "spherex");
   const sliceRef = useRef(slice);
   sliceRef.current = slice;
   const [layerStatus, setLayerStatus] = useState<LayerStatus>("loading");
@@ -95,6 +114,8 @@ export function SkyMap({
   const [allSky, setAllSky] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [readout, setReadout] = useState<{ ra: number; dec: number; width: number; height: number } | null>(null);
+  // Width of the map view in degrees, kept current so the compare control can react to zoom.
+  const [viewWidthDeg, setViewWidthDeg] = useState<number | null>(null);
 
   function syncReadout() {
     const sky = view.current;
@@ -102,6 +123,7 @@ export function SkyMap({
     const [ra, dec] = sky.getRaDec();
     const [width, height] = sky.getFoV();
     if ([ra, dec, width, height].every(Number.isFinite)) setReadout({ ra: normalizeRa(ra), dec, width, height });
+    if (Number.isFinite(width)) setViewWidthDeg(width);
   }
 
   // Create the Aladin view once; image layers are applied separately so switching keeps the position.
@@ -142,6 +164,20 @@ export function SkyMap({
         sky.gotoRaDec(initialCenter.ra, initialCenter.dec);
         const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle", displayLabel: true, labelColumn: "label", labelColor: "#7edaff", labelFont: "12px sans-serif" });
         sky.addCatalog(catalog);
+        const box = Aladin.graphicOverlay({ name: "Requested field", color: "#ffb547", lineWidth: 2 });
+        sky.addOverlay(box);
+        outline.current = (field) => {
+          box.removeAll();
+          // Aladin redraws overlays only on its own schedule; without this a cleared outline lingers.
+          sky.view.requestRedraw();
+          if (!field) return;
+          // A square on the tangent plane, as the comparison grid is.
+          const half = field.fovArcmin / 120;
+          const dra = half / Math.max(Math.cos(field.dec * Math.PI / 180), 1e-6);
+          const at = (sx: number, sy: number): [number, number] =>
+            [(field.ra + sx * dra + 360) % 360, Math.max(-90, Math.min(90, field.dec + sy * half))];
+          box.add(Aladin.polygon([at(-1, -1), at(1, -1), at(1, 1), at(-1, 1)]));
+        };
         markPosition.current = (position) => {
           catalog.clear();
           if (position) catalog.addSources([Aladin.source(position.ra, position.dec, { label: `${position.displayName ?? `Gaia DR3 ${position.sourceId}`} (${position.predicted ? "predicted" : `catalog epoch ${position.astrometry.refEpoch}`})` })]);
@@ -176,9 +212,33 @@ export function SkyMap({
       ++layerToken.current;
       markPosition.current = null;
       targetPosition.current = null;
+      outline.current = null;
       setViewStatus("loading");
     };
   }, [initialCenter]);
+
+  // The pinned field stays outlined on the sky wherever the map is moved.
+  useEffect(() => {
+    outline.current?.(pinnedField);
+  }, [pinnedField, viewStatus]);
+
+  // Follow the comparison view's survey: WISE view shows WISE imagery, SPHEREx view shows
+  // SPHEREx. A manual imagery choice (e.g. DSS) within a view still stands until the view changes.
+  useEffect(() => {
+    setImagery(survey === "wise" ? "wise" : "spherex");
+  }, [survey]);
+
+  // Aladin gives no "tiles loaded" signal, but it fetches them; watching those requests lets a
+  // wavelength scan load ahead and move on only when the next wavelength can draw at once.
+  useEffect(() => {
+    if (!tiles) return;
+    const watch = watchTiles(isSpherexTileUrl, spherexTileBase);
+    tiles.current = watch;
+    return () => {
+      watch.stop();
+      tiles.current = null;
+    };
+  }, [tiles]);
 
   // Check that the SPHEREx cube is reachable and read its wavelength list.
   useEffect(() => {
@@ -190,7 +250,7 @@ export function SkyMap({
     return () => controller.abort();
   }, [attempt]);
 
-  // Apply the selected imagery as the base layer.
+  // Apply the selected imagery as the base/reference layer.
   useEffect(() => {
     const sky = view.current;
     const Aladin = aladin.current;
@@ -223,6 +283,33 @@ export function SkyMap({
       }), referenceLayerId);
       tryMirror(0);
       return;
+    }
+    if (imagery === "wise") {
+      spherexDetail.current = null;
+      spherexOverview.current = null;
+      sky.removeImageLayer(spherexDetailLayerId);
+      const controller = new AbortController();
+      // Load the first mirror that serves the survey's metadata, then fall through the rest on error.
+      const tryMirror = (i: number) => sky.setOverlayImageLayer(Aladin.HiPS(wiseMap.urls[i], {
+        name: wiseMap.name,
+        successCallback: () => {
+          if (!current() || controller.signal.aborted) return;
+          placeReferenceLayer(sky, referenceLayerId);
+          setLayerStatus("ready");
+          setMapShown(true);
+        },
+        errorCallback: (error) => {
+          if (controller.signal.aborted) return;
+          if (current() && i + 1 < wiseMap.urls.length) tryMirror(i + 1);
+          else failed(error);
+        },
+      }), referenceLayerId);
+      void findWiseSurvey(controller.signal).then((url) => {
+        if (controller.signal.aborted || !current()) return;
+        const start = url ? (wiseMap.urls as readonly string[]).indexOf(url) : 0;
+        tryMirror(start < 0 ? 0 : start);
+      });
+      return () => controller.abort();
     }
     if (cube === null) return;
     if (cube === "unavailable") {
@@ -372,11 +459,23 @@ export function SkyMap({
     layerStatus === "unavailable" ? `${imageryLabels[imagery]} imagery unavailable. Try again, switch imagery, or search using coordinates.` :
     layerStatus === "loading" || viewStatus === "loading" ? `Loading ${imageryLabels[imagery]} imagery…` : "";
 
+  // The field a compare would use from this zoom, or null when the view is too wide.
+  const compareWidth = mapUsable && viewWidthDeg !== null ? fieldWidthFromView(viewWidthDeg, compareLimits) : null;
+  // From a wide view only the central part is compared; a box on the map marks it.
+  const boxPercent = compareWidth !== null && viewWidthDeg !== null && compareWidth < viewWidthDeg * 60 - 1e-9
+    ? 100 * (compareWidth / 60) / viewWidthDeg : null;
+  const widthLabel = compareWidth === null ? "" : `${Number(compareWidth.toFixed(1))} arcmin`;
+
   return (
     <section className="sky-section" aria-label="Reference sky map">
       <div className="sky-map">
         <div ref={container} className="aladin-host" data-hidden={!datedReady && (!mapShown || unavailable) || undefined} />
         {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
+        {boxPercent !== null && (
+          <div className="compare-field" style={{ width: `${boxPercent}%` }} aria-hidden="true">
+            <span>{widthLabel} field</span>
+          </div>
+        )}
         {statusText && !datedReady && <p className="map-status" role="status">{statusText}</p>}
       </div>
       <div className="sky-dock">
@@ -395,7 +494,7 @@ export function SkyMap({
         </p>
         <div className="imagery-row">
           <div className="segmented" role="group" aria-label="Map imagery">
-            {(["spherex", "dss"] as const).map((option) => (
+            {(["spherex", "dss", "wise"] as const).map((option) => (
               <button key={option} type="button" aria-pressed={imagery === option} disabled={viewStatus !== "ready"}
                 onClick={() => setImagery(option)}>{imageryLabels[option]}</button>
             ))}
@@ -404,9 +503,15 @@ export function SkyMap({
         <div className="controls">
           <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={!mapUsable}>+</button>
           <button type="button" aria-label="Zoom out" onClick={() => zoom(2)} disabled={!mapUsable}>−</button>
-          <button type="button" onClick={compareViewport} disabled={!mapUsable}>
+          <button type="button" className="compare-button" onClick={compareViewport} disabled={!mapUsable}
+            data-ready={compareWidth !== null || undefined} aria-describedby="compare-hint">
             Compare this field
           </button>
+          <span id="compare-hint" className="visually-hidden">
+            {compareWidth !== null
+              ? `Ready: compares ${boxPercent !== null ? "the central " : ""}${widthLabel} at the map centre.`
+              : `Zoom in until the map is under ${compareReachDeg}° wide to compare.`}
+          </span>
           {unavailable && <button type="button" onClick={() => setAttempt((value) => value + 1)}>Retry imagery</button>}
           <button ref={menuButton} type="button" className="menu-button" aria-label="More map options"
             aria-expanded={menuOpen} aria-controls="map-menu" onClick={() => setMenuOpen(!menuOpen)}>
@@ -438,10 +543,12 @@ export function SkyMap({
             {wavelength !== null && <> · {wavelength.toFixed(3)} µm</>} · band {band}, channel {channel}
             {" "}· combined observations, not dated · NASA/SPHEREx · Caltech/IPAC IRSA
           </small>
-        ) : (
+        ) : imagery === "dss" ? (
           <small>
             <a href={dssAcknowledgement}>DSS2 colour</a> · optical reference survey, not SPHEREx · STScI · HiPS by CDS
           </small>
+        ) : (
+          <small><a href={wiseMap.link}>{wiseMap.name}</a> · reference map, false colour · NASA/JPL-Caltech/UCLA · CDS HiPS</small>
         ))}
       </div>
       {dock}

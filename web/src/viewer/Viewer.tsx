@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentType,
@@ -15,7 +16,6 @@ import type {
 } from "./comparison";
 import {
   angularSeparationArcsec,
-  CatalogApiError,
   predictAtObservation,
   type CatalogAstrometry,
   type SourceInspectorProps,
@@ -30,9 +30,10 @@ import {
 } from "../leaderboard";
 import { barnardGaiaSourceId, targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
+import { compareReachDeg, fieldWidthFromView } from "./compareField";
 import { SkyMap } from "./SkyMap";
 import { SearchBox } from "./SearchBox";
-import { archiveFieldLimits, ArchiveRequestError } from "./archive";
+import { archiveFieldLimits, wiseFieldLimits, type WiseBand } from "./archive";
 import { FloatingPane } from "./FloatingPane";
 import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
@@ -45,12 +46,15 @@ import {
   spherexMosaicSlice,
 } from "./spherexSurvey";
 import {
-  EvidenceReplayError,
   evidenceLink,
-  validateFinding,
   type SavedFinding,
   type EvidenceDiscussionProps,
 } from "./evidence";
+import { useComparisonLoader, type Request } from "./useComparisonLoader";
+import { WiseDock } from "./WiseDock";
+import type { TileWatch } from "./tileWatch";
+import { BuildProgressBar } from "./BuildProgress";
+import { wiseBandName, type SkyView } from "./wiseSurvey";
 import { InfoTip } from "./InfoTip";
 import { Tutorial, useTutorial } from "./Tutorial";
 import "./styles.css";
@@ -71,6 +75,31 @@ const badges: Record<ComparisonResult["status"], string> = {
   no_comparable_pair: "No matched pair",
   upstream_unavailable: "Archive offline",
 };
+
+/** Wording that differs between the two survey views. */
+const surveys = {
+  spherex: {
+    name: "SPHEREx", limits: archiveFieldLimits, panel: "Comparison", panelHeading: "Comparison",
+    ready: "Matched pair", noCoverage: "No SPHEREx coverage",
+    observations: "SPHEREx archive observations",
+  },
+  wise: {
+    name: "WISE", limits: wiseFieldLimits, panel: "Time-lapse", panelHeading: "WISE time-lapse",
+    ready: "Time-lapse", noCoverage: "No WISE coverage",
+    observations: "WISE/NEOWISE single exposures from IRSA, combined per visit",
+  },
+} as const;
+
+function viewFromUrl(): SkyView {
+  return new URLSearchParams(location.search).get("view") === "wise" ? "wise" : "spherex";
+}
+
+function requestFromUrl(): Request | null {
+  const params = new URLSearchParams(location.search);
+  const id = params.get("comparison") ?? "";
+  const findingId = params.get("finding") ?? undefined;
+  return id || findingId ? { kind: "saved", id, findingId } : null;
+}
 
 /** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
 function useHeightVariable(
@@ -99,7 +128,6 @@ function formatAngle(value: number, signed = false) {
 
 const initialCenter = targetPresets[0];
 const initialField = { ...initialCenter, fovArcmin: 6 };
-const fieldLimits = archiveFieldLimits;
 export interface ViewerControlsProps {
   onSearch: (field: Field) => void;
   onLoadSaved: (id: string, findingId?: string) => void;
@@ -114,29 +142,24 @@ export interface ViewerProps {
     signal?: AbortSignal,
   ) => Promise<SavedFinding | null>;
   Controls?: ComponentType<ViewerControlsProps>;
+  /**
+   * Dated WISE/NEOWISE frames for one band. The SPHEREx/WISE switch is hidden without it.
+   * Pass a stable function; its results use their own saved-comparison IDs.
+   */
+  wiseDataSource?: (band: WiseBand) => Pick<ViewerDataSource, "search" | "loadSaved">;
   /** Optional engagement layer; the leaderboard button is hidden without it. */
   leaderboard?: LeaderboardDataSource;
   savedExampleId: string;
   synthetic?: boolean;
 }
 
-type Request =
-  | { kind: "field"; field: Field }
-  | { kind: "name"; name: string; fovArcmin: number }
-  | { kind: "saved"; id: string; findingId?: string };
-
 type Panel = "search" | "comparison" | "gaia";
-
-type Preview =
-  | { kind: "idle" | "loading" | "missing" | "name_not_found" }
-  | { kind: "error" | "catalog_error"; message: string }
-  | { kind: "search"; result: ComparisonResult; field: Field }
-  | { kind: "saved"; comparison: Comparison; finding?: SavedFinding };
 
 const narrowScreen = "(max-width: 42rem)";
 
 export function Viewer({
   dataSource,
+  wiseDataSource,
   Inspector,
   Discussion,
   loadFinding,
@@ -145,13 +168,29 @@ export function Viewer({
   savedExampleId,
   synthetic = false,
 }: ViewerProps) {
-  const [request, setRequest] = useState<Request | null>(() => {
-    const id = new URLSearchParams(location.search).get("comparison");
-    const findingId =
-      new URLSearchParams(location.search).get("finding") ?? undefined;
-    return id || findingId ? { kind: "saved", id: id ?? "", findingId } : null;
-  });
+  // A link's `view` parameter says which survey its comparison ID belongs to.
+  const [skyView, setSkyView] = useState<SkyView>(() => wiseDataSource ? viewFromUrl() : "spherex");
+  const [wiseBand, setWiseBand] = useState<WiseBand>(2);
+  const wiseSource = useMemo(() => wiseDataSource?.(wiseBand) ?? null, [wiseDataSource, wiseBand]);
   const [focus, setFocus] = useState<Field | null>(null);
+  // Each view keeps its own request and result, so switching back shows what was there.
+  const loaders = {
+    spherex: useComparisonLoader({
+      source: dataSource, resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      initial: skyView === "spherex" ? requestFromUrl() : null,
+    }),
+    wise: useComparisonLoader({
+      source: wiseSource, resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      initial: skyView === "wise" ? requestFromUrl() : null,
+    }),
+  };
+  const { request, setRequest, preview } = loaders[skyView];
+  const other = loaders[skyView === "wise" ? "spherex" : "wise"].preview;
+  const survey = surveys[skyView];
+  // While a build runs, its field stays outlined on the sky wherever the map is moved.
+  const pinnedField = preview.kind === "loading" && request?.kind === "field" ? request.field : null;
+  const fieldLimits = survey.limits;
+
   const [panels, setPanels] = useState<Record<Panel, boolean>>({
     search: false,
     comparison: new URLSearchParams(location.search).has("finding"),
@@ -188,7 +227,6 @@ export function Viewer({
     source: CatalogAstrometry;
     displayName?: string;
   } | null>(null);
-  const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [resolvedTarget, setResolvedTarget] = useState<{ request: Request; result: ResolveResult } | null>(null);
   const target = resolvedTarget?.request === request ? resolvedTarget.result : null;
   const targetLabel = target?.identity?.commonName || target?.identity?.displayName || target?.name;
@@ -198,21 +236,59 @@ export function Viewer({
     "loading",
   );
   const workspace = useRef<HTMLElement>(null);
+  // The map's tile watcher, which the wavelength scan uses to load wavelengths ahead.
+  const tiles = useRef<TileWatch | null>(null);
   useHeightVariable(workspace, ".instrument-bar", "--header-height");
   useHeightVariable(workspace, ".sky-dock", "--dock-height");
   const tutorial = useTutorial();
+
   useEffect(() => {
     function restore() {
-      const params = new URLSearchParams(location.search);
-      const id = params.get("comparison") ?? "";
-      const findingId = params.get("finding") ?? undefined;
-      setRequest(id || findingId ? { kind: "saved", id, findingId } : null);
-      setTimeOpen(!!(id || findingId));
-      setPanels((old) => ({ ...old, comparison: !!findingId }));
+      const view = wiseDataSource ? viewFromUrl() : "spherex";
+      const saved = requestFromUrl();
+      setSkyView(view);
+      loaders[view].setRequest(saved);
+      setTimeOpen(!!saved);
+      setPanels((old) => ({ ...old, comparison: new URLSearchParams(location.search).has("finding") }));
     }
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
-  }, []);
+    // The loaders' setters are stable state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wiseDataSource]);
+
+  useEffect(() => {
+    setCopyStatus("");
+  }, [request, skyView]);
+
+  // Resolve a requested name to its catalog identity so the target panel can describe it.
+  // The loaders only report the field; this keeps the full resolve result for the panels.
+  useEffect(() => {
+    if (!request || request.kind !== "name") {
+      setResolvedTarget(null);
+      return;
+    }
+    const current = request;
+    const controller = new AbortController();
+    void dataSource.resolveName(current.name, controller.signal).then((result) => {
+      if (!controller.signal.aborted && result) setResolvedTarget({ request: current, result });
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [dataSource, request]);
+
+  /** Swaps the survey. The map keeps its centre and zoom; each view keeps its own result. */
+  function switchView(next: SkyView) {
+    if (next === skyView) return;
+    setSkyView(next);
+    setMapNotice("");
+    // A comparison ID in the address belongs to the view it was opened in.
+    const url = new URL(location.href);
+    if (next === "wise") url.searchParams.set("view", "wise");
+    else url.searchParams.delete("view");
+    url.searchParams.delete("comparison");
+    url.searchParams.delete("finding");
+    history.replaceState(history.state, "", url);
+  }
 
   function closePanel(current: Panel) {
     setPanels((old) => ({ ...old, [current]: false }));
@@ -265,112 +341,6 @@ export function Viewer({
     panelButtons.current.gaia?.focus();
   }
 
-  useEffect(() => {
-    if (!request) {
-      setPreview({ kind: "idle" });
-      return;
-    }
-    const current = request;
-    const controller = new AbortController();
-    const signal = controller.signal;
-
-    async function load() {
-      setPreview({ kind: "loading" });
-      setResolvedTarget(null);
-      setCopyStatus("");
-      let resolving = false;
-      try {
-        const source = dataSource;
-        if (current.kind === "saved") {
-          let finding: SavedFinding | undefined;
-          if (current.findingId) {
-            if (!loadFinding)
-              throw new EvidenceReplayError(
-                "Finding replay is not connected yet. Open the comparison without the finding parameter.",
-              );
-            finding =
-              (await loadFinding(current.findingId, signal)) ?? undefined;
-            if (signal.aborted) return;
-            if (!finding)
-              throw new EvidenceReplayError(
-                "Saved finding not found. Check the finding ID.",
-              );
-          }
-          const comparison = await source.loadSaved(
-            current.id || finding?.comparisonId || "",
-            signal,
-          );
-          if (comparison && finding) validateFinding(finding, comparison);
-          if (!signal.aborted) {
-            setPreview(
-              comparison
-                ? { kind: "saved", comparison, finding }
-                : { kind: "missing" },
-            );
-            if (comparison) setFocus(comparison.field);
-          }
-          return;
-        }
-
-        let field: Field;
-        if (current.kind === "name") {
-          resolving = true;
-          const position = await source.resolveName(current.name, signal);
-          if (!position) {
-            if (!signal.aborted) setPreview({ kind: "name_not_found" });
-            return;
-          }
-          resolving = false;
-          if (signal.aborted) return;
-          setResolvedTarget({ request: current, result: position });
-          field = {
-            ra: position.ra,
-            dec: position.dec,
-            fovArcmin: current.fovArcmin,
-          };
-          setFocus(field);
-        } else {
-          field = current.field;
-        }
-
-        const result = await source.search(field, signal);
-        if (!signal.aborted) {
-          setPreview({ kind: "search", result, field });
-          if (result.comparison && synthetic) setFocus(result.comparison.field);
-        }
-      } catch (error) {
-        if (signal.aborted) return;
-        if (!resolving) {
-          setPreview({
-            kind: "error",
-            message:
-              error instanceof ArchiveRequestError ||
-              error instanceof EvidenceReplayError
-                ? error.message
-                : "The archive service could not be reached.",
-          });
-        } else {
-          const missing =
-            error instanceof CatalogApiError && error.code === "not_found";
-          setPreview(
-            missing
-              ? { kind: "name_not_found" }
-              : {
-                  kind: "catalog_error",
-                  message:
-                    error instanceof CatalogApiError
-                      ? error.message
-                      : "Name lookup is unavailable. Try a preset or enter sky coordinates.",
-                },
-          );
-        }
-      }
-    }
-
-    void load();
-    return () => controller.abort();
-  }, [dataSource, loadFinding, request, synthetic]);
-
   function search(field: Field) {
     setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
@@ -386,16 +356,17 @@ export function Viewer({
     setTimeOpen(true);
   }
 
-  function compareViewport(field: Field) {
-    if (!inFieldRange(field.fovArcmin, fieldLimits)) {
-      setMapNotice(
-        `Zoom to a field width of ${fieldLimits.min}–${fieldLimits.max} arcmin before comparing.`,
-      );
+  /** Compares the field at the map centre. `view.fovArcmin` is the width of the map view. */
+  function compareViewport(view: Field) {
+    const fovArcmin = fieldWidthFromView(view.fovArcmin / 60, fieldLimits);
+    if (fovArcmin === null) {
+      setMapNotice(`Zoom in until the map is under ${compareReachDeg}° wide, then compare. The button turns amber when it is ready.`);
       return;
     }
     setMapNotice("");
-    setRequest({ kind: "field", field });
+    setRequest({ kind: "field", field: { ra: view.ra, dec: view.dec, fovArcmin } });
     setTimeOpen(true);
+    openPanel("comparison");
   }
 
   const comparison =
@@ -462,7 +433,9 @@ export function Viewer({
 
   const status =
     preview.kind === "search"
-      ? scenarios[preview.result.status]
+      ? (skyView === "wise" && preview.result.status === "ready"
+          ? `Time-lapse of ${preview.result.comparison.frames.length} dated visits`
+          : scenarios[preview.result.status])
       : preview.kind === "saved"
         ? "Saved comparison"
         : preview.kind === "missing"
@@ -470,11 +443,13 @@ export function Viewer({
           : preview.kind === "name_not_found"
             ? "Object name not found. Try a preset or enter sky coordinates."
             : preview.kind === "catalog_error"
-              ? preview.message
+              ? "Name lookup is unavailable. Try a preset or enter sky coordinates."
               : preview.kind === "error"
                 ? preview.message
                 : preview.kind === "idle"
-                  ? "Choose a field to compare."
+                  ? (skyView === "wise" && !wiseSource
+                      ? "The WISE time-lapse service is not connected."
+                      : "Choose a field to compare.")
                   : "Loading comparison…";
   const diagnostics =
     preview.kind === "search"
@@ -492,7 +467,10 @@ export function Viewer({
   }
 
   function comparisonLink(id: string, findingId?: string) {
-    return evidenceLink(location.href, id, findingId);
+    const url = new URL(evidenceLink(location.href, id, findingId));
+    if (skyView === "wise") url.searchParams.set("view", "wise");
+    else url.searchParams.delete("view");
+    return url.href;
   }
 
   function showEvidence(finding: SavedFinding) {
@@ -522,13 +500,15 @@ export function Viewer({
       : kind === "saved_real_example"
         ? "saved real"
         : "live archive";
+  const badgeFor = (state: ComparisonResult["status"]) =>
+    state === "ready" ? survey.ready : state === "no_coverage" ? survey.noCoverage : badges[state];
   const badge =
     preview.kind === "search"
       ? comparison
-        ? `${badges[preview.result.status]} · ${source}`
-        : badges[preview.result.status]
+        ? `${badgeFor(preview.result.status)} · ${source}`
+        : badgeFor(preview.result.status)
       : preview.kind === "saved"
-        ? `${preview.comparison.frames.length > 1 ? "Matched pair" : "Single epoch"} · ${source}`
+        ? `${preview.comparison.frames.length > 1 ? survey.ready : "Single epoch"} · ${source}`
         : preview.kind === "loading"
           ? "Loading"
           : preview.kind === "idle"
@@ -543,9 +523,11 @@ export function Viewer({
       : "problem";
   const readoutField =
     comparison?.field ?? (preview.kind === "search" ? preview.field : focus);
-  const bands = comparison
+  const bands = comparison && skyView === "spherex"
     ? [...new Set(comparison.wavelengthRangeUm.map(bandForWavelength))]
     : [];
+  // The field the other view last compared, offered here so one target can be seen both ways.
+  const otherField = other.kind === "search" ? other.field : other.kind === "saved" ? other.comparison.field : null;
   const frameShown = comparison ? playback.frame : null;
 
   return (
@@ -560,6 +542,10 @@ export function Viewer({
         target={target}
         notice={mapNotice}
         slice={mapSlice}
+        survey={skyView}
+        tiles={tiles}
+        compareLimits={fieldLimits}
+        pinnedField={pinnedField}
         onStateChange={setMapState}
         dated={
           comparison && playback.frame
@@ -583,17 +569,22 @@ export function Viewer({
             inspectCutout(comparison.id, position, playback.frame);
         }}
         dock={
-          <SpectralRuler
-            mapSlice={mapSlice}
-            onSelectSlice={setMapSlice}
-            disabled={mapState !== "ready"}
-            frameWavelengthUm={frameShown?.wavelengthUm ?? null}
-            frameLabel={
-              frameShown && comparison
-                ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm`
-                : null
-            }
-          />
+          skyView === "wise" ? (
+            <WiseDock band={wiseBand} onSelectBand={setWiseBand} />
+          ) : (
+            <SpectralRuler
+              mapSlice={mapSlice}
+              onSelectSlice={setMapSlice}
+              disabled={mapState !== "ready"}
+              tiles={tiles}
+              frameWavelengthUm={frameShown?.wavelengthUm ?? null}
+              frameLabel={
+                frameShown && comparison
+                  ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm`
+                  : null
+              }
+            />
+          )
         }
       />
       <header className="instrument-bar">
@@ -611,8 +602,17 @@ export function Viewer({
             <circle cx="12" cy="12" r="3" />
             <path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
           </svg>
-          <span>SPHEREx / Field viewer</span>
+          <span>{survey.name} / Field viewer</span>
         </div>
+        {wiseDataSource && (
+          <div className="view-switch" role="group" aria-label="Sky survey">
+            {(["spherex", "wise"] as const).map((view) => (
+              <button key={view} type="button" aria-pressed={skyView === view} onClick={() => switchView(view)}>
+                {surveys[view].name}
+              </button>
+            ))}
+          </div>
+        )}
         <SearchBox
           fovArcmin={initialField.fovArcmin}
           onSearch={search}
@@ -675,6 +675,8 @@ export function Viewer({
                   )}
                   {bands.some(Boolean) &&
                     `B${bands.filter(Boolean).join("–")} · `}
+                  {skyView === "wise" &&
+                    `${wiseBandName(comparison.frames[0].wavelengthUm)} · `}
                   {comparison.wavelengthRangeUm
                     .map((value) => value.toFixed(4))
                     .join("–")}{" "}
@@ -704,7 +706,7 @@ export function Viewer({
             {(
               [
                 ["search", "Advanced"],
-                ["comparison", "Comparison"],
+                ["comparison", survey.panel],
                 ["gaia", "Gaia"],
               ] as const
             ).map(([id, label]) => (
@@ -773,7 +775,7 @@ export function Viewer({
         </p>
         {inspectingCutout && (
           <p>
-            Selected SPHEREx frame{" "}
+            Selected {survey.name} frame{" "}
             <time dateTime={inspectingCutout.frame.observedAtUtc}>
               {inspectingCutout.frame.observedAtUtc}
             </time>{" "}
@@ -840,7 +842,8 @@ export function Viewer({
         reset={layoutReset}
       >
         <FieldSearch
-          field={initialField}
+          key={skyView}
+          field={focus ?? initialField}
           limits={fieldLimits}
           onSearch={search}
           onResolve={resolve}
@@ -856,7 +859,7 @@ export function Viewer({
               ? "Synthetic"
               : kind === "saved_real_example"
                 ? "Saved example"
-                : "SPHEREx"
+                : survey.name
             : undefined
         }
         open={timeOpen}
@@ -891,7 +894,23 @@ export function Viewer({
         )}
         {!comparison && <p role="status">{status}</p>}
         {preview.kind === "loading" && request?.kind !== "saved" && (
-          <p>An archive search can take a few minutes.</p>
+          <>
+            <BuildProgressBar
+              key={preview.startedAt}
+              startedAt={preview.startedAt}
+              progress={preview.progress}
+              waitingLabel={
+                skyView === "wise"
+                  ? "Starting the time-lapse build"
+                  : "Searching the SPHEREx archive"
+              }
+            />
+            <p>
+              {skyView === "wise"
+                ? "Building a few dated frames spread over 14 years of WISE exposures. The first build of a field usually takes about a minute."
+                : "An archive search can take a few minutes."}
+            </p>
+          </>
         )}
         {typeof diagnostics?.message === "string" && (
           <p>{diagnostics.message}</p>
@@ -904,18 +923,39 @@ export function Viewer({
             <button type="button" onClick={() => setRequest({ ...request })}>
               Retry
             </button>
-            {request.kind !== "saved" && (
+            {request.kind !== "saved" && skyView === "spherex" && (
               <button type="button" onClick={openExample}>
                 {synthetic ? "Open saved fixture" : "Open saved real example"}
               </button>
             )}
           </div>
         )}
-        {!synthetic && preview.kind === "idle" && (
+        {!synthetic && preview.kind === "idle" && skyView === "spherex" && (
           <button type="button" onClick={openExample}>
             Open saved real example
           </button>
         )}
+        {preview.kind === "idle" && skyView === "wise" && wiseSource && (
+          <p>
+            Dated frames come from single WISE and NEOWISE exposures, 2010 to 2024, one frame per
+            visit. Pick the band in the bar under the map.
+          </p>
+        )}
+        {preview.kind === "idle" &&
+          otherField &&
+          (skyView === "spherex" || wiseSource) &&
+          (inFieldRange(otherField.fovArcmin, fieldLimits) ? (
+            <button type="button" onClick={() => search(otherField)}>
+              Compare the {surveys[skyView === "wise" ? "spherex" : "wise"].name} field in{" "}
+              {survey.name}
+            </button>
+          ) : (
+            <p>
+              The {surveys[skyView === "wise" ? "spherex" : "wise"].name} field is{" "}
+              {otherField.fovArcmin.toFixed(1)} arcmin wide. {survey.name} comparisons take{" "}
+              {fieldLimits.min}–{fieldLimits.max} arcmin.
+            </p>
+          ))}
         {preview.kind === "search" && !comparison && (
           <p>
             Requested RA {preview.field.ra.toFixed(6)}°, Dec{" "}
@@ -923,7 +963,7 @@ export function Viewer({
             {preview.field.fovArcmin.toFixed(2)} arcmin.
           </p>
         )}
-        {preview.kind === "idle" && (
+        {preview.kind === "idle" && skyView === "spherex" && (
           <button
             type="button"
             onClick={() =>
@@ -1010,16 +1050,17 @@ export function Viewer({
         {comparison && (
           <>
             <p>
-              {synthetic || kind === "synthetic_fixture" || kind === "fixture"
+              {synthetic || kind === "synthetic_fixture"
                 ? "Synthetic comparison"
                 : kind === "saved_real_example"
                   ? "Saved real SPHEREx example"
-                  : "SPHEREx archive observations"}
+                  : survey.observations}
             </p>
             <ComparisonPlayback
               key={comparison.id}
               comparison={comparison}
               playback={playback}
+              survey={skyView}
               selectedPosition={selection?.position ?? null}
               frameMark={frameMark}
               savedMarks={finding?.marks}

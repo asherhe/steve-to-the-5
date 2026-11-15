@@ -1,5 +1,10 @@
 export const spherexSurveyUrl = "https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube";
 const surveyUrl = spherexSurveyUrl;
+export const spherexTileBase = surveyUrl;
+/** True for requests that fetch tiles of the all-sky cube. */
+export function isSpherexTileUrl(url: string): boolean {
+  return url.startsWith(surveyUrl);
+}
 export const spherexMosaicDoi = "https://doi.org/10.26131/IRSA679";
 export const spherexMosaicSlice = 1;
 // IRSA DR1 combines Surveys 1 and 2. The release midpoint is a guide for
@@ -172,6 +177,13 @@ export const spherexBands: readonly SpherexBand[] = Array.from({ length: 6 }, (_
   return { band: i + 1, fromUm, toUm, mapSlice: first + 1 };
 });
 
+/**
+ * Slices with no tiles on the server: the blank dichroic channels (band 3 channel 17, band 4
+ * channel 1), per the cube's `obs_description`, and slice 0, whose tiles answer 404. Showing
+ * one leaves the map empty.
+ */
+export const blankSlices: ReadonlySet<number> = new Set([0, 50, 51]);
+
 /** Nearest non-blank slice to a wavelength, compared on a log scale. */
 export function nearestSlice(um: number): number {
   let best = 0;
@@ -187,6 +199,50 @@ export function stepSlice(slice: number, step: number): number {
   let next = Math.min(spherexSliceWavelengthsUm.length - 1, Math.max(0, slice + step));
   while (blankSpherexSlices.has(next)) next += Math.sign(step) || 1;
   return Math.min(spherexSliceWavelengthsUm.length - 1, Math.max(0, next));
+}
+
+/** Every slice that has tiles, shortest wavelength first. */
+export const scannableSlices: readonly number[] = spherexSliceWavelengthsUm
+  .map((_, slice) => slice).filter((slice) => !blankSlices.has(slice));
+
+/** How many wavelengths a scan preloads and cycles through. */
+export const scanSampleCount = 10;
+
+/**
+ * Longest wavelength a scan uses: the end of band 5 (4.405 µm). The map drew white for
+ * band 6 (4.435-4.988 µm) even with every tile cached, so a scan leaves it out. The ruler
+ * can still set those wavelengths by hand.
+ */
+export const scanMaxSlice = 84;
+
+/** The wavelengths a scan uses: evenly spaced from the shortest up to `scanMaxSlice`, ends included. */
+const scanRange = scannableSlices.filter((slice) => slice <= scanMaxSlice);
+export const scanSamples: readonly number[] = Array.from({ length: scanSampleCount }, (_, i) =>
+  scanRange[Math.round(i * (scanRange.length - 1) / (scanSampleCount - 1))]);
+
+/** Scan speeds offered, as multiples of the base pace. */
+export const scanSpeeds = [0.5, 1, 2, 4, 8] as const;
+/** Time each wavelength stays up at 1×. */
+export const scanBaseStepMs = 250;
+
+/** The scannable slices in scan order, starting just after `from` and ending with `from`. */
+export function scanOrder(from: number): number[] {
+  const after = scannableSlices.filter((slice) => slice > from);
+  const before = scannableSlices.filter((slice) => slice <= from);
+  return [...after, ...before];
+}
+
+/** The next slice in scan order that is in `ready`, or null when no other slice is. */
+export function nextReadySlice(from: number, ready: ReadonlySet<number>): number | null {
+  for (const slice of scanOrder(from)) {
+    if (slice !== from && ready.has(slice)) return slice;
+  }
+  return null;
+}
+
+/** The slice a scan shows after this one: the next non-blank slice, wrapping to the first. */
+export function nextScanSlice(slice: number): number {
+  return slice >= spherexSliceWavelengthsUm.length - 1 ? stepSlice(0, 1) : stepSlice(slice, 1);
 }
 
 export function bandForSlice(slice: number): number {

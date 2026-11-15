@@ -23,6 +23,14 @@ const services = {
     requirements: ["-r", "requirements.lock"],
     args: ["-m", "services.archive", "serve", "--port", "8000"],
   },
+  // Reuses the archive's Python environment and dependencies, so it declares no
+  // requirements of its own; setup() skips the install step and runs the shared venv.
+  wise: {
+    directory: archive,
+    cwd: root,
+    minPythonMinor: 12,
+    args: ["-m", "services.wise", "serve", "--port", "8020"],
+  },
   // Needs SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVER_KEY and
   // SPHEREX_COMPARISON_BASE_URL in the environment; see services/findings/README.md.
   findings: {
@@ -35,7 +43,7 @@ const services = {
 
 const name = process.argv[2];
 if (!Object.hasOwn(services, name)) {
-  console.error("Choose a development service: gaia, spherex or findings.");
+  console.error("Choose a development service: gaia, spherex, wise or findings.");
   process.exit(1);
 }
 
@@ -107,6 +115,8 @@ async function setup() {
     }
   }
   // Pip reuses installed packages that satisfy the requirements and repairs missing ones.
+  // Services without their own requirements (e.g. wise) reuse another service's venv; skip install.
+  if (!service.requirements) return;
   console.log(`Checking Python dependencies for ${name}`);
   const pipArgs = ["-m", "pip", "--require-virtualenv", "--disable-pip-version-check",
     "install", "--quiet", "--no-input", ...service.requirements];

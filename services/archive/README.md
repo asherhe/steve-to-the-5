@@ -147,6 +147,14 @@ The coordinator can include `create_router(pipeline)` in the shared app and call
 `EvidenceStore`; a cloud adapter must preserve atomic publication, conflict detection,
 integrity checks and `load_raw`. No Supabase schema or root application file was changed.
 
+## Search and download retries
+
+IRSA answers roughly half of single search requests with an instant 502 at times, so the
+served app retries searches up to 6 times and downloads up to 5 times (the
+`search_attempts` and `cutout_attempts` arguments of `IRSAClient`; the saved config is
+unchanged). Searches for the two releases run at the same time. On eight fields, searches
+with a missing release fell from 2 to 0.
+
 ## Processing policy and limits
 
 Resolved settings are serialized in each manifest. These are provisional quick-look

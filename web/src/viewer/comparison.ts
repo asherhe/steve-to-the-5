@@ -45,8 +45,18 @@ export type ComparisonResult = (
     }
 ) & { diagnostics?: Record<string, unknown> };
 
+/** Progress of a running build, as its service reports it. For display only. */
+export interface BuildProgress {
+  stage: string;
+  done: number;
+  total: number;
+  /** Share of the whole build finished, 0 to 1. */
+  fraction: number;
+}
+
 export interface ViewerDataSource {
-  search(field: Field, signal?: AbortSignal): Promise<ComparisonResult>;
+  /** `onProgress` is called only by services that report build progress. */
+  search(field: Field, signal?: AbortSignal, onProgress?: (progress: BuildProgress) => void): Promise<ComparisonResult>;
   loadSaved(id: string, signal?: AbortSignal): Promise<Comparison | null>;
   resolveName(
     name: string,
