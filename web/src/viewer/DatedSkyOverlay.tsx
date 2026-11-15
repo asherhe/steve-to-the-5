@@ -9,7 +9,7 @@ export interface DatedLayer {
   comparison: Comparison; frame: ComparisonFrame; assets: Record<string, Asset>; attempt: number;
   selected: SkyPosition | null;
   marks: readonly (SkyPosition & { frameId: string })[];
-  predictedMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
+  predictedMark: SkyPosition | null;
 }
 export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView; aladin: AladinModule; dated:DatedLayer;redraw:unknown}) {
   const layers=useRef(new Map<string,{id:string;image:AladinImage;ready:boolean}>());
@@ -19,6 +19,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
   const [failure,setFailure]=useState(false);
   const [label,setLabel]=useState<{x:number;y:number}|null>(null);
   const wcs=cutoutWcs(dated.comparison.grid);
+  const predictedMark = ready[dated.frame.id] ? dated.predictedMark : null;
   useEffect(()=>{
     let alive=true;
     if (!wcs) return;
@@ -76,12 +77,13 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
       function mark(position:SkyPosition,color:string){const point=sky.world2pix(position.ra,position.dec);if(!point)return;context.strokeStyle=color;context.beginPath();context.arc(...point,7,0,2*Math.PI);context.stroke();}
       if(dated.selected)mark(dated.selected,"#8ce5ff");
       for(const saved of dated.marks)if(saved.frameId===dated.frame.id)mark(saved,"#8ce5ff");
-      if(dated.predictedMark?.frameId===dated.frame.id)mark(dated.predictedMark,"#ffd08e");
+      if(predictedMark)mark(predictedMark,"#ffd08e");
     });
     return ()=>cancelAnimationFrame(task);
-  },[sky,dated,redraw,ready]);
+  },[sky,dated,redraw,predictedMark]);
   return <>
-    <canvas ref={canvas} className="dated-footprint" aria-label="Saved dated-image footprint and frame-specific marks" />
+    <canvas ref={canvas} className="dated-footprint"
+      aria-label={predictedMark ? "Dated-image footprint, frame marks and predicted Gaia position" : "Dated-image footprint and frame marks"} />
     {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated SPHEREx · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
     {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Compare details to inspect the saved image.</p>}
     {wcs && !ready[dated.frame.id] && dated.assets[dated.frame.id]?.state==="ready" && <p className="dated-overlay-status" role="status">Placing dated image on the sky…</p>}

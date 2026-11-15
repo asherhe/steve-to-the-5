@@ -1,5 +1,5 @@
 import { fmtDecDms, fmtDeg, fmtRaHms, fmtWithUnit } from "../format";
-import { isoToDecimalYear, propagate } from "../propagate";
+import { predictAtObservation } from "../propagate";
 import type { GaiaDetail, MarkAction, NearbySource, SelectedFrameMeta } from "../types";
 
 interface Props {
@@ -18,16 +18,7 @@ interface Props {
 export function SourceDetailView({ source, detail, selectedFrame, onMark }: Props) {
   const d = detail;
 
-  const predicted = selectedFrame
-    ? propagate(
-        source.ra,
-        source.dec,
-        source.refEpoch,
-        isoToDecimalYear(selectedFrame.observedAtUtc),
-        source.pmRaCosDecMasYr,
-        source.pmDecMasYr
-      )
-    : null;
+  const predicted = selectedFrame ? predictAtObservation(source, selectedFrame.observedAtUtc) : null;
 
   const markRa = predicted ? predicted.ra : source.ra;
   const markDec = predicted ? predicted.dec : source.dec;
@@ -39,6 +30,7 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
       dec: markDec,
       sourceId: source.sourceId,
       predicted: predicted !== null,
+      astrometry: source,
     });
   }
 
@@ -130,9 +122,13 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
         </a>
       )}
 
-      <button type="button" className="si-mark-button" onClick={handleMark}>
-        {predicted ? "Mark predicted position on frame" : "Mark position"}
-      </button>
+      {selectedFrame && !predicted ? (
+        <p>Prediction unavailable for this observation time.</p>
+      ) : (
+        <button type="button" className="si-mark-button" onClick={handleMark}>
+          {predicted ? "Mark predicted position" : "Mark position"}
+        </button>
+      )}
     </div>
   );
 }

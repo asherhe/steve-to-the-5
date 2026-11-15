@@ -24,7 +24,7 @@ const client = createCatalogClient({ baseUrl: "/api" });
     wavelengthUm: 1.62,
   }}
   radiusArcsec={30}                                 // optional, default 30
-  onMark={(mark) => { /* { frameId, ra, dec, sourceId, predicted } */ }}
+  onMark={(mark) => { /* { frameId, ra, dec, sourceId, predicted, astrometry } */ }}
 />
 ```
 
@@ -36,6 +36,7 @@ const client = createCatalogClient({ baseUrl: "/api" });
 | `ra`, `dec` | sky coordinates to mark — predicted position when a frame is selected, otherwise the observed catalog position |
 | `sourceId` | the Gaia source the mark refers to |
 | `predicted` | `true` when `ra`/`dec` are a propagated prediction |
+| `astrometry` | Catalog coordinates, source ID, reference epoch and proper motion used to recalculate the prediction across frames |
 
 A findings pin and a selected image position use these same sky coordinates.
 

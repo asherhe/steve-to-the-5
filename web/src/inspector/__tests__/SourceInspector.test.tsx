@@ -119,7 +119,7 @@ describe("mark action", () => {
     expect(screen.getByText("predicted")).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: /mark predicted position on frame/i })
+      screen.getByRole("button", { name: /mark predicted position/i })
     );
     const mark = onMark.mock.calls[0][0];
     const expected = propagate(
@@ -132,6 +132,14 @@ describe("mark action", () => {
     );
     expect(mark.frameId).toBe(frame.frameId);
     expect(mark.predicted).toBe(true);
+    expect(mark.astrometry).toMatchObject({
+      sourceId: knownSource.sourceId,
+      ra: knownSource.ra,
+      dec: knownSource.dec,
+      refEpoch: knownSource.refEpoch,
+      pmRaCosDecMasYr: knownSource.pmRaCosDecMasYr,
+      pmDecMasYr: knownSource.pmDecMasYr,
+    });
     expect(mark.ra).toBeCloseTo(expected.ra, 9);
     expect(mark.dec).toBeCloseTo(expected.dec, 9);
     // Predicted differs from observed (Barnard's Star has large proper motion).
