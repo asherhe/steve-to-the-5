@@ -286,11 +286,12 @@ export function SkyMap({
       <div className="sky-map">
         <div ref={container} className="aladin-host" data-hidden={!datedReady && (!mapShown || unavailable) || undefined} />
         {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
-        {statusText && <p className="map-status" role="status">{statusText}</p>}
+        {statusText && !datedReady && <p className="map-status" role="status">{statusText}</p>}
       </div>
       <FloatingPane id="map-tools" title="Map" anchor="map" reset={layoutReset} defaultCollapsed={innerWidth<672}>
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
+        {datedReady && statusText && <small className="reference-status">Reference sky: {statusText}</small>}
         <p className="sky-readout">
           {readout && mapUsable ? (
             <>

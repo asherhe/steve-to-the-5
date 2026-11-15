@@ -7,23 +7,26 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
 }) {
   const ref = useRef<HTMLElement>(null);
   const [position, setPosition] = useState<{x:number;y:number} | null>(null);
+  const positionRef = useRef(position);
+  positionRef.current = position;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [layer, setLayer] = useState(5);
   const dragging = useRef<{x:number;y:number;left:number;top:number} | null>(null);
   function clamp(x: number, y: number) {
     const box = ref.current!.getBoundingClientRect();
     const next = boundPane(x,y,box.width,box.height,innerWidth,innerHeight);
+    positionRef.current = next;
     setPosition(old => old?.x === next.x && old?.y === next.y ? old : next);
   }
   const lastReset = useRef(reset);
   useLayoutEffect(() => {
     if (lastReset.current !== reset) {
-      lastReset.current = reset; setPosition(null); setCollapsed(defaultCollapsed); return;
+      lastReset.current = reset; positionRef.current = null; setCollapsed(defaultCollapsed);
     }
     if (!open || !ref.current) return;
     function fit() {
       const box = ref.current!.getBoundingClientRect();
-      if (position) clamp(position.x,position.y);
+      if (positionRef.current) clamp(positionRef.current.x,positionRef.current.y);
       else {
         const mobile = innerWidth < 672;
         const x = anchor === "time" ? (innerWidth-box.width)/2 : anchor === "left" || anchor === "map" ? 16 : innerWidth-box.width-16;
@@ -35,7 +38,7 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
     fit(); const observer = new ResizeObserver(fit); observer.observe(ref.current!);
     window.addEventListener("resize",fit);
     return () => { observer.disconnect(); window.removeEventListener("resize",fit); };
-  }, [open, position, anchor, collapsed, reset]);
+  }, [open, anchor, collapsed, reset]);
   return <section ref={ref} id={id} role="region" aria-label={title} hidden={!open}
     className={`floating-pane pane-${anchor}`} style={{left:position?.x,top:position?.y,zIndex:layer}}
     onPointerDownCapture={() => setLayer(++topLayer)}
