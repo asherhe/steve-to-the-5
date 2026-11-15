@@ -1,5 +1,8 @@
 declare module "aladin-lite" {
   interface AladinImageSurvey {
+    query: Promise<AladinImageSurvey>;
+    skyFraction: number;
+    setOpacity(opacity: number): void;
     setFrequency(frequency: { value: number; unit: "Hz" }): void;
   }
 
@@ -8,7 +11,10 @@ declare module "aladin-lite" {
   }
   export interface AladinView {
     world2pix(ra: number, dec: number): [number, number] | undefined;
-    setOverlayImageLayer(image: AladinImage, id: string): void;
+    setOverlayImageLayer(image: AladinImage | AladinImageSurvey, id: string): void;
+    getOverlayImageLayer(id: string): AladinImage | AladinImageSurvey | undefined;
+    getStackLayers(): string[];
+    view: { swapLayers(first: string, second: string): void };
     removeImageLayer(id: string): void;
     getRaDec(): [ra: number, dec: number];
     getFoV(): [width: number, height: number];
@@ -36,7 +42,8 @@ declare module "aladin-lite" {
       successCallback: (ra: number, dec: number, fov: number, image: AladinImage) => void;
       errorCallback?: (error: unknown) => void;
     }): AladinImage;
-    HiPS(urlOrId: string, options: {
+    HiPS(urlOrId: string | { properties: File; moc: File; 0: Record<number, { png: File }> }, options: {
+      id?: string;
       name: string;
       successCallback: (survey: AladinImageSurvey) => void;
       errorCallback: (error: unknown) => void;
@@ -47,7 +54,7 @@ declare module "aladin-lite" {
       element: HTMLElement,
       options: {
         cooFrame: "ICRSd";
-        survey?: string | AladinImageSurvey;
+        survey?: string | AladinImageSurvey | [];
         projection: "SIN";
         fov: number;
         showProjectionControl: boolean;

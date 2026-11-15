@@ -6,8 +6,8 @@ import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
 import { formatAngularSize, formatDec, formatRa, normalizeRa } from "./coordinates";
 import {
-  blankSpherexSlices, dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, spherexBandChannel,
-  spherexMosaicDoi, spherexMosaicSlice, spherexSliceFrequencyHz, spherexSliceWavelength, spherexSurveyUrl,
+  blankSpherexSlices, dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, loadSpherexOverview, spherexBandChannel,
+  spherexMosaicDoi, spherexMosaicSlice, spherexSliceFrequencyHz, spherexSliceWavelength,
   type SpherexCube,
 } from "./spherexSurvey";
 
@@ -16,7 +16,33 @@ type Imagery = "spherex" | "dss";
 type LayerStatus = "loading" | "ready" | "unavailable";
 
 const globeFovDeg = 180;
+const referenceLayerId = "reference-sky";
+const spherexDetailLayerId = "spherex-detail";
 const imageryLabels: Record<Imagery, string> = { spherex: "SPHEREx", dss: "DSS" };
+
+function placeReferenceLayer(sky: AladinView, layerId: string) {
+  const stack = sky.getStackLayers();
+  const earlier = stack.slice(0, stack.indexOf(layerId)).reverse();
+  for (const id of earlier) {
+    if (layerId === spherexDetailLayerId && id === referenceLayerId) break;
+    if (sky.getOverlayImageLayer(id)) sky.view.swapLayers(id, layerId);
+  }
+}
+
+function makeCubeCoverageOpaque(host: HTMLElement) {
+  const gl = host.querySelector<HTMLCanvasElement>(".aladin-imageCanvas")?.getContext("webgl2");
+  if (!gl) return;
+  const shaderSource = gl.shaderSource.bind(gl);
+  // Aladin 3.8's PNG cube shader treats its coverage channel as blend opacity.
+  // Use binary coverage on this viewer's canvas, retaining the RGB values.
+  gl.shaderSource = (shader, source) => {
+    if (source.includes("vec4 color = uvw2c_ra(uv);")) {
+      source = source.replace("out_frag_color.a = opacity * out_frag_color.a;",
+        "if (out_frag_color.a <= 0.0) discard; out_frag_color.a = opacity;");
+    }
+    shaderSource(shader, source);
+  };
+}
 
 export function SkyMap({
   initialCenter,
@@ -42,7 +68,8 @@ export function SkyMap({
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<AladinModule | null>(null);
   const view = useRef<AladinView | null>(null);
-  const spherexLayer = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
+  const spherexDetail = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
+  const spherexOverview = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
   const layerToken = useRef(0);
   const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
@@ -84,8 +111,8 @@ export function SkyMap({
         if (cancelled) return;
         const sky = Aladin.aladin(element, {
           cooFrame: "ICRSd",
-          // Placeholder so Aladin skips its default survey; the layer effect sets the real base layer.
-          survey: spherexSurveyUrl,
+          // Start with an empty list so the reference layer is registered only once.
+          survey: [],
           projection: "SIN",
           fov: globeFovDeg,
           showProjectionControl: false,
@@ -99,6 +126,7 @@ export function SkyMap({
           showFov: false,
           showSimbadPointerControl: false,
         });
+        makeCubeCoverageOpaque(element);
         sky.gotoRaDec(initialCenter.ra, initialCenter.dec);
         const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle" });
         sky.addCatalog(catalog);
@@ -125,7 +153,9 @@ export function SkyMap({
       cancelled = true;
       view.current = null;
       aladin.current = null;
-      spherexLayer.current = null;
+      spherexDetail.current = null;
+      spherexOverview.current = null;
+      ++layerToken.current;
       markPosition.current = null;
       setViewStatus("loading");
     };
@@ -156,11 +186,14 @@ export function SkyMap({
     setLayerStatus("loading");
 
     if (imagery === "dss") {
-      spherexLayer.current = null;
-      const tryMirror = (index: number) => sky.setBaseImageLayer(Aladin.HiPS(dssSurveyUrls[index], {
+      spherexDetail.current = null;
+      spherexOverview.current = null;
+      sky.removeImageLayer(spherexDetailLayerId);
+      const tryMirror = (index: number) => sky.setOverlayImageLayer(Aladin.HiPS(dssSurveyUrls[index], {
         name: "DSS2 colour (optical reference)",
         successCallback: () => {
           if (!current()) return;
+          placeReferenceLayer(sky, referenceLayerId);
           setLayerStatus("ready");
           setMapShown(true);
         },
@@ -168,34 +201,71 @@ export function SkyMap({
           if (current() && index + 1 < dssSurveyUrls.length) tryMirror(index + 1);
           else failed(error);
         },
-      }));
+      }), referenceLayerId);
       tryMirror(0);
       return;
     }
     if (cube === null) return;
     if (cube === "unavailable") {
-      spherexLayer.current = null;
+      spherexDetail.current = null;
+      sky.removeImageLayer(spherexDetailLayerId);
       setLayerStatus("unavailable");
       return;
     }
-    const layer = Aladin.HiPS(cube.url, {
+
+    const selectSlice = (layer: ReturnType<AladinModule["HiPS"]>) => {
+      layer.setFrequency({ value: spherexSliceFrequencyHz(cube, sliceRef.current), unit: "Hz" });
+    };
+    const detail = Aladin.HiPS(cube.url, {
       name: "SPHEREx DR1 all-sky mosaic",
       successCallback: (added) => {
         if (!current()) return;
-        added.setFrequency({ value: spherexSliceFrequencyHz(cube, sliceRef.current), unit: "Hz" });
+        selectSlice(added);
+        spherexDetail.current = added;
         setLayerStatus("ready");
         setMapShown(true);
+        placeReferenceLayer(sky, spherexDetailLayerId);
       },
       errorCallback: failed,
     });
-    spherexLayer.current = layer;
-    sky.setBaseImageLayer(layer);
+    void detail.query.then(() => {
+      if (!current()) return;
+      // Aladin skips every layer below an opaque all-sky layer. Keep compositing
+      // below the detail layer so missing PNG tiles can reveal the underlay.
+      detail.skyFraction = Math.min(detail.skyFraction, 0.999);
+      sky.setOverlayImageLayer(detail, spherexDetailLayerId);
+    }).catch(failed);
   }, [imagery, cube, viewStatus, attempt]);
 
   useEffect(() => {
-    if (imagery !== "spherex" || layerStatus !== "ready" || !cube || cube === "unavailable") return;
-    spherexLayer.current?.setFrequency({ value: spherexSliceFrequencyHz(cube, slice), unit: "Hz" });
-  }, [imagery, slice, layerStatus, cube]);
+    const sky = view.current;
+    const Aladin = aladin.current;
+    if (!sky || !Aladin || viewStatus !== "ready" || imagery !== "spherex" || !cube || cube === "unavailable") return;
+    const controller = new AbortController();
+    const signal = controller.signal;
+    spherexOverview.current?.setOpacity(0);
+    spherexDetail.current?.setFrequency({ value: spherexSliceFrequencyHz(cube, slice), unit: "Hz" });
+    const overviewFailed = (error: unknown) => {
+      if (!signal.aborted) console.error("Could not load the SPHEREx overview", error);
+    };
+    void loadSpherexOverview(cube, slice, signal).then(async (tiles) => {
+      const overview = Aladin.HiPS(tiles, {
+        id: "spherex-overview",
+        name: "SPHEREx DR1 all-sky overview",
+        successCallback: (added) => {
+          if (signal.aborted) return;
+          placeReferenceLayer(sky, referenceLayerId);
+          spherexOverview.current = added;
+          setLayerStatus("ready");
+          setMapShown(true);
+        },
+        errorCallback: overviewFailed,
+      });
+      await overview.query;
+      if (!signal.aborted) sky.setOverlayImageLayer(overview, referenceLayerId);
+    }).catch(overviewFailed);
+    return () => controller.abort();
+  }, [imagery, slice, viewStatus, cube]);
 
   useEffect(() => {
     if (!focus || viewStatus !== "ready" || !view.current) return;
