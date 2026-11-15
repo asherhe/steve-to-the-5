@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import type { Playback } from "./usePlayback";
 import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 
@@ -10,31 +10,24 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect,
+  comparison, playback, selectedPosition, frameMark, savedMarks = [], onInspect,
 }: {
   comparison: Comparison;
-  visible?: boolean;
+  playback: Playback;
   selectedPosition: SkyPosition | null;
   frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
   onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
 }) {
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [failed, setFailed] = useState(false);
-  const [loadedFrame, setLoadedFrame] = useState<string | null>(null);
-  const [imageAttempt, setImageAttempt] = useState(0);
-  const frames = comparison.frames;
-  const frame = frames[index];
-  const multi = frames.length > 1;
+  const { frame, index, frames, attempt: imageAttempt } = playback;
+  const failed = playback.assets[frame.id]?.state === "failed";
   const { width, height } = comparison.grid;
   const wcs = cutoutWcs(comparison.grid);
-  const canInspect = !!wcs && loadedFrame === frame.id && !failed;
+  const canInspect = !!wcs && playback.assets[frame.id]?.state === "ready" && !failed;
 
   function inspect(x: number, y: number) {
     if (!canInspect || !wcs) return;
-    setPlaying(false);
+    playback.pause();
     onInspect(wcs.toSky({ x, y }), frame);
   }
 
@@ -47,24 +40,6 @@ export function ComparisonPlayback({
     );
   }
 
-  useEffect(() => {
-    if (!visible) setPlaying(false);
-  }, [visible]);
-
-  useEffect(() => {
-    if (!visible || !playing || failed || !multi || loadedFrame !== frame.id) return;
-    const timer = setTimeout(() => {
-      setLoadedFrame(null);
-      setIndex((current) => (current + 1) % frames.length);
-    }, 1000 / speed);
-    return () => clearTimeout(timer);
-  }, [visible, playing, failed, multi, frames.length, speed, frame.id, loadedFrame]);
-
-  function select(next: number) {
-    setPlaying(false);
-    setFailed(false);
-    setIndex(next);
-  }
 
   return (
     <section aria-label="Comparison playback">
@@ -77,17 +52,13 @@ export function ComparisonPlayback({
           {failed ? (
             <div role="status">
               This frame could not be loaded.{" "}
-              <button type="button" onClick={() => {
-                setImageAttempt((attempt) => attempt + 1);
-                setFailed(false);
-              }}>Retry frame</button>
+              <button type="button" onClick={playback.retry}>Retry frame</button>
             </div>
           ) : (
             <>
               <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={width}
                 height={height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
-                onLoad={() => setLoadedFrame(frame.id)}
-                onError={() => { setFailed(true); setPlaying(false); }} />
+                onError={playback.fail} />
               {canInspect && (
                 <button type="button" className="cutout-inspect" aria-label="Inspect image. Press Enter to inspect its center."
                   onClick={(event) => {
@@ -116,24 +87,7 @@ export function ComparisonPlayback({
       {frame.observationStartUtc && frame.observationEndUtc && (
         <p>Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</p>
       )}
-      {multi && (
-        <div className="controls playback-controls">
-          <button type="button" onClick={() => select(index - 1)} disabled={index === 0}>Previous</button>
-          <button type="button" onClick={() => setPlaying(!playing)} disabled={failed}>{playing ? "Pause" : "Play"}</button>
-          <button type="button" onClick={() => select(index + 1)} disabled={index === frames.length - 1}>Next</button>
-          <label>
-            Observation {index + 1} of {frames.length}
-            <input type="range" min={0} max={frames.length - 1} value={index}
-              aria-valuetext={frame.observedAtUtc} onChange={(event) => select(Number(event.target.value))} />
-          </label>
-          <label>
-            Playback speed
-            <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
-              <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option>
-            </select>
-          </label>
-        </div>
-      )}
+      <p>Observation {index+1} of {frames.length} · Use the Time window to blink or select another date.</p>
       {frame.validFraction !== undefined && (
         <p>{(frame.validFraction * 100).toFixed(1)}% valid pixels
           {frame.alignment && <> · {alignmentLabels[frame.alignment] ?? frame.alignment}</>}
