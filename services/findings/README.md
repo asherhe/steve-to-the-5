@@ -147,3 +147,29 @@ return parameters. Email is not a public author display name.
 simulated auth/PostgREST/catalog transport. It verifies review ownership, score computation,
 WISE identity, original marks, anonymous reads, two authors, duplicates and moderation.
 This complements browser contract tests and is not hosted Auth/PostgREST verification.
+
+## Point scoring — point-check-v2 (2026-11-15)
+
+`POST /api/findings/reviews` now scores a marked point (`services/findings/review.py`):
+
+| Result | Points |
+|---|---|
+| Any of the six catalogs lists a source in the cone (`candidates` or `partial`) | 10 (`classification: "known"`) |
+| All six return `no_candidates`, and the point is bright in saved frames of at least two surveys | 20 (`"uncatalogued"`) |
+| All six empty but bright in fewer than two surveys, or any catalog unavailable/skipped | 0 (`"uncatalogued"` / `"incomplete"`); still postable |
+
+`ReviewInput.brightnessEvidence` lists saved comparisons from the other surveys (at most one
+per survey, never the review's own survey; real evidence only). Brightness is measured by the
+service, never supplied by the client (`services/findings/brightness.py`): each saved frame's
+retained FITS (`/assets/{frameId}.fits`, fetched from the archive or WISE service, 20 MB cap)
+is read in its own WCS; a frame is bright when the highest valid pixel within 1.5 px of the
+point is at least 5σ above the median of a 4–10 px annulus, with σ = 1.4826 × MAD and, for
+SPHEREx, at least the pixel's own `sqrt(VARIANCE)`. SPHEREx pixels flagged outside the frame's
+informational mask are excluded; WISE combined frames have no variance or mask. A survey counts
+when any of its frames is bright. Responses include `classification` and per-frame `brightness`
+results. NEOSSat previews (`/api/catalogs/neossat`) have no FITS or WCS and do not count yet.
+
+Migration `20261115150000_findings_point_check_scores.sql` allows scores 0–50 and ranks only
+`point-check-v2` reviews; earlier `review-effort-v1` entries no longer appear on the board.
+Tests: `python -m pytest services/findings/tests` (scoring on the real saved SPHEREx FITS plus
+a synthetic WISE frame) and `node services/findings/tests/check_migration.cjs`.

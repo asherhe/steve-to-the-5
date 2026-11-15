@@ -109,19 +109,6 @@ class LocalStore:
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise ArchiveError("EVIDENCE_CORRUPT", "Saved evidence is missing or corrupt", 500) from exc
 
-    def matching_recorded_field(self, field):
-        """Instant replay only for the exact reviewed field; other fields still query IRSA."""
-        for example in self.examples:
-            for path in (example / "manifests").glob("*.json"):
-                response = self.load_raw(path.stem)
-                saved = response.get("comparison") or {}
-                previous = saved.get("field") or {}
-                if (abs(previous.get("ra", -999) - field.ra) < 1e-8 and
-                    abs(previous.get("dec", -999) - field.dec) < 1e-8 and
-                    abs(previous.get("fovArcmin", -999) - field.fov_arcmin) < 1e-8):
-                    return response
-        return None
-
     def load(self, comparison_id):
         return ComparisonResponse.model_validate(self.load_raw(comparison_id))
 

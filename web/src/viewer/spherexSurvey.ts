@@ -194,6 +194,11 @@ export function nearestSlice(um: number): number {
   return best;
 }
 
+/** Wavelength (µm) the map layer and spectral ruler start at. */
+export const defaultMapWavelengthUm = 4.6;
+/** Cube slice the map layer starts at: the one nearest `defaultMapWavelengthUm` (slice 90, 4.600 µm). */
+export const defaultMapSlice = nearestSlice(defaultMapWavelengthUm);
+
 /** The next non-blank slice in a direction, staying in range. */
 export function stepSlice(slice: number, step: number): number {
   let next = Math.min(spherexSliceWavelengthsUm.length - 1, Math.max(0, slice + step));

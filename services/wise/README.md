@@ -97,12 +97,16 @@ load). A 6 arcmin comparison stores about 20 MB.
 - W1 and W2 are broad filters. A WISE frame is not comparable with a SPHEREx spectral
   channel, and the two are never mixed in one comparison.
 - IRSA's image search takes 30–80 s when it is healthy and dominates a first build: a
-  6 arcmin field then needs 30 cutouts (about 5 MB), a 12 arcmin field about 18 MB. A
-  hanging search is tried twice, then reported as `upstream_unavailable`. A build stops
-  at a 360 s deadline and publishes nothing. Search results and finished cutouts are cached
-  on disk (the survey's image sets are final), so a retry resumes from them. IRSA
-  sometimes answers 503 when requests arrive quickly; those downloads are retried one
-  at a time.
+  6 arcmin field then needs 30 cutouts (about 5 MB), a 12 arcmin field about 18 MB. IRSA's
+  search often answers an instant 502 or 503 for a while and then recovers, so each
+  mission-phase search retries those (and dropped connections) up to 8 times with backoff
+  growing from 1 s to 20 s, about a minute in all. A hanging search is tried twice, then
+  reported as `upstream_unavailable`. A build stops at a 360 s deadline and publishes
+  nothing. Search results and finished cutouts are cached on disk (the survey's image sets
+  are final), so a retry resumes from them. Each cutout is tried up to 5 times; downloads
+  that still fail with 503, a timeout or a dropped connection get one more round, one at
+  a time, after a 5 s pause. These retry limits are constants in `client.py`, not
+  `WiseConfig`, so they do not change comparison identities.
 
 ## Checks run
 

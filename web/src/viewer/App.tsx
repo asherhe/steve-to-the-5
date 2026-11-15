@@ -9,7 +9,7 @@ import { FindingThread } from '../findings/FindingThread';
 import { EvidenceReplayError, type EvidenceDiscussionProps } from './evidence';
 import { Viewer } from './Viewer';
 import { createViewerDataSource, createWiseDataSource } from './production';
-import retainedExample from '../../../fixtures/archive/real-wise0855/response.json';
+import retainedExample from '../../../fixtures/archive/real-barnard/response.json';
 import { mockAuth, mockFindings } from '../findings/mock';
 
 // Default to an unmistakable local simulation until real findings/auth are configured.
@@ -41,5 +41,5 @@ function Discussion(props: EvidenceDiscussionProps) {
   return <FindingThread client={findings} session={account.session} findingId={props.finding.id} onClose={() => props.onClose?.()} onRequestSignIn={account.requestSignIn} onShowEvidence={() => props.onShowEvidence(props.finding)} />;
 }
 export function App() {
-  return <AccountProvider gateway={auth}><Viewer dataSource={dataSource} wiseDataSource={createWiseDataSource} Inspector={Inspector} leaderboard={leaderboard} loadFinding={loadFinding} Discussion={Discussion} Review={Review} Account={demo ? undefined : AccountControls} Activity={Activity} savedExampleId={retainedExample.comparison.id} /></AccountProvider>;
+  return <AccountProvider gateway={auth}><Viewer dataSource={dataSource} wiseDataSource={createWiseDataSource} Inspector={Inspector} leaderboard={leaderboard} loadFinding={loadFinding} Discussion={Discussion} Review={Review} checkPoint={catalog.review} Account={demo ? undefined : AccountControls} Activity={Activity} savedExampleId={retainedExample.comparison.id} /></AccountProvider>;
 }

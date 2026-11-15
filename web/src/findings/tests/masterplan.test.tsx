@@ -27,7 +27,7 @@ describe('review contract and identity', () => {
   it('accepts the exported backend snapshot and equivalent UTC representations', () => {
     expect(report.catalogReview.checks).toHaveLength(6);
     const r = structuredClone(fixture.review); r.catalogReview.observedAtUtc = r.observedAtUtc.replace('Z', '+00:00');
-    expect(parseReview(r).score).toBe(50);
+    expect(parseReview(r).score).toBe(20);
   });
   it.each(['offline', 'duplicate', 'wrong-point', 'wrong-time', 'invalid-status', 'too-many-rows'])('rejects %s review payloads', kind => {
     const r = structuredClone(fixture.review);
@@ -68,14 +68,14 @@ describe('candidate workflow', () => {
   it('sign-in is requested before any persisted review', () => {
     const { p, fetch } = setup();
     render(<CandidateReviewPane {...p} session={null} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in to review' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to submit' }));
     expect(p.onPrepareSignIn).toHaveBeenCalledOnce(); expect(p.onRequestSignIn).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled();
   });
   it('posts the server review ID and locked original-frame mark, without a client score', async () => {
     const { p, fetch } = setup();
     render(<CandidateReviewPane {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' }));
-    await screen.findByText('50 participation points');
+    fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' }));
+    await screen.findByText(/^20 points/);
     expect(screen.getByRole('button', { name: /Remove mark/ })).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Check this point' } });
     fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Could this be an image artifact?' } });
@@ -87,11 +87,11 @@ describe('candidate workflow', () => {
   });
   it('invalidates a completed review when time, point, radius, or account changes', async () => {
     const { p } = setup(); const ui = render(<CandidateReviewPane {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' })); await screen.findByText('50 participation points');
+    fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' })); await screen.findByText(/^20 points/);
     ui.rerender(<CandidateReviewPane {...p} frame={comparison.frames[1]} />);
     expect(screen.queryByText('50 participation points')).toBeNull();
     ui.rerender(<CandidateReviewPane {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' })); await screen.findByText('50 participation points');
+    fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' })); await screen.findByText(/^20 points/);
     fireEvent.change(screen.getByLabelText('Catalog search radius'), { target: { value: 300 } });
     expect(screen.queryByText('50 participation points')).toBeNull();
     ui.rerender(<CandidateReviewPane {...p} session={{ ...session, userId: 'different' }} />);
@@ -102,23 +102,23 @@ describe('candidate workflow', () => {
     const fetch = vi.fn(() => new Promise<Response>(r => { respond = r; }));
     const { p } = setup({}, fetch);
     const ui = render(<CandidateReviewPane {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' }));
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     ui.rerender(<CandidateReviewPane {...p} position={{ ra: report.ra + .001, dec: report.dec }} />);
     respond(Response.json(fixture.review));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Run six catalog checks' })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Check and score this point' })).toBeEnabled());
     expect(screen.queryByText('50 participation points')).toBeNull();
   });
   it.each([true, false])('prevents reference/synthetic selection from ranking (%s)', synthetic => {
     const { p, fetch } = setup(synthetic ? { synthetic: true } : { position: null });
     render(<CandidateReviewPane {...p} />);
-    expect(screen.queryByRole('button', { name: 'Run six catalog checks' })).toBeNull(); expect(fetch).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Check and score this point' })).toBeNull(); expect(fetch).not.toHaveBeenCalled();
   });
   it('keeps text on duplicate rejection and gives session-expiry recovery', async () => {
     let expired = false;
     const fetch = vi.fn(async (url: string) => url.endsWith('/reviews') ? Response.json(fixture.review) : Response.json({ code: expired ? 'unauthorized' : 'duplicate_candidate', message: expired ? 'Sign in' : 'This candidate has already been posted.' }, { status: expired ? 401 : 409 }));
     const { p } = setup({}, fetch); render(<CandidateReviewPane {...p} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' })); await screen.findByLabelText('Title');
+    fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' })); await screen.findByLabelText('Title');
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Draft preserved' } });
     fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'A question' } });
     fireEvent.click(screen.getByRole('button', { name: 'Post finding' })); await screen.findByText('This candidate has already been posted.');
@@ -128,8 +128,8 @@ describe('candidate workflow', () => {
   });
   it('shows catalog failure as failure with retry rather than an empty report', async () => {
     const { p } = setup({}, vi.fn(async () => Response.json({ code: 'catalogs_unavailable', message: 'Catalog review could not complete.' }, { status: 503 })));
-    render(<CandidateReviewPane {...p} />); fireEvent.click(screen.getByRole('button', { name: 'Run six catalog checks' }));
-    await screen.findByRole('alert'); expect(screen.queryByText(/participation points/)).toBeNull(); expect(screen.getByRole('button', { name: 'Run six catalog checks' })).toBeEnabled();
+    render(<CandidateReviewPane {...p} />); fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' }));
+    await screen.findByRole('alert'); expect(screen.queryByText(/^\d+ points/)).toBeNull(); expect(screen.getByRole('button', { name: 'Check and score this point' })).toBeEnabled();
   });
 });
 
@@ -156,7 +156,7 @@ describe('replay and public ranking', () => {
     const fetch = vi.fn(async () => Response.json({ ...fixture.leaderboard, board: 'daily' }));
     const auth = vi.fn(); const client = createFindingsClient({ fetch, getAuthHeaders: auth }); const source = { list: client.leaderboard };
     const evidence = vi.fn(); const ui = render(<LeaderboardPanel dataSource={source} open onGoTo={vi.fn()} onShowEvidence={evidence} refresh={0} />);
-    await screen.findByText('50 points'); expect(auth).not.toHaveBeenCalled();
+    await screen.findByText('20 points'); expect(auth).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Evidence & discussion' })); expect(evidence.mock.calls[0][0].survey).toBe('spherex');
     ui.rerender(<LeaderboardPanel dataSource={source} open onGoTo={vi.fn()} onShowEvidence={evidence} refresh={1} />);
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));

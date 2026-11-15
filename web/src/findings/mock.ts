@@ -1,4 +1,7 @@
-/** Explicitly simulated local workflow; never sent to findings or catalog services. */
+/** Explicitly simulated local workflow; never sent to the findings service. The public
+ *  catalog check runs for real so known objects score as they would; brightness is only
+ *  measured by the findings service, so the simulation never awards the 20-point rule. */
+import { createCatalogClient } from '../inspector/api';
 import fixture from '../../../services/findings/fixtures/candidate-flow.json';
 import examples from './retained-examples.json';
 import type { ReviewClient } from './api';
@@ -20,6 +23,7 @@ export const mockAuth: AuthGateway = {
   sendEmail: async () => {}, verifyCode: async () => {}, signOut: async () => {},
 };
 let reviews = new Map<string, CandidateReview>();
+const catalog = createCatalogClient();
 export const mockFindings: ReviewClient = {
   authConfig: async () => { throw new Error('Local demo has no sign-in service.'); },
   async createReview(req, signal) {
@@ -28,14 +32,31 @@ export const mockFindings: ReviewClient = {
     const saved = examples.find(item => item.id === req.comparisonId);
     const frame = saved?.frames.find(item => item.id === req.frameId);
     if (!frame) throw new Error('The local demo supports the four retained real comparison fields. Open a saved example first.');
+    const radiusArcsec = req.radiusArcsec ?? 120;
+    let catalogReview: CandidateReview['catalogReview'];
+    try {
+      catalogReview = await catalog.review({ ra: req.ra, dec: req.dec, radiusArcsec, observedAtUtc: frame.observedAtUtc }, signal);
+    } catch (error) {
+      aborted(signal);
+      catalogReview = { ...template.catalogReview, mode: 'offline', ra: req.ra, dec: req.dec, observedAtUtc: frame.observedAtUtc, radiusArcsec,
+        checks: template.catalogReview.checks.map(check => ({ ...check, status: 'unavailable' as const, scope: 'Catalog service unreachable', rows: [], servedBy: null })),
+        limitations: [`The catalog check could not run: ${error instanceof Error ? error.message : 'unknown error'}`] };
+    }
+    const statuses = catalogReview.checks.map(c => c.status);
+    const listed = catalogReview.checks.filter(c => c.status === 'candidates' || c.status === 'partial').map(c => c.catalog);
+    const classification = listed.length ? 'known' as const : statuses.every(x => x === 'no_candidates') && catalogReview.mode === 'live' ? 'uncatalogued' as const : 'incomplete' as const;
+    const score = classification === 'known' ? 10 : 0;
+    const reasons = [classification === 'known'
+      ? `+10: known object. ${listed.join(', ')} ${listed.length === 1 ? 'lists' : 'list'} a source within ${radiusArcsec}″.`
+      : classification === 'uncatalogued'
+        ? '+0 (LOCAL SIMULATION): no catalog lists a source, but brightness is only measured by the findings service, so the 20-point rule cannot be scored here.'
+        : '+0: the catalog check is incomplete or offline. Retry for points.'];
     const result: CandidateReview = { ...template, id: crypto.randomUUID(), comparisonId: req.comparisonId,
-      survey: req.survey ?? 'spherex', frameId: req.frameId, ra: req.ra, dec: req.dec,
-      radiusArcsec: req.radiusArcsec ?? 120,
-      observedAtUtc: frame.observedAtUtc, reviewedAtUtc: new Date().toISOString(), score: 20,
-      reasons: ['+10: saved real dated image with a marked sky position', '+10: saved comparison contains at least two observation dates'],
-      catalogReview: { ...template.catalogReview, ra: req.ra, dec: req.dec, observedAtUtc: frame.observedAtUtc, radiusArcsec: req.radiusArcsec ?? 120,
-        checks: template.catalogReview.checks.map(check => ({ ...check, status: 'skipped' as const, scope: 'Local simulation; no catalog query was made', rows: [], servedBy: null })),
-        limitations: ['LOCAL SIMULATION: no catalog query was made. These review-effort points exist only in this browser.'] } };
+      survey: req.survey ?? 'spherex', frameId: req.frameId, ra: req.ra, dec: req.dec, radiusArcsec,
+      brightnessEvidence: req.brightnessEvidence ?? [],
+      observedAtUtc: frame.observedAtUtc, reviewedAtUtc: new Date().toISOString(), score, classification, reasons,
+      brightness: [], catalogReview,
+      limitations: ['LOCAL SIMULATION: points and posts exist only in this browser; brightness was not measured.', ...template.limitations] };
     reviews.set(result.id, result);
     return result;
   },
@@ -56,7 +77,7 @@ export const mockFindings: ReviewClient = {
     finding.replies.push(reply); write(list); return reply;
   },
   async getFinding(id, signal) { aborted(signal); const finding = read().find(f => f.id === id); if (!finding) throw new Error('Demo finding not found.'); return finding; },
-  async listFindings(_viewport, signal) { aborted(signal); return { items: read().map(f => ({ id: f.id, ra: f.ra, dec: f.dec, title: f.title })) }; },
+  async listFindings(_viewport, signal) { aborted(signal); return { items: read().map(f => ({ id: f.id, ra: f.ra, dec: f.dec, title: f.title, authorDisplayName: f.authorDisplayName, createdAtUtc: f.createdAtUtc, replyCount: f.replies.length, survey: f.survey ?? 'spherex' })) }; },
   async leaderboard(board, signal): Promise<LeaderboardResult> {
     aborted(signal);
     const today = new Date().toISOString().slice(0, 10);

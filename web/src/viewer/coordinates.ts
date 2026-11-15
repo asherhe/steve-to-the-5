@@ -2,18 +2,42 @@ import type { SkyPosition } from "./comparison";
 import { namedTargets } from "./targetNames.ts";
 
 const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
+const degreeSuffix = /\s*(?:°|deg(?:rees?)?)$/i;
 const separated = /^([+-]?\d+)(?::|\s+)(\d+)(?::|\s+)(\d+(?:\.\d+)?)$/;
-const raUnits = /^([+]?\d+)h\s*(\d+)m\s*(\d+(?:\.\d+)?)s$/i;
-const decUnits = /^([+-]?\d+)[°d]\s*(\d+)['′m]\s*(\d+(?:\.\d+)?)["″s]$/i;
+const raUnits = /^([+]?\d+)\s*h\s*(\d+)\s*m\s*(\d+(?:\.\d+)?)\s*s?$/i;
+const decUnits = /^([+-]?\d+)\s*(?:°|d|deg)\s*(\d+)\s*(?:'|m)\s*(\d+(?:\.\d+)?)\s*(?:"|s)?$/i;
+
+/** Axis labels, frame names and joining words that may surround typed coordinates. */
+const labels = /(?:\bright\s+ascension\b|\bdeclination\b|\bdecl?\b\.?|\br\.?a\b\.?|[αδ])\s*[:=]?|\(?\b(?:icrs|fk5|j2000(?:\.0)?)\b\)?|\band\b/gi;
+
+/**
+ * Puts typed coordinates into one spelling: ASCII signs and primes, no axis labels,
+ * and no space between a number and its unit ("08 h 55 m" → "08h55m").
+ */
+function normalizeCoordinates(input: string): string {
+  return input
+    .replace(/[−–—]/g, "-")
+    .replace(/[′’‘]/g, "'")
+    .replace(/[″”“]|''/g, '"')
+    .replace(labels, " ")
+    .replace(/(\d)\s+(?=[hdms°'"](?![a-z]))/gi, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export const barnardGaiaSourceId = "4472832130942575872";
 
+/**
+ * Parses one RA or Dec value: decimal degrees (optionally with "°" or "deg"), colon- or
+ * space-separated sexagesimal, or units (RA "08h55m10.8s", Dec "-7d14m42.5s" / "-7°14′42.5″").
+ */
 export function parseAngle(input: string, axis: "ra" | "dec"): number | null {
-  const value = input.trim().replace("−", "-");
+  const value = normalizeCoordinates(input).replace(/^,+|,+$/g, "").trim();
+  const unitless = value.replace(degreeSuffix, "");
   let degrees: number;
 
-  if (decimal.test(value)) {
-    degrees = Number(value);
+  if (decimal.test(unitless)) {
+    degrees = Number(unitless);
   } else {
     const parts = value.match(separated) ?? value.match(axis === "ra" ? raUnits : decUnits);
     if (!parts) return null;
@@ -37,34 +61,34 @@ export const targetPresets = namedTargets.map(target => ({
 const plainNumber = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 
 /**
- * Splits free text into RA and Dec parts. Accepts "RA, Dec", "RA Dec" or six
- * space-separated sexagesimal fields ("17 57 48.5 +04 41 36").
+ * Possible RA / Dec splits of free text. With a comma or semicolon the text splits there;
+ * otherwise every split between whitespace-separated tokens is offered, so "RA Dec",
+ * six sexagesimal fields ("17 57 48.5 +04 41 36") and labelled forms
+ * ("Right Ascension 08h55m10.8s, declination -7d14m42.5s") all work.
  */
-function splitPosition(input: string): [string, string] | null {
-  const value = input.trim().replace(/−/g, "-");
-  if (value.includes(",")) {
-    const parts = value.split(",").map((part) => part.trim());
-    return parts.length === 2 && parts.every(Boolean) ? [parts[0], parts[1]] : null;
+function splitPosition(input: string): [string, string][] {
+  const value = normalizeCoordinates(input);
+  if (/[,;]/.test(value)) {
+    const parts = value.split(/[,;]/).map((part) => part.trim()).filter(Boolean);
+    return parts.length === 2 ? [[parts[0], parts[1]]] : [];
   }
-  const tokens = value.split(/\s+/);
-  if (tokens.length === 2) return [tokens[0], tokens[1]];
-  if (tokens.length === 6) return [tokens.slice(0, 3).join(" "), tokens.slice(3).join(" ")];
-  return null;
+  const tokens = value.split(" ").filter(Boolean);
+  return tokens.slice(1).map((_, i) => [tokens.slice(0, i + 1).join(" "), tokens.slice(i + 1).join(" ")]);
 }
 
 /** Parses an ICRS position typed as one string. Returns null when it is not a valid position. */
 export function parseSkyPosition(input: string): SkyPosition | null {
-  const parts = splitPosition(input);
-  if (!parts) return null;
-  const ra = parseAngle(parts[0], "ra");
-  const dec = parseAngle(parts[1], "dec");
-  return ra === null || dec === null ? null : { ra, dec };
+  for (const [raText, decText] of splitPosition(input)) {
+    const ra = parseAngle(raText, "ra");
+    const dec = parseAngle(decText, "dec");
+    if (ra !== null && dec !== null) return { ra, dec };
+  }
+  return null;
 }
 
 /** True for two plain decimal numbers, which can only mean a (possibly out-of-range) position. */
 export function isDecimalPair(input: string): boolean {
-  const parts = splitPosition(input);
-  return parts !== null && parts.every((part) => plainNumber.test(part));
+  return splitPosition(input).some((parts) => parts.every((part) => plainNumber.test(part.replace(degreeSuffix, ""))));
 }
 
 export function normalizeRa(ra: number) {

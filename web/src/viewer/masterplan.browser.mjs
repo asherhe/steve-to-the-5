@@ -8,9 +8,9 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const origin = process.env.VIEWER_TEST_URL ?? 'http://127.0.0.1:5188';
 const root = new URL('../../../', import.meta.url);
 const json = async path => JSON.parse(await readFile(new URL(path, root), 'utf8'));
-const response = await json('fixtures/archive/real-wise0855/response.json');
+const response = await json('fixtures/archive/real-barnard/response.json');
 const comparison = response.comparison;
-const manifest = await json(`fixtures/archive/real-wise0855/evidence/manifests/${comparison.id}.json`);
+const manifest = await json(`fixtures/archive/real-barnard/evidence/manifests/${comparison.id}.json`);
 const flow = await json('services/findings/fixtures/candidate-flow.json');
 const output = new URL('.local-test-temp/masterplan-browser/', root);
 await mkdir(output, { recursive: true });
@@ -42,7 +42,7 @@ async function contextFor(userId, viewport = { width: 1440, height: 1000 }) {
     if (u.pathname.includes('/assets/')) {
       if (failImage) return route.fulfill({ status: 404 });
       const hash = manifest.assets[u.pathname.split('/').at(-1)];
-      return hash ? route.fulfill({ contentType: 'image/png', body: await readFile(new URL(`fixtures/archive/real-wise0855/evidence/blobs/${hash}`, root)) }) : route.fulfill({ status: 404 });
+      return hash ? route.fulfill({ contentType: 'image/png', body: await readFile(new URL(`fixtures/archive/real-barnard/evidence/blobs/${hash}`, root)) }) : route.fulfill({ status: 404 });
     }
     if (u.pathname === '/api/findings/auth/config') return route.fulfill({ json: { url: authOrigin, publishableKey: 'test-only-publishable-key' } });
     if (u.pathname === '/api/findings/leaderboard') {

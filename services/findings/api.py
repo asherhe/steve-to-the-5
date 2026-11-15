@@ -9,7 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .models import CreatedFinding, ErrorResponse, Finding, FindingInput, Reply, ReplyInput, Viewport, ReviewInput, ReviewResponse, LeaderboardResult, PublicAuthConfig
+from .models import CreatedFinding, ErrorResponse, ExistingEntry, Finding, FindingInput, Reply, ReplyInput, Viewport, ReviewInput, ReviewResponse, LeaderboardResult, PublicAuthConfig, PointReviewInput, PointReviewResponse
+from .point_review import DUPLICATE_RADIUS_ARCSEC, SCORE_VERSION as POINT_SCORE_VERSION, prepare_point_review
 from .review import prepare_review
 from .supabase import ApiError, Supabase
 
@@ -44,7 +45,8 @@ class FindingsRoute(APIRoute):
         return handle
 
 
-def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None) -> APIRouter:
+def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
+                  load_asset=None, load_cutouts=None) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
         responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
@@ -86,13 +88,44 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
             raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
         async with review_slots:
             comparison = await evidence(data.comparisonId, data.survey)
-            response, candidate_key = await prepare_review(data, comparison, load_catalog_review)
+            response, candidate_key = await prepare_review(data, comparison, load_catalog_review, evidence, load_asset)
             await supabase.request("POST", "spherex_candidate_reviews", json={
                 "id": str(response.id), "author_id": author.id,
                 "comparison_id": data.comparisonId, "survey": data.survey,
                 "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key,
                 "fov_arcmin": comparison["field"]["fovArcmin"],
                 "score": response.score, "report": response.model_dump(mode="json"),
+            })
+            return response
+
+    async def existing_entry(ra, dec, key):
+        """The leaderboard entry already holding this object or a point within the duplicate radius."""
+        found = await supabase.rpc("spherex_point_entry_near", {
+            "p_ra": ra, "p_dec": dec, "p_radius_arcsec": DUPLICATE_RADIUS_ARCSEC, "p_object_key": key})
+        return ExistingEntry.model_validate(found) if found else None
+
+    def duplicate_error(entry: ExistingEntry) -> ApiError:
+        what = "This object" if entry.sameObject else f"A point {entry.separationArcsec:.1f}″ away"
+        return ApiError(409, "already_on_leaderboard",
+                        f"{what} is already on the leaderboard: “{entry.title}” by {entry.displayName}. Open it to join the discussion.")
+
+    @router.post("/points/review", status_code=201, response_model=PointReviewResponse,
+                 responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}})
+    async def point_review(data: PointReviewInput, author=Depends(signed_in)):
+        """Scores a marked point; the server runs the catalog chain and fetches survey cutouts."""
+        if load_catalog_review is None or load_cutouts is None:
+            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
+        if review_slots.locked():
+            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
+        async with review_slots:
+            response, candidate_key, key = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence)
+            response.duplicate = await existing_entry(data.ra, data.dec, key)
+            await supabase.request("POST", "spherex_candidate_reviews", json={
+                "id": str(response.id), "author_id": author.id,
+                "comparison_id": data.frame.comparisonId if data.frame else None,
+                "survey": data.frame.survey if data.frame else "spherex",
+                "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key, "object_key": key,
+                "fov_arcmin": None, "score": response.score, "report": response.model_dump(mode="json"),
             })
             return response
 
@@ -118,6 +151,13 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
 
     @router.post("", status_code=201, response_model=CreatedFinding, responses={401: {"model": ErrorResponse}})
     async def create_finding(finding: FindingInput, author=Depends(signed_in)):
+        if finding.reviewId:
+            point = await supabase.request("GET", "spherex_candidate_reviews", params={
+                "id": f"eq.{finding.reviewId}", "author_id": f"eq.{author.id}", "select": "*", "limit": 1})
+            if point and point[0]["report"].get("scoreVersion") == POINT_SCORE_VERSION:
+                return await create_point_finding(finding, point[0], author)
+        if finding.comparisonId is None:
+            raise ApiError(422, "invalid_comparison", "Choose a saved comparison or a completed point review before posting.")
         comparison = await evidence(finding.comparisonId, finding.survey)
         frames = comparison.get("frames")
         if not isinstance(frames, list) or not frames or any(
@@ -165,6 +205,24 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
                 "candidate_key": candidate_key,
             },
         )
+        return {"id": finding_id}
+
+    async def create_point_finding(finding: FindingInput, reviewed: dict, author):
+        """A leaderboard entry for a point review. One entry per object, checked atomically."""
+        if finding.comparisonId is not None or finding.marks:
+            raise ApiError(422, "invalid_review", "A point submission has no saved comparison or frame marks.")
+        if (reviewed["ra"], reviewed["dec"]) != (finding.ra, finding.dec):
+            raise ApiError(422, "invalid_review", "The review belongs to a different position. Check the point again.")
+        finding_id = uuid4()
+        result = await supabase.rpc("spherex_submit_point_finding", {
+            "p_id": str(finding_id), "p_ra": finding.ra, "p_dec": finding.dec,
+            "p_title": finding.title, "p_note": finding.note,
+            "p_author_id": author.id, "p_author_display_name": author.display_name,
+            "p_review_id": str(finding.reviewId), "p_object_key": reviewed.get("object_key"),
+            "p_survey": reviewed.get("survey") or "spherex", "p_radius_arcsec": DUPLICATE_RADIUS_ARCSEC,
+        })
+        if isinstance(result, dict) and result.get("duplicate"):
+            raise duplicate_error(ExistingEntry.model_validate(result["duplicate"]))
         return {"id": finding_id}
 
     @router.post(

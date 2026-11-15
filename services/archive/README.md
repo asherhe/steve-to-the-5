@@ -53,10 +53,12 @@ Response examples for all five domain statuses are in `fixtures/archive/response
 
 ### Retained real examples
 
-Two real examples are kept. They are different kinds of evidence.
+The viewer's **Open saved real example** uses `real-barnard`. The other real examples
+remain available by ID. They are different kinds of evidence.
 
 | Directory | What it is | Field |
 |---|---|---|
+| `fixtures/archive/real-barnard/` | Comparison built by a live archive query on 2026-11-15 (`evidenceKind: real_archive`), copied with its original cutouts. Built with `maxCutouts` 400 and `batchSize` 120 (recorded in its config) so the longest-baseline compatible pair in the sample could be chosen: D5, 4.29 µm, 2025-08-25 and 2026-09-22, alignment verified on 5 stationary sources. The saturated, masked core of Barnard's Star sits at its propagated Gaia DR3 position in each frame and is displaced about 2 px north (informal look, not a measurement) | Barnard's Star, Gaia DR3 position propagated to about 2025.9 (RA 269.44629°, Dec +4.76792°), 6 arcmin |
 | `fixtures/archive/real-wise0855/` | Comparison built by a live archive query with the current policy (`evidenceKind: real_archive`), copied with its original cutouts | WISE 0855 challenge position, 6 arcmin |
 | `fixtures/archive/real/` | Earlier hand-curated tutorial pair (manifest schema 1, `saved_real_example`) | IRSA tutorial field, 1 arcmin |
 
@@ -71,6 +73,14 @@ The ID is `originalComparisonId` in each `sources.json` (for the tutorial exampl
 `id` in `response.json`). `GET /api/comparisons/{id}` returns the stored response
 unchanged. The default server also reads the bundled tutorial pair from its fixture
 store on replay, so **Open saved real example** works alongside live field search.
+Saved examples are served by ID only: a field or name search always queries IRSA,
+even at a saved example's exact field.
+
+Reprocessing `real-barnard` offline with its recorded config reproduces the same
+frame IDs (identical rendered frames); the comparison ID differs because provenance
+then records the recorded client rather than the live archive. The CLI uses the default
+cutout budget, so pass the recorded config through `ProcessingConfig(**sources["config"])`
+when reprocessing it from Python.
 
 Reprocess the retained WISE 0855 cutouts offline:
 

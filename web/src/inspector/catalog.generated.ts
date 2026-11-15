@@ -163,7 +163,7 @@ export interface components {
             /** Radiusarcsec */
             radiusArcsec: number;
             /** Observedatutc */
-            observedAtUtc: string;
+            observedAtUtc?: string | null;
             /** Checks */
             checks: components["schemas"]["CatalogCheck"][];
             /** Limitations */
@@ -527,7 +527,7 @@ export interface operations {
                 ra: number;
                 dec: number;
                 radiusArcsec?: number;
-                observedAtUtc: string;
+                observedAtUtc?: string | null;
             };
             header?: never;
             path?: never;

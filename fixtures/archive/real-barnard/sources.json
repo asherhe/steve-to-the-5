@@ -1,0 +1,69 @@
+{
+  "evidenceKind": "saved_real_example",
+  "target": "Barnard's Star",
+  "originalComparisonId": "19c551e87f4b416c06c7052e0e2cc5cf62b5ec5539a3afc6b2e1eeb6e758afa9",
+  "originalEvidenceKind": "real_archive",
+  "field": {
+    "ra": 269.44629,
+    "dec": 4.76792,
+    "fovArcmin": 6.0
+  },
+  "config": {
+    "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+    "asinhSoftening": 0.1,
+    "attempts": 3,
+    "backgroundPolicy": "subtract_zodi",
+    "backoffBaseSeconds": 0.5,
+    "backoffMaxSeconds": 8.0,
+    "batchSize": 120,
+    "buildDeadlineSeconds": 900.0,
+    "concurrency": 3,
+    "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+    "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+    "cutoutPaddingArcsec": 20.0,
+    "lowerPercentile": 1.0,
+    "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+    "maxCandidates": 1000,
+    "maxCutouts": 400,
+    "maxDownloadBytes": 20000000,
+    "maxFrames": 12,
+    "minCommonValidCoverage": 0.75,
+    "minGeometricCoverage": 0.98,
+    "minValidCoverage": 0.8,
+    "pixelScaleArcsec": 6.2,
+    "resampling": "bilinear_with_full_valid_support",
+    "targetRegionRadiusPixels": 5.0,
+    "timeoutSeconds": 30.0,
+    "upperPercentile": 99.5,
+    "wavelengthToleranceBandwidth": 0.25
+  },
+  "selectionScope": "Only the frames selected by the original build are retained; offline reprocessing sees these inputs alone and is not an archive search.",
+  "visibleChange": "informal_offset_consistent_with_proper_motion",
+  "note": "Built by a live IRSA query on 2026-11-15 (field centred on the Gaia DR3 4472832130942575872 position propagated to about 2025.9; cutout budget raised to 400 with batches of 120 so the longest-baseline compatible pair in the sample could be chosen). Informal look at the two PNGs at 4.29 um, 393 days apart: the saturated, masked core of Barnard's Star sits at the propagated Gaia position in each frame and is displaced about 2 pixels north in the later frame, as expected from its ~10.4 arcsec/yr proper motion; field stars repeat. Not a measured astrometric motion.",
+  "sources": [
+    {
+      "observation": {
+        "detector": 5,
+        "endMjd": 60912.715479,
+        "observationId": "2025W35_1A_0146_1",
+        "release": "dr1",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_1D5_spx_l2b-v27-2026-230.fits",
+        "startMjd": 60912.714147
+      },
+      "sha256": "cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35",
+      "path": "evidence/blobs/cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35"
+    },
+    {
+      "observation": {
+        "detector": 5,
+        "endMjd": 61305.629353,
+        "observationId": "2026W39_1A_0371_1",
+        "release": "qr3",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/5/level2_2026W39_1A_0371_1D5_spx_l2b-v27-2026-268.fits",
+        "startMjd": 61305.628021
+      },
+      "sha256": "74312408b4292545eb9195a4622d939147b21e3d1e5c9277effcf4e968411df1",
+      "path": "evidence/blobs/74312408b4292545eb9195a4622d939147b21e3d1e5c9277effcf4e968411df1"
+    }
+  ]
+}

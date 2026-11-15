@@ -1,0 +1,103 @@
+/* Community findings pane. Rows follow the leaderboard's list style. */
+.community { display: grid; gap: 0.625rem; font-size: 0.875rem; }
+
+/* Header: show-on-map switch, status line and retry. */
+.findings-activity { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.75rem; }
+.findings-activity .activity-status { flex: 1 1 10rem; margin: 0; color: var(--muted, #8a9aa6); font: 400 0.75rem/1.4 var(--mono, monospace); }
+.findings-activity .activity-status[data-status="error"] { color: var(--problem, #ff8a80); }
+.floating-pane .activity-switch,
+.floating-pane .activity-switch:hover:enabled {
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border-color: var(--line-strong, #23313b);
+  background: transparent;
+  color: var(--text, #d8e1e8);
+}
+.floating-pane .activity-switch:hover:enabled { border-color: var(--amber, #ffb547); }
+.activity-switch-track {
+  position: relative;
+  width: 1.75rem;
+  height: 1rem;
+  border: 1px solid var(--line-strong, #23313b);
+  border-radius: 999px;
+  background: var(--control, #0b1116);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.activity-switch-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--muted, #8a9aa6);
+  transition: transform 120ms ease, background 120ms ease;
+}
+.activity-switch[aria-checked="true"] .activity-switch-track { border-color: var(--amber, #ffb547); background: rgba(255, 181, 71, 0.18); }
+.activity-switch[aria-checked="true"] .activity-switch-thumb { transform: translateX(0.75rem); background: var(--amber, #ffb547); }
+.floating-pane .activity-retry { min-height: 2.25rem; }
+
+/* Sort: a compact segmented control. */
+.community-sort { display: flex; }
+.floating-pane .community-sort button { flex: 1; min-height: 2rem; padding: 0.25rem 0.5rem; border-radius: 0; font-size: 0.6875rem; }
+.floating-pane .community-sort button + button { border-left: 0; }
+
+/* Rows. */
+.community-list { display: grid; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--hair, #16212a); }
+.community-entry { border-top: 1px solid var(--hair, #16212a); border-left: 2px solid transparent; }
+.community-entry[data-highlighted] { border-left-color: var(--amber, #ffb547); background: rgba(255, 181, 71, 0.05); }
+.community-entry[aria-current="true"] { border-left-color: var(--amber, #ffb547); background: rgba(255, 181, 71, 0.09); }
+.floating-pane .community-row,
+.floating-pane .community-row:hover:enabled {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.6rem 0.375rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+}
+.floating-pane .community-row:hover:enabled { background: rgba(255, 255, 255, 0.03); }
+.community-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding-inline: 0.25rem;
+  box-sizing: border-box;
+  border: 1.5px solid var(--amber, #ffb547);
+  border-radius: 999px;
+  background: var(--panel-solid, #080c10);
+  color: var(--amber, #ffb547);
+  font: 600 0.75rem/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.community-entry[data-kind="cluster"] .community-badge { border-style: dashed; color: var(--text, #d8e1e8); }
+.community-entry[data-highlighted] .community-badge,
+.community-entry[aria-current="true"] .community-badge { background: var(--amber, #ffb547); color: var(--bg, #05070a); }
+.community-body { display: grid; gap: 0.2rem; min-width: 0; }
+.community-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.community-entry[data-kind="cluster"] .community-title { color: var(--muted, #8a9aa6); font-weight: 400; }
+.community-meta { display: flex; flex-wrap: wrap; gap: 0 0.5rem; color: var(--muted, #8a9aa6); font: 400 0.6875rem/1.5 var(--mono, monospace); }
+/* The dot trails each part, so a wrapped line never starts with one. */
+.community-meta span:not(:last-child)::after { content: "·"; margin-left: 0.5rem; }
+.community-hint { margin: 0; color: var(--muted, #8a9aa6); font-size: 0.8125rem; }

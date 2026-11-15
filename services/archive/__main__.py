@@ -152,7 +152,7 @@ def main():
                               buildDeadlineSeconds=args.deadline)
     fixtures = Path(__file__).resolve().parents[2] / "fixtures" / "archive"
     examples = ([fixtures / name / "evidence" for name in
-                 ("real", "real-wise0855", "real-epsindib", "real-rdraconis")]
+                 ("real", "real-barnard", "real-wise0855", "real-epsindib", "real-rdraconis")]
                 if args.command in {"serve", "replay"} else None)
     store = LocalStore(args.storage / "evidence", examples=examples)
     if args.synthetic and args.recorded:

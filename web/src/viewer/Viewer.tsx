@@ -47,8 +47,8 @@ import { cutoutWcs } from "./cutoutWcs";
 import { SpectralRuler, bandColors } from "./SpectralRuler";
 import {
   bandForWavelength,
+  defaultMapSlice,
   spherexMosaicGuideTimeUtc,
-  spherexMosaicSlice,
 } from "./spherexSurvey";
 import {
   evidenceLink,
@@ -62,6 +62,8 @@ import { BuildProgressBar } from "./BuildProgress";
 import { wiseBandName, type SkyView } from "./wiseSurvey";
 import { InfoTip } from "./InfoTip";
 import { Tutorial, useTutorial } from "./Tutorial";
+import { PointCheck, type CheckPoint, type MarkedPoint, type SurveyEvidence } from "./PointCheck";
+import type { GaiaNeighbour } from "./catalogCheckSummary";
 import "./styles.css";
 
 const scenarios: Record<ComparisonResult["status"], string> = {
@@ -143,6 +145,8 @@ export interface ViewerProps {
   Inspector: ComponentType<Omit<SourceInspectorProps, "client">>;
   Discussion?: ComponentType<EvidenceDiscussionProps>;
   Review?: ComponentType<CandidateReviewSlotProps>;
+  /** Checks a double-clicked map point against the catalog chain. Marking is off without it. */
+  checkPoint?: CheckPoint;
   Activity?: ComponentType<CommunityActivityProps>;
   Account?: ComponentType<{ mode: "button" | "pane" }>;
   loadFinding?: (
@@ -171,6 +175,7 @@ export function Viewer({
   Inspector,
   Discussion,
   Review,
+  checkPoint,
   Account,
   Activity,
   loadFinding,
@@ -223,6 +228,12 @@ export function Viewer({
   const [communityOpen, setCommunityOpen] = useState(false);
   const [viewport, setViewport] = useState<FindingsViewport | null>(null);
   const [communityMarkers, setCommunityMarkers] = useState<FindingMarker[]>([]);
+  // Hovering a finding in the list or on the map highlights it in both.
+  const [highlightedMarker, setHighlightedMarker] = useState<string | null>(null);
+  // Point double-clicked on the map, with the dated frame it was marked on (for its time).
+  const [markedPoint, setMarkedPoint] = useState<(MarkedPoint & { comparisonId?: string; frameId?: string; survey: SkyView }) | null>(null);
+  // Search radius chosen in the check pane; a submission scores the same cone.
+  const [checkRadius, setCheckRadius] = useState(30);
   const [reviewOpen, setReviewOpen] = useState(() => new URLSearchParams(location.search).has("reviewFrame"));
   const [comparisonLarge, setComparisonLarge] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
@@ -258,7 +269,7 @@ export function Viewer({
   const target = resolvedTarget?.request === request ? resolvedTarget.result : null;
   const targetLabel = target?.identity?.commonName || target?.identity?.displayName || target?.name;
   const [copyStatus, setCopyStatus] = useState("");
-  const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
+  const [mapSlice, setMapSlice] = useState(defaultMapSlice);
   const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">(
     "loading",
   );
@@ -385,6 +396,34 @@ export function Viewer({
     setInspectFrame(false);
     openPanel("gaia");
   }
+  function markPoint(position: SkyPosition, onDatedFrame: boolean, onSpherexMosaic: boolean) {
+    // The marked point is also the NEOSSat selection. Marking is a deliberate choice of
+    // point, so an open NEOSSat panel loads it at once instead of waiting for Refresh.
+    setCrossReferencePosition(position);
+    if (neossatOpen) void neossat.refresh(position);
+    const frame = onDatedFrame && comparison ? playback.frame : null;
+    // Keep the frame the point was marked on in view while its check runs.
+    if (frame) playback.pause();
+    setMarkedPoint({
+      position,
+      survey: skyView,
+      onSpherexMosaic,
+      comparisonId: frame ? comparison!.id : undefined,
+      frameId: frame?.id,
+      frame: frame
+        ? { observedAtUtc: frame.observedAtUtc, label: `${survey.name} frame ${comparison!.frames.indexOf(frame) + 1} (${frame.wavelengthUm.toFixed(3)} µm)` }
+        : null,
+    });
+  }
+  function reviewMarkedPoint() {
+    if (!markedPoint || !markedFrame || !comparison) return;
+    playback.select(playback.frames.findIndex(f => f.id === markedFrame.id));
+    setFrameSelection({ comparisonId: comparison.id, survey: skyView, position: markedPoint.position,
+      frame: { frameId: markedFrame.id, observedAtUtc: markedFrame.observedAtUtc, wavelengthUm: markedFrame.wavelengthUm } });
+    setInspectFrame(true);
+    setReviewOpen(true);
+  }
+
   function inspectCutout(
     comparisonId: string,
     position: SkyPosition,
@@ -445,7 +484,8 @@ export function Viewer({
         : null;
   useEffect(() => {
     if (preview.kind === "saved" && preview.comparison.id === savedExampleId)
-      setFocus({ ...preview.comparison.field, fovArcmin: Math.min(30, preview.comparison.field.fovArcmin * 3) });
+      // Close enough that a pixel-scale shift between the dated frames is visible when blinking.
+      setFocus({ ...preview.comparison.field });
   }, [preview, savedExampleId]);
   const playback = usePlayback(
     comparison,
@@ -503,6 +543,74 @@ export function Viewer({
       ? barnardGaiaSourceId
       : undefined;
 
+  // The signed-in candidate review needs the dated frame the point was marked on.
+  const markedFrame = markedPoint?.frameId && comparison && comparison.id === markedPoint.comparisonId && skyView === markedPoint.survey
+    ? comparison.frames.find(f => f.id === markedPoint.frameId) ?? null : null;
+  // Saved real comparisons per survey, for the brightness rule (bright in two surveys).
+  const savedComparison = (view: SkyView) => {
+    const value = loaders[view].preview;
+    const result = value.kind === "search" ? value.result.comparison : value.kind === "saved" ? value.comparison : null;
+    return result && ["real_archive", "saved_real_example"].includes(String(result.provenance?.evidenceKind)) ? result : null;
+  };
+  const covers = (view: SkyView, position: SkyPosition) => {
+    const saved = savedComparison(view);
+    const point = saved && cutoutWcs(saved.grid)?.toImage(position);
+    return !!point && point.x >= -0.5 && point.y >= -0.5 && point.x < saved!.grid.width - 0.5 && point.y < saved!.grid.height - 0.5;
+  };
+  /** Other surveys' saved comparisons covering a point, sent with a submission for brightness. */
+  function brightnessEvidenceFor(position: SkyPosition | null, primary: SkyView) {
+    const others: SkyView[] = primary === "wise" ? ["spherex"] : wiseSource ? ["wise"] : [];
+    return position ? others.filter(view => covers(view, position)).map(view => ({ survey: view, comparisonId: savedComparison(view)!.id })) : [];
+  }
+  /** Builds a comparison of the survey's dated frames centred on the point. */
+  function loadSurveyAt(view: SkyView, position: SkyPosition) {
+    if (view !== skyView) switchView(view);
+    setMapNotice("");
+    setCrossReferencePosition(position);
+    loaders[view].setRequest({ kind: "field", field: { ra: position.ra, dec: position.dec, fovArcmin: 6 } });
+    setTimeOpen(true);
+    openPanel("comparison");
+  }
+  const checkSurveys: SurveyEvidence[] = markedPoint ? [
+    { label: "SPHEREx", loaded: covers("spherex", markedPoint.position), onLoad: () => loadSurveyAt("spherex", markedPoint.position) },
+    wiseSource
+      ? { label: "WISE", loaded: covers("wise", markedPoint.position), onLoad: () => loadSurveyAt("wise", markedPoint.position) }
+      : { label: "WISE", loaded: false, note: "WISE service not connected" },
+    { label: "NEOSSat", loaded: false, note: "previews only, not measurable yet" },
+  ] : [];
+  const markedSurveyName = markedPoint ? surveys[markedPoint.survey].name : "";
+  const checkSubmitHint = !markedPoint || markedFrame ? undefined
+    : !markedPoint.frame
+      ? { text: "Submitting needs saved dated frames covering this point. Load them, then double-click the point on a frame.",
+          action: { label: `Load ${survey.name} frames here`, run: () => loadSurveyAt(skyView, markedPoint.position) } }
+      : markedPoint.survey !== skyView
+        ? { text: `This point was marked on a ${markedSurveyName} frame.`,
+            action: { label: `Back to ${markedSurveyName} to submit`, run: () => switchView(markedPoint.survey) } }
+        : { text: "The frame this point was marked on is no longer loaded. Double-click the point again on a dated frame." };
+  // Gaia positions in the check pane are moved to the time the map shows, as in the inspector:
+  // the marked frame's time, the mosaic guide date on the SPHEREx mosaic, or none (catalog epoch).
+  const checkPredictionTime = markedFrame ? markedFrame.observedAtUtc
+    : markedPoint?.onSpherexMosaic ? spherexMosaicGuideTimeUtc : null;
+  const checkShownSourceId = markedFrame
+    ? (comparisonMark && comparisonMark.comparisonId === comparison?.id ? comparisonMark.source.sourceId : null)
+    : catalogMark?.sourceId ?? null;
+  /** Draws a Gaia source from the check pane with the same marks the source inspector uses. */
+  function showCheckSource(source: GaiaNeighbour | null) {
+    if (markedFrame && comparison) {
+      setComparisonMark(source ? { comparisonId: comparison.id, source } : null);
+      return;
+    }
+    if (!source) { setCatalogMark(null); return; }
+    const at = checkPredictionTime ? source.predicted : null;
+    setCatalogMark({ frameId: null, ra: (at ?? source).ra, dec: (at ?? source).dec, sourceId: source.sourceId,
+      predicted: at !== null, astrometry: source, refEpoch: source.refEpoch });
+  }
+  function clearMarkedPoint() {
+    if (checkShownSourceId) showCheckSource(null);
+    // The check pane remounts at its default radius.
+    setCheckRadius(30);
+    setMarkedPoint(null);
+  }
   const restoredReview = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -562,7 +670,7 @@ export function Viewer({
       preview.result.status === "upstream_unavailable");
 
   function openExample() {
-    setMapNotice("Saved WISE 0855 field: 6 arcmin image footprint; the requested object is not confirmed in these frames.");
+    setMapNotice("Saved Barnard’s Star field: blink the two dates to see the star shift north against the fixed background stars.");
     setTimeOpen(true);
     setRequest({ kind: "saved", id: savedExampleId });
     setComparisonLarge(false);
@@ -643,9 +751,14 @@ export function Viewer({
         onViewport={setViewport}
         communityMarkers={communityMarkers}
         onFindingMarker={activateFindingMarker}
+        highlightedMarker={highlightedMarker}
+        onHighlightMarker={setHighlightedMarker}
+        activeFindingId={finding?.id ?? null}
         focus={focus}
         onCompare={compareViewport}
         onInspect={inspect}
+        pointMark={markedPoint?.position ?? null}
+        onMarkPoint={checkPoint ? markPoint : undefined}
         onAdvancedSearch={() => openPanel("search")}
         catalogMark={catalogMark}
         target={target}
@@ -668,9 +781,10 @@ export function Viewer({
                 selected: selection?.position ?? null,
                 marks: finding?.marks ?? [],
                 predictedMark: frameMark,
-                predictedLabel:
-                  markedName ??
-                  (markedSourceId ? `Gaia DR3 ${markedSourceId}` : undefined),
+                // Label the source the frame mark was predicted from (set by the inspector or the check pane).
+                predictedLabel: frameMark && markedSource
+                  ? comparisonMark?.displayName ?? `Gaia DR3 ${markedSource.sourceId}`
+                  : undefined,
               }
             : null
         }
@@ -809,7 +923,6 @@ export function Viewer({
               [
                 ["search", "Advanced"],
                 ["comparison", survey.panel],
-                ["gaia", "Gaia"],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -830,7 +943,6 @@ export function Viewer({
                 if (!neossatOpen) neossat.open(crossReferencePosition);
                 setNeossatOpen(!neossatOpen);
               }}>NEOSSat</button>
-            {Review && <button type="button" aria-expanded={reviewOpen} aria-controls="review-panel" onClick={() => { playback.pause(); setReviewOpen(!reviewOpen); }}>Review candidate</button>}
             {Activity && <button type="button" aria-expanded={communityOpen} aria-controls="community-panel" onClick={() => setCommunityOpen(!communityOpen)}>Community</button>}
             {Account && <Account mode="button" />}
             <button
@@ -876,9 +988,27 @@ export function Viewer({
         <NeossatPanel position={crossReferencePosition} snapshot={neossat} />
       </FloatingPane>
       {Account && <Account mode="pane" />}
-      {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} /></FloatingPane>}
+      {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} highlighted={highlightedMarker} onHighlight={setHighlightedMarker} activeFindingId={finding?.id ?? null} /></FloatingPane>}
+      {checkPoint && (
+        <FloatingPane id="point-check-panel" title="Check this point" anchor="left" open={!!markedPoint} reset={layoutReset} onClose={clearMarkedPoint}>
+          {markedPoint && (
+            <PointCheck
+              point={markedPoint}
+              check={checkPoint}
+              onClear={clearMarkedPoint}
+              onReview={Review && markedFrame ? reviewMarkedPoint : undefined}
+              predictionTimeUtc={checkPredictionTime}
+              shownSourceId={checkShownSourceId}
+              onShowSource={showCheckSource}
+              surveys={checkSurveys}
+              onRadiusChange={setCheckRadius}
+              submitHint={checkSubmitHint}
+            />
+          )}
+        </FloatingPane>
+      )}
       {Review && <FloatingPane id="review-panel" title="Candidate review" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>
-        {reviewOpen && <Review comparison={comparison} frame={playback.frame ?? null} position={inspectingCutout && playback.frame && playback.assets[playback.frame.id]?.state === "ready" ? inspectingCutout.position : null} survey={skyView} synthetic={synthetic} onPrepareSignIn={prepareReviewSignIn} onCreated={(id, comparisonId, view) => {
+        {reviewOpen && <Review defaultRadiusArcsec={markedFrame ? checkRadius : undefined} brightnessEvidence={brightnessEvidenceFor(inspectingCutout?.position ?? null, skyView)} comparison={comparison} frame={playback.frame ?? null} position={inspectingCutout && playback.frame && playback.assets[playback.frame.id]?.state === "ready" ? inspectingCutout.position : null} survey={skyView} synthetic={synthetic} onPrepareSignIn={prepareReviewSignIn} onCreated={(id, comparisonId, view) => {
           setReviewOpen(false); setLeaderboardRefresh(n => n + 1); setLeaderboardOpen(true);
           openFinding(comparisonId, id, view);
         }} />}
@@ -1177,7 +1307,7 @@ export function Viewer({
         {!comparison && <p>Load dated images using the Time window.</p>}
         {comparison && (
           <>
-            {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">WISE 0855 field: 6 arcminutes across at RA 133.795129°, Dec −7.245147° (ICRS; source coordinate epoch unspecified). The outline marks the saved field, not a detected object. This SPHEREx pair does not establish that WISE 0855 appears or moves in these frames.</p>}
+            {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">Barnard’s Star field: 6 arcminutes across, centred on the star’s Gaia DR3 position propagated to late 2025. Both frames are at 4.29 µm, 393 days apart. The star is saturated, so its core is masked and shows as a hole; blink the dates and the whole bright patch shifts about 2 pixels (≈11″) north while the field stars stay put. That matches its known proper motion of about 10.4″ per year. This is a visual quick-look, not a measured motion.</p>}
             <p>
               {synthetic || kind === "synthetic_fixture"
                 ? "Synthetic comparison"

@@ -1,5 +1,5 @@
 // Engagement layer only. An entry references saved evidence by ID; it is never evidence itself,
-// and participation points measure review effort, never rarity or a discovery.
+// and points follow the server's point-check-v2 rules, never rarity or a discovery.
 
 export type LeaderboardBoard = "daily" | "allTime";
 

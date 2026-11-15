@@ -1,0 +1,51 @@
+/* Check-chain results. Uses the source inspector's theme variables (--si-*). */
+
+.check-chain { display: grid; gap: 10px; }
+
+.cc-verdict {
+  border: 1px solid var(--si-border);
+  border-left-width: 3px;
+  padding: 8px 10px;
+}
+.cc-verdict__title { margin: 0 0 2px; font-weight: 600; }
+.cc-verdict__detail { margin: 0; color: var(--si-muted); }
+.cc-verdict--catalogued { border-left-color: var(--si-muted); }
+.cc-verdict--incomplete { border-left-color: var(--si-warn); }
+.cc-verdict--incomplete .cc-verdict__title { color: var(--si-warn); }
+.cc-verdict--uncatalogued_candidate { border-left-color: var(--si-accent); }
+.cc-verdict--uncatalogued_candidate .cc-verdict__title { color: var(--si-accent); }
+
+.cc-fixture { margin: 0; color: var(--si-warn); font-size: 12px; }
+
+.cc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: cc-step; }
+.cc-step {
+  counter-increment: cc-step;
+  border-top: 1px solid var(--si-border);
+  padding-top: 6px;
+}
+.cc-step__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.cc-step__label { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.cc-step__label::before { content: counter(cc-step) ". "; color: var(--si-muted); font-weight: 400; }
+.cc-step__label a { color: inherit; }
+.cc-step__message { margin: 2px 0 0; color: var(--si-muted); font-size: 13px; }
+
+.cc-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border: 1px solid var(--si-border);
+  color: var(--si-muted);
+}
+.cc-step--match .cc-chip { color: var(--si-fg); border-color: var(--si-fg); }
+.cc-step--unavailable .cc-chip,
+.cc-step--not_configured .cc-chip { color: var(--si-warn); border-color: var(--si-warn); }
+
+.cc-matches { list-style: none; margin: 4px 0 0; padding: 0 0 0 12px; display: grid; gap: 2px; font-size: 13px; }
+.cc-matches li { display: flex; flex-wrap: wrap; gap: 0 8px; }
+.cc-match__name { overflow-wrap: anywhere; }
+.cc-match__name a { color: var(--si-accent); }
+.cc-match__meta, .cc-match__more { color: var(--si-muted); }
+
+.cc-footnote { margin: 0; color: var(--si-muted); font-size: 12px; overflow-wrap: anywhere; }

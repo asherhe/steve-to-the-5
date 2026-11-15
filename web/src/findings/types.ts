@@ -14,7 +14,11 @@ export type SkyPosition = { ra: number; dec: number };
 
 export type ApiErrorBody = { code: string; message: string };
 
-export type FindingPin = { id: string; ra: number; dec: number; title: string };
+/** Summary fields are optional: older servers return only id, position and title. */
+export type FindingPin = {
+  id: string; ra: number; dec: number; title: string;
+  authorDisplayName?: string | null; createdAtUtc?: string | null; replyCount?: number | null; survey?: Survey | null;
+};
 /** zoomTo: integer map zoom at which this cluster resolves into pins. */
 export type FindingCluster = { ra: number; dec: number; count: number; zoomTo: number };
 export type FindingListItem = FindingPin | FindingCluster;

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createWiseDataSource } from "./production.ts";
 import { archiveFieldLimits, wiseFieldLimits } from "./archive.ts";
-import { compareReachDeg, fieldWidthFromView } from "./compareField.ts";
+import { compareFieldMaxArcmin, compareReachDeg, fieldWidthFromView } from "./compareField.ts";
 
 // The WISE service returns the archive's comparison shape, so the archive owner's
 // synthetic response stands in for its body here. Only routing is under test.
@@ -84,10 +84,13 @@ test("a compare from the map uses the view when it fits and its centre when it i
   assert.equal(fieldWidthFromView(0.5 / 60, wiseFieldLimits), 1);
   // Inside the limits the view itself is the field.
   assert.equal(fieldWidthFromView(6 / 60, wiseFieldLimits), 6);
-  // Wider views compare the largest allowed field at the same centre.
-  assert.equal(fieldWidthFromView(2, wiseFieldLimits), 12);
-  assert.equal(fieldWidthFromView(2, archiveFieldLimits), 30);
-  assert.equal(fieldWidthFromView(compareReachDeg, wiseFieldLimits), 12);
+  assert.equal(fieldWidthFromView(4 / 60, archiveFieldLimits), 4);
+  // Wider views compare a capped field at the same centre, below the services' maxima.
+  assert.equal(compareFieldMaxArcmin, 10);
+  assert.equal(fieldWidthFromView(20 / 60, archiveFieldLimits), 10);
+  assert.equal(fieldWidthFromView(2, wiseFieldLimits), 10);
+  assert.equal(fieldWidthFromView(2, archiveFieldLimits), 10);
+  assert.equal(fieldWidthFromView(compareReachDeg, wiseFieldLimits), 10);
   // Beyond the reach, and for unusable values, no compare is offered.
   for (const width of [compareReachDeg + 0.01, 180, 360, 0, -1, NaN]) {
     assert.equal(fieldWidthFromView(width, wiseFieldLimits), null);

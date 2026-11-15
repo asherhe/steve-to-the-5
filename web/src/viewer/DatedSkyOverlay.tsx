@@ -66,7 +66,8 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
       for(let i=1;i<=16;i++)points.push(skyPoint(grid.width-0.5,-0.5+i*grid.height/16));
       for(let i=1;i<=16;i++)points.push(skyPoint(grid.width-0.5-i*grid.width/16,grid.height-0.5));
       for(let i=1;i<=16;i++)points.push(skyPoint(-0.5,grid.height-0.5-i*grid.height/16));
-      context.strokeStyle="#8ce5ff";context.lineWidth=1.5;context.setLineDash([5,4]);context.beginPath();
+      // Same amber outline the map uses for a requested field, so a loaded field reads as that field.
+      context.strokeStyle="#ffb547";context.lineWidth=1.5;context.beginPath();
       let previous:[number,number]|undefined;
       for(const point of points){
         if(point && point.every(Number.isFinite)){
@@ -75,7 +76,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
           previous=point;
         }else previous=undefined;
       }
-      context.stroke();context.setLineDash([]);
+      context.stroke();
       const corner=points.find(point=>point && point[0]>=0 && point[0]<=box.width && point[1]>=0 && point[1]<=box.height);
       setLabel(corner?{x:Math.max(8,Math.min(box.width-240,corner[0])),y:Math.max(70,Math.min(box.height-30,corner[1]))}:null);
       function mark(position:SkyPosition,color:string){const point=sky.world2pix(position.ra,position.dec);if(!point || !point.every(Number.isFinite))return;context.strokeStyle=color;context.beginPath();context.arc(...point,7,0,2*Math.PI);context.stroke();}

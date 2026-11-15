@@ -32,13 +32,13 @@ const steps: Step[] = [
     <p>A saved real example is a labelled teaching field. Enlarging it cannot add detail to its original pixels.</p>
   </> },
   { title: "4. Review a point", body: <>
-    <p>Click inside a dated image, or focus its inspect button and press Enter to select the center. Gaia provides catalog measurements and labelled position predictions.</p>
-    <p>Choose <strong>Review this point</strong>. In the local demo, checks are skipped and posts are simulated in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
+    <p><strong>Double-click</strong> a point, on a dated image or anywhere on the map. A box with an X marks it and six catalogs are checked at once, no sign-in needed. Use <strong>Show on map</strong> to see where a nearby Gaia source is, predicted for the image date. A single click opens the full Gaia source inspector.</p>
+    <p>For a point on a dated image, choose <strong>Submit to leaderboard</strong>. In the local demo, checks are skipped and posts are simulated in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
     <p>These are independent cone searches, not identity verdicts. Different epochs, motion and sensitivity matter. No result does not mean a new object; an unavailable catalog stays unavailable.</p>
   </> },
   { title: "5. Share and discuss", body: <>
     <p>Add a title and a question or observation. The reviewed point stays marked on its original frame. Posting puts the review on the <strong>Participation leaderboard</strong> with an evidence link and public discussion.</p>
-    <p>Points reward documented review effort, regardless of match count: 10 for saved real evidence, 10 for multiple dates and 5 per completed catalog search, up to 50. Partial or failed searches earn no catalog points. This is not rarity or a verified discovery.</p>
+    <p>Points: 10 if a catalog already lists a source at the point. 20 if none of the six catalogs lists one and the server measures the point at least 5σ above its surroundings in saved frames of two surveys (SPHEREx and WISE). Otherwise 0, and you can still post it. Points are not a discovery.</p>
     <p>Saved evidence reopens with the same frames, dates, wavelength, stretch and marks. Local demo replies stay in this browser.</p>
   </> },
   { title: "Gaps stay visible", body: <>

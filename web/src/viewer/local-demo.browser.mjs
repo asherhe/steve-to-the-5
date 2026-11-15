@@ -5,9 +5,9 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const origin = process.env.VIEWER_TEST_URL ?? 'http://127.0.0.1:5173';
 const root = new URL('../../../', import.meta.url);
 const liveArchive = process.env.LOCAL_REAL_ARCHIVE === '1';
-const response = JSON.parse(await readFile(new URL('fixtures/archive/real-wise0855/response.json', root)));
+const response = JSON.parse(await readFile(new URL('fixtures/archive/real-barnard/response.json', root)));
 const comparison = response.comparison;
-const record = JSON.parse(await readFile(new URL(`fixtures/archive/real-wise0855/evidence/manifests/${comparison.id}.json`, root)));
+const record = JSON.parse(await readFile(new URL(`fixtures/archive/real-barnard/evidence/manifests/${comparison.id}.json`, root)));
 const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL ?? 'chrome', headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -20,7 +20,7 @@ try {
     if (url.pathname === `/api/comparisons/${comparison.id}`) return route.fulfill({ json: response });
     if (url.pathname.startsWith(`/api/comparisons/${comparison.id}/assets/`)) {
       const sha = record.assets[url.pathname.split('/').at(-1)];
-      return sha ? route.fulfill({ contentType: 'image/png', body: await readFile(new URL(`fixtures/archive/real-wise0855/evidence/blobs/${sha}`, root)) }) : route.fulfill({ status: 404 });
+      return sha ? route.fulfill({ contentType: 'image/png', body: await readFile(new URL(`fixtures/archive/real-barnard/evidence/blobs/${sha}`, root)) }) : route.fulfill({ status: 404 });
     }
     if (url.pathname === '/api/comparisons') return route.fulfill({ json: response });
     if (url.pathname.startsWith('/api/')) return route.fulfill({ status: 503 });
@@ -33,7 +33,7 @@ try {
   assert.equal(await page.getByRole('button', { name: 'Sign in', exact: true }).count(), 0);
   await page.getByRole('button', { name: 'Time', exact: true }).click();
   await page.getByRole('button', { name: 'Open saved real example' }).click();
-  await page.getByText('WISE 0855 field:', { exact: false }).first().waitFor();
+  await page.getByText('Barnard’s Star field:', { exact: false }).first().waitFor();
   await page.locator('.comparison-frame img').evaluate(img => img.decode());
   assert.equal(await page.locator('.comparison-frame img').evaluate(img => img.naturalWidth), 59);
   await page.getByRole('button', { name: 'Inspect image. Press Enter to inspect its center.' }).press('Enter');

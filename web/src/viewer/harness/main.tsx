@@ -9,6 +9,7 @@ const fixtureCatalog = {
   async nearby() { return { sources: [] }; },
   async detail() { throw new Error("No fixture catalog source selected."); },
   async resolve() { throw new Error("Name resolution uses the fixture viewer adapter."); },
+  async review(): Promise<never> { throw new Error("The fixture harness has no catalog chain."); },
 };
 function Inspector(props: Omit<SourceInspectorProps, "client">) {
   return <SourceInspector {...props} client={fixtureCatalog} />;
