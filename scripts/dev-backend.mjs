@@ -18,6 +18,12 @@ const services = {
     cwd: root,
     args: ["-m", "services.archive", "serve", "--port", "8000"],
   },
+  // Reuses the archive's Python environment; it has the same dependencies.
+  wise: {
+    directory: archive,
+    cwd: root,
+    args: ["-m", "services.wise", "serve", "--port", "8020"],
+  },
   // Needs SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVER_KEY and
   // SPHEREX_COMPARISON_BASE_URL in the environment; see services/findings/README.md.
   findings: {
@@ -29,7 +35,7 @@ const services = {
 
 const service = services[process.argv[2]];
 if (!service) {
-  console.error("Choose a development service: gaia, spherex or findings.");
+  console.error("Choose a development service: gaia, spherex, wise or findings.");
   process.exit(1);
 }
 

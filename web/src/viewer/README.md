@@ -25,9 +25,46 @@ The sky fills the viewport. Open **Search**, **Comparison**, or **Gaia** in the 
 
 Click a dated image to open Gaia at the selected sky coordinate. Keyboard users can focus the image and press Enter to inspect its center. The selection stays at the same sky position across frames. A Gaia prediction marked from the inspector appears only on the frame used for that prediction. These marks are local to the current viewer session.
 
-Pan and zoom, then select **Compare this field** once the map width is within the archive's 1–30 arcmin range. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
+**Scan wavelengths**, on the wavelength ruler under the map, steps the map layer through the cube's wavelengths from short to long and loops until you press **Stop scan**, drag the ruler or use its keys. It shows the combined all-sky mosaic, not dated frames, at your current position and zoom.
+
+To make that instant, the ruler **preloads ten wavelengths**, evenly spaced from the shortest up to band 5, once the map has been still for about 1.5 s, and shows "Preloading wavelengths n/10" until "10 wavelengths ready". It fetches each one's tiles for the current view into the browser cache (`tileWatch.ts` records which tiles Aladin asked for, since Aladin reports no loaded signal, and fetches the same tiles for the other wavelengths). The scan cycles through those ten (`scanSampleCount` in `spherexSurvey.ts`), not all 99, and stops at the end of band 5 (4.405 µm): the map drew white for band 6 even with every tile cached, so the scan leaves it out. The ruler still sets any wavelength. The **Speed** control beside the button sets how long each wavelength stays up: 0.5× to 8× of a 250 ms base step (500 ms down to about 31 ms), 2× at first; changing it does not restart a running scan. The scan only steps through wavelengths that are already loaded, so it never waits and never shows an unloaded tile; pressing it early scans what is ready so far. Panning or zooming restarts the preload for the new view (tiles already fetched stay cached). IRSA's tile server serves roughly one wavelength a second, so a first preload takes about ten seconds and about 12 MB at the full-globe view (about 11 tiles of 100 KB per wavelength; zoomed-in views need fewer tiles). Slices 0, 50 and 51 have no tiles and are skipped. A background tab pauses the preload and scan.
+
+Pan and zoom, then select **Compare this field**. The button turns amber once the map is under 10° wide. If the view fits the service's limits (1–30 arcmin for SPHEREx, 1–12 for WISE) that view is compared; from a wider view the largest allowed field at the map centre is compared, and a dashed box marks it. Once a comparison is requested, its field stays outlined at its sky position while it builds, however you move the map, and **Cancel build** in the panel stops it (the service stops too). While a comparison builds, the panel shows a progress bar: measured steps for WISE, elapsed time for SPHEREx, whose archive does not report progress. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
 Open `/?fixtures=1` in development to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.
+
+## WISE view
+
+The **SPHEREx / WISE** switch in the top bar changes which survey the viewer shows. It
+swaps the map's image layer inside the same Aladin view, so the centre, zoom and
+projection stay exactly as they were. `SkyMap` takes the survey as its `survey` prop.
+
+In WISE view:
+
+- The map shows the AllWISE colour composite (W4 red, W2 green, W1 blue), read from
+  IRSA's mirror with CDS as fallback. It is a reference layer made from 2010–2011
+  exposures and carries no dates. Its colours show which band is brighter; they do not
+  measure temperature or composition.
+- The dock under the map lists those channels and picks the time-lapse band (W1 or W2)
+  in place of the SPHEREx wavelength ruler.
+- **Time-lapse** replaces **Comparison**. It plays dated frames from the
+  [WISE time-lapse service](../../../services/wise/README.md): six visits spread evenly
+  from 2010 to 2024, with the same playback, timeline, Gaia inspection and limitations list. Fields
+  are 1–12 arcmin here, against 1–30 for SPHEREx.
+
+Each view keeps its own request and result. Switching away and back shows what was
+there without searching again, and a build started in one view keeps running while you
+look at the other. When the other view has a compared field, the empty panel offers to
+compare that same field in the current view. Nothing is searched until you ask.
+
+WISE comparisons have their own IDs and evidence store. Links to them carry
+`view=wise`; switching views removes `comparison` and `finding` from the address,
+because those IDs belong to the view they were opened in. Findings cannot yet reference
+a WISE comparison. The switch is shown only when the shell passes `wiseDataSource` to
+`Viewer`, so the fixture harness is unchanged.
+
+Run `node --test web/src/viewer/wise.test.mjs` for the adapter's routing checks. Vite
+proxies `/api/wise` to port 8020 (`WISE_API_TARGET`), which `npm run dev` now starts.
 
 ## SPHEREx archive integration
 

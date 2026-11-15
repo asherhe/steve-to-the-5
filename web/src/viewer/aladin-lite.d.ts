@@ -12,7 +12,18 @@ declare module "aladin-lite" {
     setFoV(degrees: number): void;
     setProjection(projection: "SIN" | "AIT"): void;
     on(event: "click", callback: (position: { ra: number; dec: number; isDragging: boolean }) => void): void;
+    /** Fires, throttled, with the new field of view in degrees. */
+    on(event: "zoomChanged", callback: (fovDeg: number) => void): void;
     addCatalog(catalog: AladinCatalog): void;
+    addOverlay(overlay: AladinOverlay): void;
+    view: { requestRedraw(): void };
+    /** Replaces the base image layer; the view's centre, zoom and projection are kept. */
+    setBaseImageLayer(survey: AladinImageSurvey): void;
+  }
+
+  interface AladinOverlay {
+    removeAll(): void;
+    add(shape: unknown): void;
   }
 
   interface AladinCatalog {
@@ -29,6 +40,8 @@ declare module "aladin-lite" {
     }): AladinImageSurvey;
     catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" }): AladinCatalog;
     source(ra: number, dec: number): unknown;
+    graphicOverlay(options: { name: string; color: string; lineWidth: number }): AladinOverlay;
+    polygon(corners: [number, number][]): unknown;
     aladin(
       element: HTMLElement,
       options: {

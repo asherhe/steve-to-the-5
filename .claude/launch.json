@@ -22,6 +22,26 @@
         "dev:viewer"
       ],
       "port": 5182
+    },
+    {
+      "name": "viewer-wise",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VIEWER_PORT=5184",
+        "npm",
+        "run",
+        "dev:viewer"
+      ],
+      "port": 5184
+    },
+    {
+      "name": "wise-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:wise"
+      ],
+      "port": 8020
     }
   ]
 }

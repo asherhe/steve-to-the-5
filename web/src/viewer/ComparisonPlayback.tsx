@@ -3,6 +3,7 @@ import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 import { bandColors } from "./SpectralRuler";
 import { bandForWavelength } from "./spherexSurvey";
+import { wiseBandName, type SkyView } from "./wiseSurvey";
 
 function formatInterval(ms: number): string {
   const minutes = Math.round(Math.abs(ms) / 60_000);
@@ -34,9 +35,11 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect, onFrameChange,
+  comparison, survey = "spherex", visible = true, selectedPosition, frameMark, savedMarks = [], onInspect, onFrameChange,
 }: {
   comparison: Comparison;
+  /** Survey the frames come from; it changes labels only. */
+  survey?: SkyView;
   visible?: boolean;
   selectedPosition: SkyPosition | null;
   frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
@@ -98,7 +101,9 @@ export function ComparisonPlayback({
 
   const times = frames.map(({ observedAtUtc }) => Date.parse(observedAtUtc));
   const span = Math.max(...times) - Math.min(...times);
-  const band = bandForWavelength(frame.wavelengthUm);
+  const wise = survey === "wise";
+  const band = wise ? null : bandForWavelength(frame.wavelengthUm);
+  const combined = frame.qualityFlags.combinedExposures;
 
   return (
     <section aria-label="Comparison playback" className="playback">
@@ -115,7 +120,7 @@ export function ComparisonPlayback({
           ) : (
             <>
               <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={width}
-                height={height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
+                height={height} alt={`${wise ? "WISE" : "SPHEREx"} frame ${index + 1} of ${frames.length}`}
                 onLoad={() => setLoadedFrame(frame.id)}
                 onError={() => { setFailed(true); setPlaying(false); }} />
               {canInspect && (
@@ -142,11 +147,16 @@ export function ComparisonPlayback({
           <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
           <span className="frame-meta">
             {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}
-            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
-            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+            {band ? `Band ${band} · ` : ""}
+            {wise ? `${wiseBandName(frame.wavelengthUm)} broad band · ${frame.wavelengthUm.toFixed(2)} µm` : `${frame.wavelengthUm.toFixed(4)} µm`}
+            {" · "}{frame.release.toUpperCase()}
+            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>{wise ? "First source exposure" : "Source observation"}</a></>}
           </span>
           {frame.observationStartUtc && frame.observationEndUtc && (
-            <span className="frame-meta">Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</span>
+            <span className="frame-meta">
+              {wise ? `Median of ${combined ?? "several"} exposures taken (UTC)` : "Exposure interval (UTC)"}
+              {" "}{frame.observationStartUtc} to {frame.observationEndUtc}
+            </span>
           )}
         </figcaption>
       </figure>
@@ -184,6 +194,7 @@ export function ComparisonPlayback({
               Playback speed
               <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
                 <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option>
+                <option value={4}>4×</option>
               </select>
             </label>
           </div>

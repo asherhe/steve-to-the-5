@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { SourceInspector, createCatalogClient } from "../inspector";
 import { Viewer } from "./Viewer";
-import { createViewerDataSource } from "./production";
+import { createViewerDataSource, createWiseDataSource } from "./production";
 import { createPlaceholderLeaderboard } from "../leaderboard";
 import retainedExample from "../../../fixtures/archive/real/response.json";
 
@@ -20,5 +20,5 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get("fixtures") 
   const { FixtureHarness } = await import("./harness/main");
   app.render(<FixtureHarness />);
 } else {
-  app.render(<Viewer dataSource={dataSource} Inspector={Inspector} leaderboard={leaderboard} savedExampleId={retainedExample.comparison.id} />);
+  app.render(<Viewer dataSource={dataSource} wiseDataSource={createWiseDataSource} Inspector={Inspector} leaderboard={leaderboard} savedExampleId={retainedExample.comparison.id} />);
 }

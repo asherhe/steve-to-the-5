@@ -8,11 +8,17 @@ const archiveProxy = {
 const catalogTarget = process.env.CATALOG_API_TARGET ?? "http://127.0.0.1:8010";
 // Findings backend is opt-in (`npm run dev:findings`); requests fail fast while it is down.
 const findingsTarget = process.env.FINDINGS_API_TARGET ?? "http://127.0.0.1:8014";
+// WISE time-lapse backend (`npm run dev:wise`). The timeout sits above its 360 s build deadline.
+const wiseProxy = {
+  target: process.env.WISE_API_TARGET ?? "http://127.0.0.1:8020",
+  proxyTimeout: 420_000,
+};
 const proxy = {
   "/api/resolve": catalogTarget,
   "/api/catalogs": catalogTarget,
   "/api/comparisons": archiveProxy,
   "/api/findings": findingsTarget,
+  "/api/wise": wiseProxy,
 };
 
 export default defineConfig(({ command }) => ({
