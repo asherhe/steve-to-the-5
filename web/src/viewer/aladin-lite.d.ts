@@ -1,5 +1,5 @@
 declare module "aladin-lite" {
-  interface AladinImageSurvey {
+  export interface AladinImageSurvey {
     query: Promise<AladinImageSurvey>;
     skyFraction: number;
     setOpacity(opacity: number): void;

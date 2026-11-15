@@ -1,13 +1,12 @@
 import { DatedSkyOverlay, type DatedLayer } from "./DatedSkyOverlay";
-import { FloatingPane } from "./FloatingPane";
 import { cutoutWcs } from "./cutoutWcs";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
 import { formatAngularSize, formatDec, formatRa, normalizeRa } from "./coordinates";
 import {
-  blankSpherexSlices, dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, loadSpherexOverview, spherexBandChannel,
-  spherexMosaicDoi, spherexMosaicSlice, spherexSliceFrequencyHz, spherexSliceWavelength,
+  dssAcknowledgement, dssSurveyUrls, findSpherexSurvey, loadSpherexOverview, spherexBandChannel,
+  spherexMosaicDoi, spherexSliceFrequencyHz, spherexSliceWavelength,
   type SpherexCube,
 } from "./spherexSurvey";
 
@@ -52,7 +51,7 @@ export function SkyMap({
   onAdvancedSearch,
   catalogMark,
   notice,
-  dated, onInspectDated, layoutReset = 0,
+  dated, onInspectDated, slice, onStateChange, dock,
 }: {
   initialCenter: SkyPosition;
   focus: Field | null;
@@ -63,7 +62,12 @@ export function SkyMap({
   notice: string;
   dated?: DatedLayer | null;
   onInspectDated?: (position: SkyPosition) => void;
-  layoutReset?: number;
+  /** Cube slice shown as the SPHEREx reference layer. */
+  slice: number;
+  /** Reports the SPHEREx layer: `ready` only while it is the visible imagery and its wavelength can change. */
+  onStateChange?: (state: LayerStatus) => void;
+  /** Rendered below the map tools, across the bottom of the map. */
+  dock?: ReactNode;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<AladinModule | null>(null);
@@ -80,7 +84,6 @@ export function SkyMap({
   const [attempt, setAttempt] = useState(0);
   const [cube, setCube] = useState<SpherexCube | "unavailable" | null>(null);
   const [imagery, setImagery] = useState<Imagery>("spherex");
-  const [slice, setSlice] = useState(spherexMosaicSlice);
   const sliceRef = useRef(slice);
   sliceRef.current = slice;
   const [layerStatus, setLayerStatus] = useState<LayerStatus>("loading");
@@ -307,9 +310,13 @@ export function SkyMap({
   const datedReady = !!dated && dated.assets[dated.frame.id]?.state === "ready";
   const mapUsable = viewStatus === "ready" && (datedReady || (mapShown && layerStatus !== "unavailable"));
   const unavailable = viewStatus === "failed" || layerStatus === "unavailable";
-  const wavelengths = cube && cube !== "unavailable" ? cube.wavelengthsUm : [];
   const wavelength = cube && cube !== "unavailable" ? spherexSliceWavelength(cube, slice) : null;
   const { band, channel } = spherexBandChannel(slice);
+  const spherexState: LayerStatus = imagery === "spherex" && viewStatus !== "failed" ? layerStatus : "unavailable";
+
+  useEffect(() => {
+    onStateChange?.(spherexState);
+  }, [onStateChange, spherexState]);
 
   function closeMenu() {
     setMenuOpen(false);
@@ -341,13 +348,6 @@ export function SkyMap({
     syncReadout();
   }
 
-  function pickSlice(event: ChangeEvent<HTMLInputElement>) {
-    let next = Number(event.target.value);
-    const step = next >= slice ? 1 : -1;
-    while (blankSpherexSlices.has(next)) next += step;
-    if (next >= 0 && next < wavelengths.length) setSlice(next);
-  }
-
   const statusText =
     viewStatus === "failed" ? "The sky map could not start. Search using coordinates or a preset." :
     layerStatus === "unavailable" ? `${imageryLabels[imagery]} imagery unavailable. Try again, switch imagery, or search using coordinates.` :
@@ -360,7 +360,7 @@ export function SkyMap({
         {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
         {statusText && !datedReady && <p className="map-status" role="status">{statusText}</p>}
       </div>
-      <FloatingPane id="map-tools" title="Map" anchor="map" reset={layoutReset} defaultCollapsed={innerWidth<1280}>
+      <div className="sky-dock">
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         {datedReady && statusText && <small className="reference-status">Reference sky: {statusText}</small>}
@@ -380,15 +380,6 @@ export function SkyMap({
                 onClick={() => setImagery(option)}>{imageryLabels[option]}</button>
             ))}
           </div>
-          {imagery === "spherex" && wavelengths.length > 0 && (
-            <label className="wavelength">
-              <span className="visually-hidden">SPHEREx wavelength</span>
-              <input type="range" min={0} max={wavelengths.length - 1} step={1} value={slice}
-                disabled={layerStatus !== "ready"} onChange={pickSlice}
-                aria-valuetext={`${wavelength?.toFixed(3)} micrometres, band ${band} channel ${channel}`} />
-              <output>{wavelength?.toFixed(3)} µm</output>
-            </label>
-          )}
         </div>
         <div className="controls">
           <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={!mapUsable}>+</button>
@@ -433,7 +424,8 @@ export function SkyMap({
           </small>
         ))}
       </div>
-      </FloatingPane>
+      {dock}
+      </div>
     </section>
   );
 }

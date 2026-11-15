@@ -32,8 +32,13 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
       if (positionRef.current) clamp(positionRef.current.x,positionRef.current.y);
       else {
         const mobile = innerWidth < 672;
+        // The header bar and spectral dock publish their heights on the workspace; stay clear of both.
+        const style = getComputedStyle(ref.current!.closest(".sky-workspace") ?? document.documentElement);
+        const header = parseFloat(style.getPropertyValue("--header-height")) || 60;
+        const dock = parseFloat(style.getPropertyValue("--dock-height")) || 144;
         const x = anchor === "time" ? (innerWidth-box.width)/2 : anchor === "left" || anchor === "map" ? 16 : innerWidth-box.width-16;
-        const y = anchor === "map" ? innerHeight-box.height-16 : anchor === "time" ? (mobile ? 80 : innerHeight-box.height-16) : mobile ? 80 : 76;
+        const top = 14 + header + 14;
+        const y = anchor === "map" ? innerHeight-box.height-16 : anchor === "time" ? (mobile ? top : innerHeight-dock-box.height-28) : top;
         clamp(x,y);
       }
     }

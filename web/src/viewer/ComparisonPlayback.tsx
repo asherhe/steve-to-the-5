@@ -1,6 +1,8 @@
 import type { Playback } from "./usePlayback";
 import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
+import { bandColors } from "./SpectralRuler";
+import { bandForWavelength } from "./spherexSurvey";
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -40,13 +42,10 @@ export function ComparisonPlayback({
     );
   }
 
+  const band = bandForWavelength(frame.wavelengthUm);
 
   return (
-    <section aria-label="Comparison playback">
-      <p>
-        {comparison.wavelengthRangeUm.map((value) => value.toFixed(4)).join("–")} µm · Shared stretch{" "}
-        {comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
-      </p>
+    <section aria-label="Comparison playback" className="playback">
       <figure className="comparison-frame">
         <div className="cutout" style={{ aspectRatio: `${comparison.grid.width} / ${comparison.grid.height}` }}>
           {failed ? (
@@ -75,24 +74,39 @@ export function ComparisonPlayback({
                 "Predicted Gaia position", "cutout-gaia-mark")}
             </>
           )}
+          <span className="cutout-chip">
+            Shared stretch {comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
+          </span>
         </div>
         <figcaption>
-          <time dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
-          {" · "}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
-          {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+          <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
+          <span className="frame-meta">
+            {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}
+            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
+            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+          </span>
+          {frame.observationStartUtc && frame.observationEndUtc && (
+            <span className="frame-meta">Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</span>
+          )}
         </figcaption>
       </figure>
-      {wcs ? <p>Click the image to inspect a sky position with Gaia.</p> :
-        <p>Point inspection is unavailable for this image grid.</p>}
-      {frame.observationStartUtc && frame.observationEndUtc && (
-        <p>Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</p>
+      {frames.length > 1 && (
+        <p className="hint">Observation {index + 1} of {frames.length}. Use the Time window to blink or select another date.</p>
       )}
-      <p>Observation {index+1} of {frames.length} · Use the Time window to blink or select another date.</p>
-      {frame.validFraction !== undefined && (
-        <p>{(frame.validFraction * 100).toFixed(1)}% valid pixels
-          {frame.alignment && <> · {alignmentLabels[frame.alignment] ?? frame.alignment}</>}
-        </p>
+      {(frame.validFraction !== undefined || frame.alignment) && (
+        <dl className="stats">
+          {frame.validFraction !== undefined && (
+            <div><dt>Valid pixels</dt><dd>{(frame.validFraction * 100).toFixed(1)}%</dd></div>
+          )}
+          {frame.alignment && (
+            <div><dt>Alignment</dt><dd data-caution={frame.alignment === "wcs_only_not_empirically_verified" || undefined}>
+              {alignmentLabels[frame.alignment] ?? frame.alignment}
+            </dd></div>
+          )}
+        </dl>
       )}
+      {wcs ? <p className="hint">Click the image to inspect a sky position with Gaia.</p> :
+        <p className="hint">Point inspection is unavailable for this image grid.</p>}
       {Object.keys(frame.qualityFlags).length > 0 && (
         <details>
           <summary>Frame quality flags</summary>

@@ -1,65 +1,60 @@
-/* Compact list so the panel leaves most of the sky visible. Colors follow web/src/viewer/styles.css. */
+/* Rarity log: hairline rows so the panel leaves most of the sky visible. Tokens come from web/src/viewer/styles.css. */
 .leaderboard { display: grid; gap: 0.5rem; font-size: 0.875rem; }
 .leaderboard p { margin: 0; }
 .leaderboard-tabs { display: flex; gap: 0.25rem; }
 .floating-pane .leaderboard-tabs button { flex: 1; min-height: 2.25rem; padding-block: 0.25rem; }
-.floating-pane .leaderboard-tabs [aria-pressed="true"] { color: #d9f3ff; background: #234764; border-color: #71afd6; }
 .leaderboard-notice {
-  padding: 0.4rem 0.55rem;
-  border: 1px dashed #b8904a;
-  border-radius: 0.5rem;
-  color: #ffd99a;
-  background: #2a2214;
+  padding: 0.5rem;
+  border: 1px dashed #6b5530;
+  color: var(--amber-soft, #ffd08a);
+  font: 400 0.6875rem/1.5 var(--mono, monospace);
 }
-.leaderboard-caption { color: #b7c1d2; font-size: 0.8rem; }
-.leaderboard-list { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
-.leaderboard-entry {
-  --tier: #6d7c91;
-  border: 1px solid #2f3b4d;
-  border-left: 3px solid var(--tier);
-  border-radius: 0.5rem;
-  background: #172131;
-}
-.leaderboard-entry[aria-current="true"] { border-color: #71afd6; border-left-color: var(--tier); background: #1c2c40; }
+.leaderboard-caption { color: var(--muted, #8a9aa6); font-size: 0.75rem; }
+.leaderboard-list { display: grid; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--hair, #16212a); }
+.leaderboard-entry { --tier: var(--muted, #8a9aa6); border-top: 1px solid var(--hair, #16212a); }
+.leaderboard-entry[aria-current="true"] { background: rgba(255, 181, 71, 0.07); }
 .leaderboard-entry[data-tier="uncommon"] { --tier: #7fb7a4; }
 .leaderboard-entry[data-tier="rare"] { --tier: #6aa8e8; }
 .leaderboard-entry[data-tier="very_rare"] { --tier: #b58cf0; }
 .leaderboard-entry[data-tier="extremely_rare"] { --tier: #f0b35c; }
 .leaderboard-entry[data-tier="unscored"] { border-left-style: dashed; }
-.floating-pane .leaderboard-goto {
+.floating-pane .leaderboard-goto,
+.floating-pane .leaderboard-goto:hover:enabled {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.625rem;
   align-items: flex-start;
   width: 100%;
   min-height: 0;
-  padding: 0.45rem 0.55rem;
+  padding: 0.6rem 0.25rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: 0;
   background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
   text-align: left;
   cursor: pointer;
 }
-.floating-pane .leaderboard-goto:hover:enabled { background: #ffffff0d; }
-.leaderboard-rank { min-width: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tier); text-align: right; }
+.floating-pane .leaderboard-goto:hover:enabled { background: rgba(255, 255, 255, 0.03); }
+.leaderboard-rank { min-width: 1.5rem; font: 600 0.875rem/1.4 var(--mono, monospace); font-variant-numeric: tabular-nums; color: var(--tier); }
 .leaderboard-body { display: grid; gap: 0.15rem; flex: 1; min-width: 0; }
 .leaderboard-line { display: flex; justify-content: space-between; gap: 0.5rem; }
-.leaderboard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.leaderboard-score { font-variant-numeric: tabular-nums; font-weight: 600; }
-.leaderboard-meta { color: #b7c1d2; font-size: 0.78rem; }
+.leaderboard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.leaderboard-score { font: 400 0.9375rem/1.4 var(--mono, monospace); font-variant-numeric: tabular-nums; }
+.leaderboard-meta { color: var(--muted, #8a9aa6); font: 400 0.6875rem/1.4 var(--mono, monospace); text-transform: uppercase; letter-spacing: 0.04em; }
 .leaderboard-tier { color: var(--tier); }
 .leaderboard-coords { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.leaderboard-reasons { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.15rem; }
+.leaderboard-reasons { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.2rem; }
 .leaderboard-reasons span {
   padding: 0 0.35rem;
-  border: 1px solid #3a4a60;
-  border-radius: 999px;
+  border: 1px solid var(--line-strong, #23313b);
   color: #c9d3e2;
-  font-size: 0.7rem;
-  line-height: 1.4rem;
+  font: 400 0.625rem/1.3rem var(--mono, monospace);
 }
 .floating-pane .leaderboard-evidence {
   min-height: 2rem;
-  margin: 0 0.55rem 0.45rem 2.55rem;
+  margin: 0 0.25rem 0.6rem 2.375rem;
   padding: 0.15rem 0.6rem;
-  font-size: 0.78rem;
+  font-size: 0.6875rem;
 }

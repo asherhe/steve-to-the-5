@@ -1,0 +1,27 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "viewer",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VIEWER_PORT=5180",
+        "npm",
+        "run",
+        "dev:viewer"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "viewer-overhaul",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VIEWER_PORT=5182",
+        "npm",
+        "run",
+        "dev:viewer"
+      ],
+      "port": 5182
+    }
+  ]
+}

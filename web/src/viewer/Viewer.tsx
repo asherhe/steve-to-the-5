@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
 import { angularSeparationArcsec, CatalogApiError, predictAtObservation, type CatalogAstrometry, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
 import { LeaderboardPanel, type LeaderboardDataSource, type LeaderboardEntry } from "../leaderboard";
@@ -12,7 +12,8 @@ import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
 import { ComparisonPlayback } from "./ComparisonPlayback";
 import { cutoutWcs } from "./cutoutWcs";
-import { spherexMosaicGuideTimeUtc } from "./spherexSurvey";
+import { SpectralRuler, bandColors } from "./SpectralRuler";
+import { bandForWavelength, spherexMosaicGuideTimeUtc, spherexMosaicSlice } from "./spherexSurvey";
 import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
 import "./styles.css";
 
@@ -23,6 +24,33 @@ const scenarios: Record<ComparisonResult["status"], string> = {
   no_comparable_pair: "No comparable pair",
   upstream_unavailable: "Archive unavailable",
 };
+
+/** Short labels for the header badge. Kept distinct from the status messages in the comparison panel. */
+const badges: Record<ComparisonResult["status"], string> = {
+  ready: "Matched pair",
+  single_epoch: "Single epoch",
+  no_coverage: "No SPHEREx coverage",
+  no_comparable_pair: "No matched pair",
+  upstream_unavailable: "Archive offline",
+};
+
+/** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
+function useHeightVariable(workspace: RefObject<HTMLElement | null>, selector: string, variable: string) {
+  useEffect(() => {
+    const host = workspace.current;
+    const element = host?.querySelector(selector);
+    if (!host || !element) return;
+    const observer = new ResizeObserver(() => {
+      host.style.setProperty(variable, `${element.getBoundingClientRect().height}px`);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [workspace, selector, variable]);
+}
+
+function formatAngle(value: number, signed = false) {
+  return `${signed && value >= 0 ? "+" : ""}${value.toFixed(6)}°`;
+}
 
 const initialCenter = targetPresets[0];
 const initialField = { ...initialCenter, fovArcmin: 6 };
@@ -85,6 +113,11 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const [comparisonMark, setComparisonMark] = useState<{ comparisonId: string; source: CatalogAstrometry } | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [copyStatus, setCopyStatus] = useState("");
+  const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
+  const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const workspace = useRef<HTMLElement>(null);
+  useHeightVariable(workspace, ".instrument-bar", "--header-height");
+  useHeightVariable(workspace, ".sky-dock", "--dock-height");
   useEffect(() => {
     function restore() {
       const params = new URLSearchParams(location.search);
@@ -290,23 +323,71 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   }
   const finding = preview.kind === "saved" ? preview.finding : undefined;
 
+  const source = synthetic || kind === "synthetic_fixture" ? "synthetic" :
+    kind === "saved_real_example" ? "saved real" : "live archive";
+  const badge =
+    preview.kind === "search" ? (comparison ? `${badges[preview.result.status]} · ${source}` : badges[preview.result.status]) :
+    preview.kind === "saved" ? `${preview.comparison.frames.length > 1 ? "Matched pair" : "Single epoch"} · ${source}` :
+    preview.kind === "loading" ? "Loading" :
+    preview.kind === "idle" ? "No field selected" :
+    preview.kind === "name_not_found" || preview.kind === "missing" ? "Not found" : "Unavailable";
+  const tone = comparison ? "ready" : preview.kind === "idle" || preview.kind === "loading" ? "idle" : "problem";
+  const readoutField = comparison?.field ?? (preview.kind === "search" ? preview.field : focus);
+  const bands = comparison ? [...new Set(comparison.wavelengthRangeUm.map(bandForWavelength))] : [];
+  const frameShown = comparison ? playback.frame : null;
+
   return (
-    <main className="sky-workspace">
+    <main className="sky-workspace" ref={workspace}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={inspect} onAdvancedSearch={() => openPanel("search")} catalogMark={catalogMark} notice={mapNotice} layoutReset={layoutReset}
+        onInspect={inspect} onAdvancedSearch={() => openPanel("search")} catalogMark={catalogMark} notice={mapNotice}
+        slice={mapSlice} onStateChange={setMapState}
         dated={comparison && playback.frame ? {comparison,frame:playback.frame,assets:playback.assets,attempt:playback.attempt,
           selected:selection?.position ?? null,marks:finding?.marks ?? [],predictedMark:frameMark} : null}
-        onInspectDated={position=>{playback.pause();if(comparison && playback.frame)inspectCutout(comparison.id,position,playback.frame);}} />
-      <header className="top-bar">
-        <SearchBox fovArcmin={initialField.fovArcmin} onSearch={search} onResolve={resolve}
-          inputRef={(input) => { if (input) panelButtons.current.search = input; }} />
-        <nav className="panel-buttons" aria-label="Viewer panels">
-          <button ref={timeButton} type="button" aria-expanded={timeOpen} aria-controls="time-window" onClick={()=>setTimeOpen(!timeOpen)}>Time</button>
-          <button type="button" ref={button=>{if(button)panelButtons.current.gaia=button;}} aria-expanded={panels.gaia} aria-controls="gaia-panel" onClick={()=>setPanels(old=>({...old,gaia:!old.gaia}))}>Inspect</button>
-          {leaderboard && <button type="button" ref={leaderboardButton} aria-expanded={leaderboardOpen} aria-controls="leaderboard-panel"
-            onClick={()=>setLeaderboardOpen(!leaderboardOpen)}>Leaderboard</button>}
-          <button type="button" aria-label="Reset layout" title="Reset window positions" onClick={()=>setLayoutReset(v=>v+1)}>↺</button>
-        </nav>
+        onInspectDated={position=>{playback.pause();if(comparison && playback.frame)inspectCutout(comparison.id,position,playback.frame);}}
+        dock={<SpectralRuler mapSlice={mapSlice} onSelectSlice={setMapSlice} disabled={mapState !== "ready"}
+          frameWavelengthUm={frameShown?.wavelengthUm ?? null}
+          frameLabel={frameShown && comparison ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm` : null} />} />
+      <header className="instrument-bar">
+        <div className="brand">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+          </svg>
+          <span>SPHEREx / Field viewer</span>
+        </div>
+        <SearchBox fovArcmin={initialField.fovArcmin} onSearch={search} onResolve={resolve} />
+        {leaderboard && (
+          <nav className="panel-buttons bar-start" aria-label="Engagement panels">
+            <button type="button" ref={leaderboardButton} aria-expanded={leaderboardOpen}
+              aria-controls="leaderboard-panel" onClick={() => setLeaderboardOpen(!leaderboardOpen)}>Leaderboard</button>
+          </nav>
+        )}
+        <dl className="readouts" aria-label="Current field">
+          <div><dt>RA</dt><dd>{readoutField ? formatAngle(readoutField.ra) : "—"}</dd></div>
+          <div><dt>Dec</dt><dd>{readoutField ? formatAngle(readoutField.dec, true) : "—"}</dd></div>
+          <div><dt>Width</dt><dd>{readoutField ? `${readoutField.fovArcmin.toFixed(2)} arcmin` : "—"}</dd></div>
+          <div><dt>Frames</dt><dd>
+            {comparison ? <>
+              {bands.map((band) => band && <span key={band} className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />)}
+              {bands.some(Boolean) && `B${bands.filter(Boolean).join("–")} · `}
+              {comparison.wavelengthRangeUm.map((value) => value.toFixed(4)).join("–")} µm
+            </> : "—"}
+          </dd></div>
+        </dl>
+        <div className="bar-actions">
+          <span className="status-badge" data-tone={tone}><span className="status-dot" aria-hidden="true" />{badge}</span>
+          <nav className="panel-buttons" aria-label="Viewer panels">
+            <button ref={timeButton} type="button" aria-expanded={timeOpen} aria-controls="time-window"
+              onClick={() => setTimeOpen(!timeOpen)}>Time</button>
+            {([["search", "Advanced"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
+              <button key={id} type="button" ref={(button) => {
+                if (button) panelButtons.current[id] = button;
+              }} aria-expanded={panels[id]} aria-controls={`${id}-panel`}
+                onClick={() => setPanels((old) => ({ ...old, [id]: !old[id] }))}>{label}</button>
+            ))}
+            <button type="button" aria-label="Reset layout" title="Reset window positions"
+              onClick={() => setLayoutReset((value) => value + 1)}>↺</button>
+          </nav>
+        </div>
       </header>
       {leaderboard && (
         <FloatingPane id="leaderboard-panel" title="Rarity leaderboard" anchor="left" open={leaderboardOpen} reset={layoutReset} onClose={closeLeaderboard}>
@@ -372,7 +453,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         {preview.kind === "idle" && <button type="button" onClick={()=>search(initialField)}>Load images of Barnard’s Star</button>}
         {preview.kind === "loading" && <button type="button" onClick={()=>setRequest(null)}>Cancel</button>}
         {comparison && <>
-          <TimeControls comparison={comparison} playback={playback} onDetails={button=>{panelButtons.current.comparison=button;openPanel("comparison");}} />
+          <TimeControls comparison={comparison} playback={playback} onDetails={()=>openPanel("comparison")} />
         </>}
       </FloatingPane>
       <FloatingPane id="comparison-panel" title="Compare details" open={panels.comparison} reset={layoutReset} onClose={()=>closePanel("comparison")}>
