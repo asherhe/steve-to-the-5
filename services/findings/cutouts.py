@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import gzip
 import io
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
@@ -70,6 +72,14 @@ async def get_bytes(client: httpx.AsyncClient, url: str, params=None, *, fits: b
                     raise SourceUnavailable("Response exceeded the size limit.")
     except httpx.HTTPError as error:
         raise SourceUnavailable(f"{type(error).__name__} from {httpx.URL(url).host}") from error
+    if fits and content[:2] == b"\x1f\x8b":
+        try:
+            with gzip.GzipFile(fileobj=io.BytesIO(content)) as compressed:
+                content = compressed.read(MAX_BYTES + 1)
+        except (OSError, EOFError) as error:
+            raise SourceUnavailable("Unreadable compressed FITS image.") from error
+        if len(content) > MAX_BYTES:
+            raise SourceUnavailable("Expanded FITS exceeded the size limit.")
     if fits and not bytes(content[:6]) == b"SIMPLE":
         raise SourceUnavailable(f"{httpx.URL(url).host} did not return a FITS image.")
     return bytes(content)
@@ -79,9 +89,19 @@ async def spherex(client, ra, dec) -> SourceResult:
     from astropy.io.votable import parse
     content = await get_bytes(client, f"{IRSA}/SIA", {
         "COLLECTION": "spherex_dr1", "POS": f"CIRCLE {ra} {dec} 0.0005", "MAXREC": 200})
-    table = list(parse(io.BytesIO(content)).iter_tables())[0].to_table(use_names_over_ids=True)
+    document = parse(io.BytesIO(content))
+    statuses = {str(info.value).upper() for resource in document.resources for info in resource.infos if info.name == "QUERY_STATUS"}
+    if "ERROR" in statuses:
+        raise SourceUnavailable("SPHEREx discovery was rejected by the archive.")
+    limited = "OVERFLOW" in statuses
+    tables = list(document.iter_tables())
+    if not tables:
+        raise SourceUnavailable("SPHEREx returned no discovery table.")
+    table = tables[0].to_table(use_names_over_ids=True)
     rows = sorted(table, key=lambda row: float(row["t_min"]), reverse=True)[:MAX_FRAMES]
     if not rows:
+        if limited:
+            raise SourceUnavailable("SPHEREx returned an empty, incomplete discovery result.")
         return SourceResult("spherex", "no_coverage")
     frames = []
     for row in rows:
@@ -91,7 +111,9 @@ async def spherex(client, ra, dec) -> SourceResult:
         query = urlencode({"center": f"{ra},{dec}", "size": f"{CUTOUT_ARCSEC / 3600}"})
         frames.append(Frame(f"SPHEREx {row['energy_bandpassname']}", url,
                             await get_bytes(client, f"{url}?{query}", fits=True), mjd_to_utc(row["t_min"])))
-    return SourceResult("spherex", "ok", frames)
+    return SourceResult("spherex", "ok", frames, message=(
+        f"Discovery was capped at {len(table)} records; only {len(frames)} images from that sample were checked. This is not an exhaustive image search."
+        if limited else None))
 
 
 async def wise(client, ra, dec) -> SourceResult:
@@ -120,17 +142,23 @@ async def neossat(client, ra, dec) -> SourceResult:
         FROM caom2.Observation AS o JOIN caom2.Plane AS p ON o.obsID = p.obsID
         JOIN caom2.Artifact AS a ON p.planeID = a.planeID
         WHERE o.collection = 'NEOSSAT' AND p.productID IN ('cord', 'cor')
-        AND a.uri LIKE 'cadc:NEOSSAT/%.fits'
+        AND (a.uri LIKE 'cadc:NEOSSAT/%.fits' OR a.uri LIKE 'cadc:NEOSSAT/%.fits.gz')
         AND 1 = CONTAINS(POINT('ICRS', {float(ra):.10f}, {float(dec):.10f}), p.position_bounds)
         ORDER BY p.time_bounds_lower DESC"""
     text = (await get_bytes(client, CADC_TAP, {"LANG": "ADQL", "REQUEST": "doQuery", "FORMAT": "csv", "QUERY": query})).decode("utf-8-sig")
-    rows = list(csv.DictReader(io.StringIO(text)))
+    reader = csv.DictReader(io.StringIO(text), strict=True)
+    if not {"uri", "time_bounds_lower"}.issubset(reader.fieldnames or []):
+        raise SourceUnavailable("Unexpected NEOSSat metadata columns.")
+    rows = list(reader)
+    if len(rows) > MAX_FRAMES:
+        raise SourceUnavailable("NEOSSat row limit exceeded.")
     if not rows:
         return SourceResult("neossat", "no_coverage")
     frames = []
     for row in rows:
-        name = row["uri"].removeprefix("cadc:NEOSSAT/")
-        if "/" in name:
+        uri = row.get("uri") or ""
+        name = uri.removeprefix("cadc:NEOSSAT/")
+        if not re.fullmatch(r"cadc:NEOSSAT/[A-Za-z0-9][A-Za-z0-9_.-]*\.fits(?:\.gz)?", uri):
             raise SourceUnavailable("Unexpected NEOSSat artifact name.")
         url = CADC_DATA + name
         frames.append(Frame(f"NEOSSat {name}", url, await get_bytes(client, url, fits=True), mjd_to_utc(row["time_bounds_lower"])))

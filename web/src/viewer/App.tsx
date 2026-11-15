@@ -3,7 +3,7 @@ import { SourceInspector, createCatalogClient } from '../inspector';
 import { createFindingsClient, FindingsApiError } from '../findings/api';
 import { createAuthGateway } from '../findings/auth';
 import { AccountProvider, AccountControls, useAccount } from '../findings/Account';
-import { CandidateReviewPane, type CandidateReviewSlotProps } from '../findings/CandidateReviewPane';
+import { PointSubmissionPane, type PointSubmissionSlotProps } from '../findings/PointSubmissionPane';
 import { CommunityActivity, type CommunityActivityProps } from '../findings/CommunityActivity';
 import { FindingThread } from '../findings/FindingThread';
 import { EvidenceReplayError, type EvidenceDiscussionProps } from './evidence';
@@ -31,9 +31,9 @@ const loadFinding = async (id: string, signal?: AbortSignal) => {
 function Inspector(props: Omit<ComponentProps<typeof SourceInspector>, 'client'>) {
   return <SourceInspector {...props} client={catalog} requireLiveCatalog />;
 }
-function Review(props: CandidateReviewSlotProps) {
+function Review(props: PointSubmissionSlotProps) {
   const account = useAccount();
-  return <CandidateReviewPane {...props} simulation={demo} client={findings} session={account.session} onRequestSignIn={account.requestSignIn} />;
+  return <PointSubmissionPane {...props} simulation={demo} client={findings} session={account.session} onRequestSignIn={account.requestSignIn} />;
 }
 function Activity(props: CommunityActivityProps) { return <CommunityActivity {...props} client={findings} />; }
 function Discussion(props: EvidenceDiscussionProps) {

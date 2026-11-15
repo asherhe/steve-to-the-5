@@ -54,6 +54,8 @@ function makeCubeCoverageOpaque(host: HTMLElement) {
   };
 }
 
+export interface SourceMark extends SkyPosition { key: string; label: string }
+
 export function SkyMap({
   initialCenter,
   focus,
@@ -71,7 +73,7 @@ export function SkyMap({
   pinnedField = null,
   onStateChange, dock, onViewport, communityMarkers = [], onFindingMarker,
   highlightedMarker = null, onHighlightMarker, activeFindingId = null,
-  pointMark = null, onMarkPoint,
+  pointMark = null, onMarkPoint, sourceMarks = [],
 }: {
   /** Community marker key hovered here or in the findings list; both show it highlighted. */
   highlightedMarker?: string | null;
@@ -80,6 +82,8 @@ export function SkyMap({
   activeFindingId?: string | null;
   /** Point marked for a catalog check; drawn as a box with an X that stays on the sky. */
   pointMark?: SkyPosition | null;
+  /** Published positions from any of the six catalog checks; never image detections. */
+  sourceMarks?: SourceMark[];
   /** Double-click marks a point. `onDatedFrame` is true when it lies on the shown, ready dated frame;
    *  `onSpherexMosaic` when the map imagery is the SPHEREx all-sky mosaic. */
   onMarkPoint?: (position: SkyPosition, onDatedFrame: boolean, onSpherexMosaic: boolean) => void;
@@ -119,6 +123,7 @@ export function SkyMap({
   const spherexOverview = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
   const layerToken = useRef(0);
   const markPosition = useRef<((position: MarkAction | null) => void) | null>(null);
+  const showSourceMarks = useRef<((marks: SourceMark[]) => void) | null>(null);
   const targetPosition = useRef<((target: ResolveResult | null) => void) | null>(null);
   const outline = useRef<((field: Field | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
@@ -161,10 +166,7 @@ export function SkyMap({
     let pending: number | undefined;
     sky.on("click", ({ ra, dec, isDragging }) => {
       window.clearTimeout(pending);
-      // Where points can be marked, a click does nothing: double-click marks and checks a
-      // point. Otherwise a third click, or two slow ones, reopened the old Gaia inspector.
-      // It still opens from its panel button and "Inspect map center".
-      if (clickProps.current.onMarkPoint) return;
+      // Delay single-click inspection so the following double-click can cancel it.
       if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) {
         pending = window.setTimeout(() => {
           const { onInspect, onInspectDated, imagery } = clickProps.current;
@@ -263,6 +265,14 @@ export function SkyMap({
           catalog.clear();
           if (position) catalog.addSources([Aladin.source(position.ra, position.dec, { label: `${position.displayName ?? `Gaia DR3 ${position.sourceId}`} (${position.predicted ? "predicted" : `catalog epoch ${position.astrometry.refEpoch}`})` })]);
         };
+        const references = Aladin.catalog({ name: "Catalog reference positions", color: "#a5e6d7", sourceSize: 14,
+          shape: "circle", displayLabel: true, labelColumn: "label", labelColor: "#a5e6d7", labelFont: "12px sans-serif" });
+        sky.addCatalog(references);
+        showSourceMarks.current = marks => {
+          references.clear();
+          references.addSources(marks.map(mark => Aladin.source(mark.ra, mark.dec, { label: mark.label })));
+          sky.view.requestRedraw();
+        };
         const fields = Aladin.catalog({ name: "Requested target field center", color: "#ffd68a", sourceSize: 20, shape: "cross", displayLabel: true, labelColumn: "label", labelColor: "#ffd68a", labelFont: "12px sans-serif" });
         sky.addCatalog(fields);
         targetPosition.current = target => {
@@ -295,6 +305,7 @@ export function SkyMap({
       detachPointer.current?.();
       detachPointer.current = null;
       markPosition.current = null;
+      showSourceMarks.current = null;
       targetPosition.current = null;
       outline.current = null;
       setViewStatus("loading");
@@ -505,6 +516,7 @@ export function SkyMap({
   }, [visibleCatalogMark, viewStatus]);
 
   useEffect(() => { targetPosition.current?.(target); }, [target, viewStatus]);
+  useEffect(() => { showSourceMarks.current?.(sourceMarks); }, [sourceMarks, viewStatus]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -609,6 +621,7 @@ export function SkyMap({
       </div>
       <div className="sky-dock">
       {(target || visibleCatalogMark) && <small className="map-name-legend">{target && `Search field: ${target.identity?.displayName ?? target.name} (field center, not a detection). `}{visibleCatalogMark && `Marked source: ${visibleCatalogMark.displayName ?? `Gaia DR3 ${visibleCatalogMark.sourceId}`} (${visibleCatalogMark.predicted ? "predicted position" : "catalog position"}).`}</small>}
+      {sourceMarks.length > 0 && <small className="map-name-legend" aria-label="Shown catalog positions">{sourceMarks.map(mark => mark.label).join(" · ")}</small>}
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         {onMarkPoint && mapUsable && !pointMark && <p className="mark-hint">Double-click the map to check a point against the catalogs.</p>}

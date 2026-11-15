@@ -7,6 +7,10 @@ export type ReviewInput = Schema['ReviewInput'];
 export type CatalogReview = CatalogComponents['schemas']['CatalogReview'];
 export type CatalogCheck = CatalogComponents['schemas']['CatalogCheck'];
 export type CandidateReview = Omit<Schema['ReviewResponse'], 'catalogReview'> & { catalogReview: CatalogReview };
+export type PointReviewInput = Schema['PointReviewInput'];
+export type FrameRef = Schema['FrameRef'];
+export type PointReview = Omit<Schema['PointReviewResponse'], 'catalogReview'> & { catalogReview: CatalogReview };
+export type SavedReview = CandidateReview | PointReview;
 export type PublicAuthConfig = Schema['PublicAuthConfig'];
 
 /** ICRS decimal degrees. */
@@ -33,7 +37,7 @@ export type FindingReply = { id: string; text: string; authorDisplayName: string
 // Optional defaulted fields keep historical, unreviewed findings readable.
 export type FindingDetail = Omit<Schema['Finding'], 'survey' | 'candidateReview'> & {
   survey?: Survey;
-  candidateReview?: CandidateReview | null;
+  candidateReview?: SavedReview | null;
 };
 export type CreateFindingRequest = Omit<Schema['FindingInput'], 'survey' | 'marks'> & { survey?: Survey; marks?: EvidenceMark[] };
 export type CreateFindingResponse = { id: string };
@@ -45,7 +49,7 @@ export type FindingsSession = { displayName: string } | null;
 /** Emitted by "Show evidence"; the viewer restores frames and annotations. */
 export type EvidenceRequest = {
   findingId: string;
-  comparisonId: string;
+  comparisonId: string | null;
   position: SkyPosition;
   marks: EvidenceMark[];
   survey?: Survey;

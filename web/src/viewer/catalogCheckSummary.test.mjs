@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { gaiaNeighbours, nearestRow, summarize } from "./catalogCheckSummary.ts";
+import { gaiaNeighbours, nearestRow, summarize, catalogSources, publishedPosition } from "./catalogCheckSummary.ts";
 
 // Synthetic check results: shapes follow fixtures/catalogs/openapi.json; values are made up.
 const check = (catalog, status, rows = []) => ({ catalog, status, scope: "", sourceUrl: "", rows });
@@ -21,7 +21,7 @@ test("a record in any catalog reads as listed, not as a confirmed match", () => 
 test("an unchecked catalog makes an empty result incomplete, never empty", () => {
   const result = summarize(review(["no_candidates", "unavailable", "no_candidates", "no_candidates", "skipped", "no_candidates"]));
   assert.equal(result.tone, "incomplete");
-  assert.match(result.detail, /SIMBAD, SkyBoT were not checked/);
+  assert.match(result.detail, /SIMBAD was not checked/);
 });
 
 test("all six empty is a lead, not a discovery", () => {
@@ -63,7 +63,7 @@ test("Gaia neighbours are ordered by separation at the shown time, as the inspec
   assert.equal(at2026[1].predicted, null, "no proper motion: kept at its catalog position");
 });
 
-test("expected points follow point-check-v2: known 10, uncatalogued up to 20, otherwise 0", async () => {
+test("expected points follow point-check-v3: known 10, uncatalogued up to 20, otherwise 0", async () => {
   const { expectedPoints } = await import("./catalogCheckSummary.ts");
   const make = (statuses, mode = "live") => ({ mode, ra: 0, dec: 0, radiusArcsec: 30, observedAtUtc: null, limitations: [],
     checks: names.map((name, i) => check(name, statuses[i])) });
@@ -73,4 +73,42 @@ test("expected points follow point-check-v2: known 10, uncatalogued up to 20, ot
   assert.ok(blank.needsBrightness);
   assert.equal(expectedPoints(make(["unavailable", ...Array(5).fill("no_candidates")])).points, 0);
   assert.equal(expectedPoints(make(Array(6).fill("skipped"), "offline")).points, null);
+});
+
+
+test("all six catalogs supply usable published markers, including sexagesimal SkyBoT", () => {
+  const rows = [
+    { sourceId: "42", ra: 10, dec: 10, refEpoch: 2016, pmRaCosDecMasYr: 0, pmDecMasYr: 0 },
+    { main_id: "SIMBAD source", ra: "10", dec: "10" },
+    { source_name: "CatWISE source", ra: 10, dec: 10 },
+    { name: "Cool source", ra_j2000_formula: "10", dec_j2000_formula: "10" },
+    { Name: "Rock", RA: "00 40 00", DEC: "+10 00 00" },
+    { AllWISE: "WISE source", RAJ2000: 10, DEJ2000: 10 },
+  ];
+  const checked = review(Array(6).fill("candidates"));
+  checked.checks.forEach((check, i) => { check.rows = [rows[i]]; });
+  const result = catalogSources(checked, { ra: 10, dec: 10 }, "2026-01-01T00:00:00Z");
+  assert.equal(result.length, 6);
+  assert.ok(result.every(source => source.placeable));
+  assert.equal(result.find(source => source.catalog === "SkyBoT").ra, 10);
+  assert.match(result.find(source => source.catalog === "SIMBAD").label, /published catalog position/);
+  assert.match(result.find(source => source.catalog === "Gaia DR3").label, /predicted for 2026/);
+});
+
+test("malformed and out-of-range catalog coordinates never become map markers", () => {
+  for (const row of [{ ra: 10, dec: 91 }, { ra: NaN, dec: 0 }, { RA: "24 00 00", DEC: "00 00 00" },
+    { RA: "00 60 00", DEC: "00 00 00" }, { RA: "00 00 00", DEC: "+90 01 00" }]) {
+    assert.equal(publishedPosition(row), null);
+  }
+  assert.deepEqual(publishedPosition({ RA: "23:59:59.9", DEC: "-00:00:01" }), { ra: (23 + 59/60 + 59.9/3600)*15, dec: -1/3600 });
+});
+
+test("an expected undated SkyBoT skip leaves the two-of-four brightness route available", async () => {
+  const { expectedPoints } = await import("./catalogCheckSummary.ts");
+  const checked = review(["no_candidates", "no_candidates", "no_candidates", "no_candidates", "skipped", "no_candidates"]);
+  const result = expectedPoints(checked);
+  assert.equal(result.points, 20);
+  assert.match(result.detail, /SPHEREx, WISE, DSS and NEOSSat/);
+  assert.equal(summarize(checked).tone, "empty");
+  assert.match(summarize(checked).detail, /SkyBoT needs an observation time/);
 });

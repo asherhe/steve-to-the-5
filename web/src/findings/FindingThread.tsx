@@ -95,10 +95,10 @@ export function FindingThread(p: FindingThreadProps) {
       </p>
       {f.note ? <p style={{ whiteSpace: 'pre-wrap' }}>{f.note}</p> : null}
       <p className="hint">An observation or question from a community member, not a validated discovery.</p>
-      <p>{f.marks.length} evidence mark{f.marks.length === 1 ? '' : 's'}</p>
+      <p>{f.comparisonId ? `${f.marks.length} evidence mark${f.marks.length === 1 ? '' : 's'}` : 'Submitted sky position; no saved image comparison is attached.'}</p>
       <div className="actions">
-        <button type="button" onClick={() => p.onShowEvidence({ findingId: f.id, comparisonId: f.comparisonId, position: { ra: f.ra, dec: f.dec }, marks: f.marks, survey: f.survey ?? 'spherex' })}>
-          Show evidence
+        <button type="button" onClick={() => p.onShowEvidence({ findingId: f.id, comparisonId: f.comparisonId ?? null, position: { ra: f.ra, dec: f.dec }, marks: f.marks, survey: f.survey ?? 'spherex' })}>
+          {f.comparisonId ? 'Show evidence' : 'Show point on map'}
         </button>
         <button type="button" onClick={async () => setCopied((await copyText(link())) ? 'ok' : 'failed')}>
           Copy link

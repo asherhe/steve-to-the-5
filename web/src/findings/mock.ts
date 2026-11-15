@@ -5,7 +5,10 @@ import { createCatalogClient } from '../inspector/api';
 import fixture from '../../../services/findings/fixtures/candidate-flow.json';
 import examples from './retained-examples.json';
 import type { ReviewClient } from './api';
-import type { CandidateReview, FindingDetail, FindingReply } from './types';
+import type { CandidateReview, FindingDetail, FindingReply, PointReview, SavedReview } from './types';
+import { FindingsApiError } from './api';
+import { catalogSources } from '../viewer/catalogCheckSummary';
+import { angularSeparationArcsec } from '../inspector/propagate';
 import type { LeaderboardResult } from '../leaderboard/types';
 import type { AuthGateway, AuthSession } from './auth';
 
@@ -22,10 +25,54 @@ export const mockAuth: AuthGateway = {
   headers: async () => ({}),
   sendEmail: async () => {}, verifyCode: async () => {}, signOut: async () => {},
 };
-let reviews = new Map<string, CandidateReview>();
+const reviews = new Map<string, SavedReview>();
 const catalog = createCatalogClient();
+
+function duplicateOf(review: PointReview, existing = read()): PointReview['duplicate'] {
+  for (const f of existing) {
+    const prior = f.candidateReview && 'identity' in f.candidateReview ? f.candidateReview.identity : null;
+    const sameObject = !!review.identity && !!prior && review.identity.catalog === prior.catalog && review.identity.name === prior.name;
+    const separationArcsec = angularSeparationArcsec(f, review);
+    if (sameObject || separationArcsec <= 15) return { findingId: f.id, title: f.title, displayName: f.authorDisplayName, separationArcsec, sameObject };
+  }
+  return null;
+}
 export const mockFindings: ReviewClient = {
   authConfig: async () => { throw new Error('Local demo has no sign-in service.'); },
+  async pointReview(req, signal) {
+    aborted(signal);
+    const radiusArcsec = req.radiusArcsec ?? 30;
+    const saved = req.frame && examples.find(item => item.id === req.frame!.comparisonId);
+    const frame = saved && saved.frames.find(item => item.id === req.frame!.frameId);
+    if (req.frame && !frame) throw new FindingsApiError(422, 'invalid_frame', 'This demo frame is unavailable. Mark a point on the reference map instead.');
+    const observedAtUtc = frame ? frame.observedAtUtc : null;
+    let catalogReview: PointReview['catalogReview'];
+    try { catalogReview = await catalog.review({ ...req, radiusArcsec, observedAtUtc }, signal); }
+    catch (error) {
+      aborted(signal);
+      const template = structuredClone(fixture.review.catalogReview) as unknown as PointReview['catalogReview'];
+      catalogReview = { ...template, mode: 'offline', ra: req.ra, dec: req.dec, observedAtUtc, radiusArcsec,
+        checks: template.checks.map(c => ({ ...c, status: 'unavailable', rows: [] })),
+        limitations: ['The catalog service could not be reached. No real checks completed.'] };
+    }
+    aborted(signal);
+    const listed = catalogReview.mode === 'live' && catalogReview.checks.some(c => c.status === 'candidates' || c.status === 'partial');
+    const incomplete = catalogReview.mode !== 'live' || catalogReview.checks.some(c => ['unavailable', 'skipped'].includes(c.status)
+      && !(c.catalog === 'SkyBoT' && c.status === 'skipped' && !observedAtUtc));
+    const priority = ['Gaia DR3', 'SIMBAD', 'CatWISE2020', 'VizieR', 'UltracoolSheet', 'SkyBoT'];
+    const source = listed ? catalogSources(catalogReview, req, null)
+      .filter(s => catalogReview.checks.some(c => c.catalog === s.catalog && ['candidates', 'partial'].includes(c.status)))
+      .sort((a, b) => priority.indexOf(a.catalog) - priority.indexOf(b.catalog) || a.separationArcsec - b.separationArcsec)[0] : null;
+    const result: PointReview = { ...req, radiusArcsec, id: crypto.randomUUID(), observedAtUtc, reviewedAtUtc: new Date().toISOString(),
+      scoreVersion: 'point-check-v3', score: listed ? 10 : 0, classification: listed ? 'known' : incomplete ? 'incomplete' : 'uncatalogued',
+      reasons: [listed ? '+10: a live catalog lists a source in this cone. No brightness check is needed.'
+        : '+0 (LOCAL SIMULATION): brightness was not measured; the 20-point rule can only be scored by the findings service.'],
+      identity: source ? { catalog: source.catalog, name: source.name, ra: source.ra, dec: source.dec, separationArcsec: source.separationArcsec } : null,
+      catalogReview, brightness: [], duplicate: null, limitations: ['LOCAL SIMULATION: posts and points exist only in this browser; brightness was not measured.'] };
+    result.duplicate = duplicateOf(result);
+    reviews.set(result.id, result);
+    return result;
+  },
   async createReview(req, signal) {
     aborted(signal);
     const template = structuredClone(fixture.review) as unknown as CandidateReview;
@@ -61,14 +108,24 @@ export const mockFindings: ReviewClient = {
     return result;
   },
   async createFinding(req) {
+    const save = () => {
     const review = req.reviewId ? reviews.get(req.reviewId) : null;
     if (!review) throw new Error('Run the local simulated review first.');
+    if (review.ra !== req.ra || review.dec !== req.dec) throw new FindingsApiError(422, 'invalid_review', 'Check this point again before submitting.');
     const existing = read();
+    if (review.scoreVersion === 'point-check-v3') {
+      const duplicate = duplicateOf(review as PointReview, existing);
+      if (duplicate) throw new FindingsApiError(409, 'already_on_leaderboard', `This point is already on the leaderboard: “${duplicate.title}” by ${duplicate.displayName}. Join its discussion.`);
+    }
     if (existing.some(f => f.comparisonId === req.comparisonId && f.ra === req.ra && f.dec === req.dec)) throw new Error('This demo position was already posted.');
-    const finding: FindingDetail = { id: crypto.randomUUID(), comparisonId: req.comparisonId, survey: req.survey ?? 'spherex',
+    const finding: FindingDetail = { id: crypto.randomUUID(), comparisonId: req.comparisonId ?? null, survey: req.survey ?? ('frameId' in review ? review.survey : review.frame?.survey) ?? 'spherex',
       ra: req.ra, dec: req.dec, title: req.title, note: req.note, marks: req.marks ?? [],
       authorDisplayName: observer.displayName, createdAtUtc: new Date().toISOString(), replies: [], candidateReview: review };
     write([finding, ...existing]); return { id: finding.id };
+    };
+    // Serialize across same-origin demo tabs when supported, just as the real DB serializes submissions.
+    if (globalThis.navigator?.locks) return navigator.locks.request('spherex.local-demo.point-submission', save);
+    return save();
   },
   async createReply(id, req) {
     const list = read(), finding = list.find(f => f.id === id);
@@ -84,7 +141,7 @@ export const mockFindings: ReviewClient = {
     const items = read().filter(f => board === 'allTime' || f.createdAtUtc.slice(0, 10) === today);
     items.sort((a,b) => (b.candidateReview?.score ?? 0) - (a.candidateReview?.score ?? 0) || a.createdAtUtc.localeCompare(b.createdAtUtc));
     return { board, placeholder: false, entries: items.map((f,i) => ({ id: f.id, findingId: f.id,
-      comparisonId: f.comparisonId, survey: f.survey ?? 'spherex', title: f.title, displayName: f.authorDisplayName,
+      comparisonId: f.comparisonId ?? null, survey: f.survey ?? 'spherex', title: f.title, displayName: f.authorDisplayName,
       ra: f.ra, dec: f.dec, fovArcmin: examples.find(item => item.id === f.comparisonId)?.fovArcmin ?? 6, enteredAtUtc: f.createdAtUtc, rank: i+1,
       rarityScore: f.candidateReview?.score ?? 0, tier: null, reasons: ['LOCAL SIMULATION — not a public ranking'] })) };
   },

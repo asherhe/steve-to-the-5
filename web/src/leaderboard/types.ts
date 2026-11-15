@@ -1,5 +1,5 @@
 // Engagement layer only. An entry references saved evidence by ID; it is never evidence itself,
-// and points follow the server's point-check-v2 rules, never rarity or a discovery.
+// and points follow the server's point-check-v3 rules, never rarity or a discovery.
 
 export type LeaderboardBoard = "daily" | "allTime";
 
@@ -19,7 +19,7 @@ export interface LeaderboardEntry {
   reasons: string[];
   ra: number;
   dec: number;
-  fovArcmin: number;
+  fovArcmin?: number | null;
   /** Immutable saved comparison to replay, when one exists. */
   comparisonId: string | null;
   findingId: string | null;

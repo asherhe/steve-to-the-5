@@ -138,9 +138,8 @@ To activate in your approved local/development Supabase instance:
    `services/findings/verify_live.py --help` for the existing live checker without printing
    or pasting tokens.
 
-Text drafts live in sessionStorage, expire after 24 hours and stay in the originating tab.
-The sign-in return URL restores the exact comparison/survey/frame/point, validated against
-its saved WCS. It never includes a client score. User-facing links strip auth and review
+Text drafts live in sessionStorage and stay in the originating tab (historical composer drafts expire after 24 hours).
+The sign-in return URL restores the selected point and radius, plus its saved frame when present. Frame-backed selections are validated against their saved WCS. It never includes a client score. User-facing links strip auth and review
 return parameters. Email is not a public author display name.
 
 `test_review_database_flow.py` runs the real router and migration SQL through PGlite and
@@ -148,28 +147,65 @@ simulated auth/PostgREST/catalog transport. It verifies review ownership, score 
 WISE identity, original marks, anonymous reads, two authors, duplicates and moderation.
 This complements browser contract tests and is not hosted Auth/PostgREST verification.
 
-## Point scoring — point-check-v2 (2026-11-15)
+## Point scoring — point-check-v3 (2026-11-15)
 
-`POST /api/findings/reviews` now scores a marked point (`services/findings/review.py`):
+`POST /api/findings/points/review` takes `{ra, dec, radiusArcsec=30, frame?}`. `frame`, when
+present, is `{survey, comparisonId, frameId}` and supplies only the saved observation time for
+SkyBoT after the server verifies the real frame and point. No loaded frames are required for
+reference-map submissions. Catalog results are recomputed by the server; clients never send
+scores, identities, image bytes or brightness measurements.
 
 | Result | Points |
 |---|---|
-| Any of the six catalogs lists a source in the cone (`candidates` or `partial`) | 10 (`classification: "known"`) |
-| All six return `no_candidates`, and the point is bright in saved frames of at least two surveys | 20 (`"uncatalogued"`) |
-| All six empty but bright in fewer than two surveys, or any catalog unavailable/skipped | 0 (`"uncatalogued"` / `"incomplete"`); still postable |
+| Any catalog lists a source (`candidates` or `partial`) | 10 (`known`), immediately; no image download or brightness step |
+| No catalog lists a source, all applicable checks complete, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
+| Fewer than two bright surveys or incomplete catalog checks | 0 (`uncatalogued` / `incomplete`), still postable |
 
-`ReviewInput.brightnessEvidence` lists saved comparisons from the other surveys (at most one
-per survey, never the review's own survey; real evidence only). Brightness is measured by the
-service, never supplied by the client (`services/findings/brightness.py`): each saved frame's
-retained FITS (`/assets/{frameId}.fits`, fetched from the archive or WISE service, 20 MB cap)
-is read in its own WCS; a frame is bright when the highest valid pixel within 1.5 px of the
-point is at least 5σ above the median of a 4–10 px annulus, with σ = 1.4826 × MAD and, for
-SPHEREx, at least the pixel's own `sqrt(VARIANCE)`. SPHEREx pixels flagged outside the frame's
-informational mask are excluded; WISE combined frames have no variance or mask. A survey counts
-when any of its frames is bright. Responses include `classification` and per-frame `brightness`
-results. NEOSSat previews (`/api/catalogs/neossat`) have no FITS or WCS and do not count yet.
+Undated reference points skip SkyBoT explicitly; that expected skip does not prevent the
+20-point rule. Other unavailable/skipped catalogs remain incomplete. A catalog source in a
+cone is not automatically the source in a selected pixel. Likewise brightness across surveys
+does not establish identity, novelty, motion or scientific significance.
 
-Migration `20261115150000_findings_point_check_scores.sql` allows scores 0–50 and ranks only
-`point-check-v2` reviews; earlier `review-effort-v1` entries no longer appear on the board.
-Tests: `python -m pytest services/findings/tests` (scoring on the real saved SPHEREx FITS plus
-a synthetic WISE frame) and `node services/findings/tests/check_migration.cjs`.
+`cutouts.py` fetches bounded FITS directly: SPHEREx DR1 SIA/IBE, AllWISE W2 IBE, STScI DSS2 red,
+and calibrated NEOSSat COR/CORD through CADC. Capped SPHEREx metadata can supply a bounded image sample, labeled as incomplete in each
+measurement; it never becomes an empty-coverage result. Four archives run independently, with 45 s per
+survey, at most two images each and a 12 MB response cap. Their `no_coverage` and `unavailable`
+states remain distinct. Published raw NEOSSat previews do not supply calibrated brightness.
+`brightness.py` uses the image's own WCS: peak within 1.5 px against a median/MAD background
+annulus (at least 8–25 arcsec), with SPHEREx variance and flag masks. At least 5 sigma counts
+as bright. Multiple frames from one survey count once. This is a local contrast rule, not
+photometry or a validated detection.
+
+The response includes `scoreVersion`, classification, reasons, optional catalog `identity`,
+per-source `brightness`, the six `catalogReview` checks and an optional `duplicate`. The UI
+shows the server score, source links and explicit gaps, then collects a title and note.
+`POST /api/findings` sends `{ra, dec, title, note, reviewId}` with no comparison or frame marks.
+A point finding is deliberately distinct from immutable saved image evidence. Its optional
+frame reference remains in its saved review. Historical frame-backed reviews/links still replay.
+
+Migration `20261115150000_findings_point_check_scores.sql` ranks only `point-check-v3`, allows
+null comparison/field width, and checks both catalog identity and angular separation within
+15 arcsec under a lock (`spherex_submit_point_finding`). Reviews return a duplicate early;
+posting also returns 409 `already_on_leaderboard` if another user wins the race. The UI blocks
+known duplicates, links their discussions and keeps drafts after a racing 409. No hosted
+migration is applied by local verification.
+
+The demo follows the same point-only flow, queries the live catalog service when available,
+awards only known-object 10 or unmeasured 0, and stores posts in localStorage. It never
+simulates 20-point brightness. Same-object/15-arcsec duplicate checks are serialized with a
+same-origin Web Lock where supported; this is browser-local simulation, not public database
+enforcement. The production flow derives identity from real authenticated sessions.
+
+Verification commands:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 services/findings/.venv/bin/python -m pytest services/findings/tests -q
+node services/findings/tests/check_migration.cjs
+npm --prefix web test -- src/findings/tests/point-workflow.test.tsx
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs VIEWER_TEST_URL=http://127.0.0.1:5189 node web/src/viewer/point-review.browser.mjs
+```
+
+The server-produced `fixtures/point-flow.json` is synthetic. Browser auth/catalog/findings
+responses are intercepted; SQL checks use isolated PGlite. Neither proves hosted Supabase or
+live archive end-to-end behavior. See `docs/verification/point-check-v3-completion.md` for this
+run's source checks, remaining archive failures and activation requirements.

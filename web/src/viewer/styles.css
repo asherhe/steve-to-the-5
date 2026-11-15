@@ -885,3 +885,11 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .point-check__submit-hint { display: grid; gap: 0.4rem; font-size: 0.8125rem; color: var(--muted); }
 .review-brightness { width: 100%; border-collapse: collapse; font: 400 0.75rem/1.4 var(--mono); }
 .review-brightness th, .review-brightness td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--line); text-align: left; }
+
+/* Point submission and image-free discussions share the larger review window bounds. */
+#point-discussion-panel { max-height: calc(100dvh - var(--header-height) - 3rem); }
+.candidate-review input, .candidate-review textarea { width: 100%; box-sizing: border-box; }
+.candidate-review textarea { min-height: 6rem; resize: vertical; }
+.review-brightness { overflow-wrap: anywhere; table-layout: fixed; }
+
+.review-measurement-note { display: block; color: var(--muted); margin-top: .25rem; }

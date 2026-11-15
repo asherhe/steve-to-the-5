@@ -19,7 +19,7 @@ export interface SourceInspectorProps {
   /** Sky position to inspect (ICRS decimal degrees). Null hides the inspector in idle. */
   skyPosition: SkyPosition | null;
   /** Catalog client used to fetch nearby sources and detail. */
-  client: CatalogClient;
+  client: Pick<CatalogClient, "nearby" | "detail" | "resolve">;
   /** Optional metadata of the active comparison frame, used for predicted positions. */
   selectedFrame?: SelectedFrameMeta | null;
   /** Representative time for the undated SPHEREx mosaic. */

@@ -6,7 +6,7 @@ import type { SkyPosition } from "./comparison";
 type CatalogCheck = CatalogReview["checks"][number];
 
 const nameKeys = ["main_id", "name", "Name", "designation", "source_name", "AllWISE", "sourceId", "source_id"];
-const positionKeys: [string, string][] = [["ra", "dec"], ["RAJ2000", "DEJ2000"], ["ra_j2000_formula", "dec_j2000_formula"]];
+const positionKeys: [string, string][] = [["ra", "dec"], ["RAJ2000", "DEJ2000"], ["ra_j2000_formula", "dec_j2000_formula"], ["RA", "DEC"]];
 
 function numeric(value: unknown): number | null {
   const n = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN;
@@ -20,10 +20,8 @@ export function nearestRow(check: CatalogCheck, point: SkyPosition): { name: str
   for (const row of check.rows ?? []) {
     let arcsec = numeric(row.separationArcsec);
     if (arcsec === null) {
-      for (const [raKey, decKey] of positionKeys) {
-        const ra = numeric(row[raKey]), dec = numeric(row[decKey]);
-        if (ra !== null && dec !== null) { arcsec = angularSeparationArcsec(point, { ra, dec }); break; }
-      }
+      const position = publishedPosition(row);
+      if (position) arcsec = angularSeparationArcsec(point, position);
     }
     if (arcsec === null) continue;
     const key = nameKeys.find(k => typeof row[k] === "string" || typeof row[k] === "number");
@@ -38,7 +36,8 @@ export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "
   if (review.mode === "offline")
     return { tone: "offline", title: "Catalogs not searched", detail: "The catalog service is running offline, so no catalog was queried. Start it with CATALOGS_LIVE=1 to check real points." };
   const listed = review.checks.filter(c => c.status === "candidates" || c.status === "partial");
-  const unchecked = review.checks.filter(c => c.status === "unavailable" || c.status === "skipped");
+  const undatedSkybot = review.checks.some(c => c.catalog === "SkyBoT" && c.status === "skipped") && !review.observedAtUtc;
+  const unchecked = review.checks.filter(c => c.status === "unavailable" || (c.status === "skipped" && !(c.catalog === "SkyBoT" && undatedSkybot)));
   if (listed.length)
     return {
       tone: "listed",
@@ -53,8 +52,8 @@ export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "
     };
   return {
     tone: "empty",
-    title: "No record in any of the six catalogs",
-    detail: `Nothing within ${review.radiusArcsec}″. That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
+    title: undatedSkybot ? "No record in the checked catalogs" : "No record in any of the six catalogs",
+    detail: `Nothing within ${review.radiusArcsec}″.${undatedSkybot ? " SkyBoT needs an observation time and was not run." : ""} That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
   };
 }
 
@@ -90,8 +89,7 @@ export function gaiaNeighbours(review: CatalogReview, point: SkyPosition, predic
   return result.sort((a, b) => a.separationArcsec - b.separationArcsec);
 }
 
-/** What the point would score under point-check-v2. The server recomputes it on submit, from
- *  its own catalog check and its own brightness measurement on the saved frames. */
+/** Provisional point-check-v3 guidance; only the server awards points. */
 export function expectedPoints(review: CatalogReview): { points: number | null; label: string; detail: string; needsBrightness: boolean } {
   const summary = summarize(review);
   if (summary.tone === "offline")
@@ -101,6 +99,59 @@ export function expectedPoints(review: CatalogReview): { points: number | null; 
   if (summary.tone === "incomplete")
     return { points: 0, label: "0 points so far", detail: "A catalog could not be checked. Check again for points; you can still submit it for discussion.", needsBrightness: false };
   return { points: 20, label: "20 points if bright in 2 surveys",
-    detail: "No catalog lists a source here. On submit, the server measures the point in each saved frame; it must be at least 5σ above its surroundings in two surveys (SPHEREx, WISE). Otherwise it scores 0 and can still be submitted.",
+    detail: "No checked catalog lists a source here. The server fetches SPHEREx, WISE, DSS and NEOSSat images and measures the point: at least 5σ above its surroundings in any two surveys earns 20 points. Otherwise it earns 0 and can still be submitted. No loaded frames are needed.",
     needsBrightness: true };
+}
+
+function sexagesimal(value: unknown, hours: boolean): number | null {
+  const direct = numeric(value);
+  if (direct !== null) return direct;
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^([+-]?)(\d{1,3})[hHdD:\s]+(\d{1,2})[mM:'\s]+(\d+(?:\.\d*)?)[sS\"]?$/);
+  if (!match) return null;
+  const first = Number(match[2]), minute = Number(match[3]), second = Number(match[4]);
+  if (minute >= 60 || second >= 60 || first > (hours ? 23 : 90) || (hours && match[1] === "-")) return null;
+  return (match[1] === "-" ? -1 : 1) * (first + minute / 60 + second / 3600) * (hours ? 15 : 1);
+}
+
+/** Published coordinates remain catalog positions; only Gaia has a propagation model here. */
+export function publishedPosition(row: Record<string, unknown>): SkyPosition | null {
+  for (const [raKey, decKey] of positionKeys) {
+    const ra = raKey === "RA" ? sexagesimal(row[raKey], true) : numeric(row[raKey]);
+    const dec = decKey === "DEC" ? sexagesimal(row[decKey], false) : numeric(row[decKey]);
+    if (ra !== null && dec !== null && ra >= 0 && ra < 360 && Math.abs(dec) <= 90) return { ra, dec };
+  }
+  return null;
+}
+
+export interface CatalogSource extends SkyPosition {
+  key: string;
+  catalog: string;
+  name: string;
+  label: string;
+  separationArcsec: number;
+  /** Gaia is retained so the viewer can update its prediction with dated playback. */
+  gaia?: GaiaNeighbour;
+  placeable: boolean;
+}
+
+export function catalogSources(review: CatalogReview, point: SkyPosition, predictionTimeUtc: string | null): CatalogSource[] {
+  const gaia = new Map(gaiaNeighbours(review, point, predictionTimeUtc).map(source => [source.sourceId, source]));
+  const result = new Map<string, CatalogSource>();
+  for (const check of review.checks) {
+    for (const row of check.rows ?? []) {
+      const position = publishedPosition(row);
+      if (!position) continue;
+      const nameKey = nameKeys.find(key => (typeof row[key] === "string" && String(row[key]).trim()) || typeof row[key] === "number") ?? (row.Num != null ? "Num" : undefined);
+      const name = nameKey ? String(row[nameKey]).trim() : "unnamed record";
+      const neighbour = check.catalog === "Gaia DR3" ? gaia.get(String(row.sourceId ?? row.source_id)) : undefined;
+      const at = neighbour?.predicted ?? position;
+      const epoch = neighbour?.predicted ? `predicted for ${predictionTimeUtc?.slice(0, 10)}` : "published catalog position";
+      const key = `${check.catalog}:${name}:${position.ra}:${position.dec}`;
+      result.set(key, { key, catalog: check.catalog, name, ...at, gaia: neighbour,
+        label: `${check.catalog} ${name} (${epoch})`, separationArcsec: angularSeparationArcsec(point, at),
+        placeable: !(check.catalog === "Gaia DR3" && predictionTimeUtc && !neighbour?.predicted) });
+    }
+  }
+  return [...result.values()].sort((a, b) => a.separationArcsec - b.separationArcsec);
 }

@@ -8,8 +8,8 @@ import type {
   FindingReply,
   FindingsViewport,
 } from './types.ts';
-import { parseReview } from './reviewContract';
-import type { CandidateReview, ReviewInput, PublicAuthConfig } from './types';
+import { parseReview, parsePointReview, sameFrame } from './reviewContract';
+import type { CandidateReview, ReviewInput, PublicAuthConfig, PointReviewInput, PointReview, SavedReview } from './types';
 import type { LeaderboardResult } from '../leaderboard/types';
 import { clampViewport } from './validation.ts';
 
@@ -45,6 +45,7 @@ export interface FindingsClient {
 }
 
 export interface ReviewClient extends FindingsClient {
+  pointReview(req: PointReviewInput, signal?: AbortSignal): Promise<PointReview>;
   createReview(req: ReviewInput, signal?: AbortSignal): Promise<CandidateReview>;
   leaderboard(board: 'daily' | 'allTime', signal?: AbortSignal): Promise<LeaderboardResult>;
   authConfig(signal?: AbortSignal): Promise<PublicAuthConfig>;
@@ -126,6 +127,11 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewCl
   }
 
   return {
+    async pointReview(req, signal) {
+      const review = parsePointReview(await request('/api/findings/points/review', { method: 'POST', body: JSON.stringify(req), signal }, true));
+      if (review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== (req.radiusArcsec ?? 30) || !sameFrame(review.frame, req.frame)) throw invalid('point review identity');
+      return review;
+    },
     async authConfig(signal) {
       const b = asObject(await request('/api/findings/auth/config', { signal }, false), 'auth configuration');
       if (typeof b.url !== 'string' || typeof b.publishableKey !== 'string' || !b.publishableKey) throw invalid('auth configuration');
@@ -143,7 +149,7 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewCl
       if (b.board !== board || b.placeholder !== false || !Array.isArray(b.entries) || b.entries.length > 100) throw invalid('leaderboard');
       for (const raw of b.entries) {
         const row = asObject(raw, 'leaderboard entry');
-        if (typeof row.id !== 'string' || typeof row.findingId !== 'string' || typeof row.comparisonId !== 'string' || !['wise', 'spherex'].includes(String(row.survey)) || typeof row.displayName !== 'string' || typeof row.title !== 'string' || typeof row.enteredAtUtc !== 'string' || !Number.isInteger(row.rank) || (row.rank as number) < 1 || !Number.isInteger(row.rarityScore) || (row.rarityScore as number) < 0 || (row.rarityScore as number) > 50 || row.tier !== null || !Array.isArray(row.reasons) || !row.reasons.every(x => typeof x === 'string') || typeof row.ra !== 'number' || !Number.isFinite(row.ra) || row.ra < 0 || row.ra >= 360 || typeof row.dec !== 'number' || !Number.isFinite(row.dec) || Math.abs(row.dec) > 90 || typeof row.fovArcmin !== 'number' || !Number.isFinite(row.fovArcmin) || row.fovArcmin <= 0) throw invalid('leaderboard entry');
+        if (typeof row.id !== 'string' || typeof row.findingId !== 'string' || (row.comparisonId != null && typeof row.comparisonId !== 'string') || !['wise', 'spherex'].includes(String(row.survey)) || typeof row.displayName !== 'string' || typeof row.title !== 'string' || typeof row.enteredAtUtc !== 'string' || !Number.isInteger(row.rank) || (row.rank as number) < 1 || !Number.isInteger(row.rarityScore) || (row.rarityScore as number) < 0 || (row.rarityScore as number) > 50 || row.tier !== null || !Array.isArray(row.reasons) || !row.reasons.every(x => typeof x === 'string') || typeof row.ra !== 'number' || !Number.isFinite(row.ra) || row.ra < 0 || row.ra >= 360 || typeof row.dec !== 'number' || !Number.isFinite(row.dec) || Math.abs(row.dec) > 90 || (row.fovArcmin != null && (typeof row.fovArcmin !== 'number' || !Number.isFinite(row.fovArcmin) || row.fovArcmin <= 0))) throw invalid('leaderboard entry');
       }
       return b as unknown as LeaderboardResult;
     },
@@ -162,14 +168,19 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewCl
         throw err;
       }
       const body = asObject(raw, 'finding');
-      if (typeof body.id !== 'string' || typeof body.comparisonId !== 'string' || typeof body.authorDisplayName !== 'string') throw invalid('finding');
+      if (typeof body.id !== 'string' || (body.comparisonId != null && typeof body.comparisonId !== 'string') || typeof body.authorDisplayName !== 'string') throw invalid('finding');
+      if (!body.comparisonId && (typeof body.ra !== 'number' || !Number.isFinite(body.ra) || body.ra < 0 || body.ra >= 360 || typeof body.dec !== 'number' || !Number.isFinite(body.dec) || Math.abs(body.dec) > 90)) throw invalid('finding position');
       if (body.survey !== undefined && body.survey !== 'spherex' && body.survey !== 'wise') throw invalid('finding survey');
       const survey = body.survey === 'wise' ? 'wise' : 'spherex';
-      const candidateReview = body.candidateReview ? parseReview(body.candidateReview) : null;
-      if (candidateReview && (candidateReview.comparisonId !== body.comparisonId || candidateReview.survey !== survey)) throw invalid('finding review identity');
+      const rawReview = body.candidateReview as Record<string, unknown> | null;
+      const candidateReview: SavedReview | null = rawReview ? rawReview.scoreVersion === 'point-check-v3' ? parsePointReview(rawReview) : parseReview(rawReview) : null;
+      if (candidateReview && ('frameId' in candidateReview
+        ? candidateReview.comparisonId !== body.comparisonId || candidateReview.survey !== survey
+        : candidateReview.ra !== body.ra || candidateReview.dec !== body.dec || body.comparisonId != null)) throw invalid('finding review identity');
       return {
         ...(body as unknown as FindingDetail),
         survey,
+        comparisonId: body.comparisonId as string | null ?? null,
         candidateReview,
         marks: Array.isArray(body.marks) ? (body.marks as FindingDetail['marks']) : [],
         replies: Array.isArray(body.replies) ? (body.replies as FindingDetail['replies']) : [],

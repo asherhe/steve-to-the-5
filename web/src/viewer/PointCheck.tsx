@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CatalogReview } from "../inspector/api";
 import { CatalogChecks } from "../findings/ReviewReport";
-import { expectedPoints, gaiaNeighbours, nearestRow, summarize, type GaiaNeighbour } from "./catalogCheckSummary";
+import { expectedPoints, catalogSources, nearestRow, summarize, type CatalogSource } from "./catalogCheckSummary";
 import type { SkyPosition } from "./comparison";
 
 type CatalogCheck = CatalogReview["checks"][number];
@@ -13,16 +13,6 @@ export interface MarkedPoint {
   frame: { observedAtUtc: string; label: string } | null;
   /** Marked on the SPHEREx all-sky mosaic (not DSS or WISE imagery). */
   onSpherexMosaic: boolean;
-}
-
-/** A survey that can count toward the brightness rule, and whether its saved frames are loaded. */
-export interface SurveyEvidence {
-  label: string;
-  loaded: boolean;
-  /** Loads this survey's dated frames at the point. */
-  onLoad?: () => void;
-  /** Why it cannot count yet (e.g. NEOSSat previews are not measurable). */
-  note?: string;
 }
 
 export type CheckPoint = (
@@ -40,22 +30,18 @@ const statusText: Record<CatalogCheck["status"], string> = {
 };
 
 /** Checks one marked point against the catalog chain as soon as it is marked; no sign-in. */
-export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc = null, shownSourceId = null, onShowSource, surveys = [], submitHint, onRadiusChange }: {
+export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc = null, shownSourceId = null, onShowSource, onRadiusChange }: {
   point: MarkedPoint;
   check: CheckPoint;
   onClear: () => void;
   /** Time Gaia positions are moved to for display (the frame time, or the mosaic guide time). */
   predictionTimeUtc?: string | null;
-  /** Gaia source currently drawn on the map. */
+  /** Catalog source currently drawn on the map. */
   shownSourceId?: string | null;
-  /** Draws a Gaia source on the map, as the source inspector's mark does; null hides it. */
-  onShowSource?: (source: GaiaNeighbour | null) => void;
-  /** Opens the signed-in submission for this point; offered only for points on a dated frame. */
+  /** Draws a catalog source on the map; null hides it. */
+  onShowSource?: (source: CatalogSource | null) => void;
+  /** Opens signed-in submission for any marked point, including the reference map. */
   onReview?: () => void;
-  /** Surveys counted by the brightness rule. */
-  surveys?: SurveyEvidence[];
-  /** Shown instead of the submit button when the point cannot be submitted yet. */
-  submitHint?: { text: string; action?: { label: string; run: () => void } };
   /** Reports the chosen search radius, so a submission scores the same cone. */
   onRadiusChange?: (radiusArcsec: number) => void;
 }) {
@@ -138,96 +124,55 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
               );
             })}
           </ul>
-          <GaiaList neighbours={gaiaNeighbours(state.review, point.position, predictionTimeUtc)} predictionTimeUtc={predictionTimeUtc}
-            frameTime={!!point.frame && predictionTimeUtc === point.frame.observedAtUtc} shownSourceId={shownSourceId} onShowSource={onShowSource} />
+          <SourceLists sources={catalogSources(state.review, point.position, predictionTimeUtc)} shownSourceId={shownSourceId} onShowSource={onShowSource} />
           <details className="point-check__details">
             <summary>Records, sources and limitations</summary>
             <div className="review-report"><CatalogChecks checks={state.review.checks} /></div>
             <ul>{state.review.limitations.map(text => <li key={text}>{text}</li>)}</ul>
           </details>
           <p className="point-check__footnote">
-            Catalog positions are as published, not moved to the image date. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
+            Positions are published catalog positions unless explicitly labeled as Gaia predictions. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
           </p>
         </>
       )}
-      {state.kind === "done" && <Points review={state.review} surveys={surveys} />}
-      {onReview ? (
-        <button type="button" className="primary" onClick={onReview}>Submit to leaderboard</button>
-      ) : submitHint && (
-        <div className="point-check__submit-hint">
-          <p>{submitHint.text}</p>
-          {submitHint.action && <button type="button" onClick={submitHint.action.run}>{submitHint.action.label}</button>}
-        </div>
-      )}
+      {state.kind === "done" && <Points review={state.review} />}
+      {onReview && <button type="button" className="primary" onClick={onReview}>Submit to leaderboard</button>}
     </section>
   );
 }
 
-/** Nearby Gaia sources with a control to draw each on the map, nearest first. */
-function GaiaList({ neighbours, predictionTimeUtc, frameTime, shownSourceId, onShowSource }: {
-  neighbours: GaiaNeighbour[];
-  predictionTimeUtc: string | null;
-  frameTime: boolean;
+/** Every returned source with usable coordinates can be shown, with its catalog epoch intact. */
+function SourceLists({ sources, shownSourceId, onShowSource }: {
+  sources: CatalogSource[];
   shownSourceId: string | null;
-  onShowSource?: (source: GaiaNeighbour | null) => void;
+  onShowSource?: (source: CatalogSource | null) => void;
 }) {
-  if (!neighbours.length) return null;
-  const shown = neighbours.slice(0, 5);
-  return (
-    <section className="point-check__gaia" aria-label="Gaia sources near the marked point">
-      <p className="point-check__subhead">
-        Gaia DR3 near this point ·{" "}
-        {predictionTimeUtc
-          ? `positions predicted for ${predictionTimeUtc.slice(0, 10)}${frameTime ? " (frame time)" : " (approximate mosaic date)"}`
-          : "catalog positions, epoch 2016.0"}
-      </p>
-      <ul>
-        {shown.map(source => {
-          const active = source.sourceId === shownSourceId;
-          // A predicted map (dated frame or SPHEREx mosaic) needs proper motion to place a source.
-          const placeable = !predictionTimeUtc || source.predicted !== null;
-          return (
-            <li key={source.sourceId}>
-              <span className="point-check__gaia-name">Gaia DR3 {source.sourceId}</span>
-              <span className="point-check__gaia-meta">
-                {source.separationArcsec.toFixed(1)}″ from the mark{source.gMag !== null && ` · G ${source.gMag.toFixed(1)}`}
-                {!placeable && " · no proper motion, cannot be moved to this date"}
-              </span>
-              {onShowSource && (
-                <button type="button" aria-pressed={active} disabled={!placeable}
-                  onClick={() => onShowSource(active ? null : source)}>
-                  {active ? "Hide" : "Show on map"}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {neighbours.length > shown.length && <p className="point-check__footnote">{neighbours.length - shown.length} more in the records below.</p>}
-    </section>
-  );
+  if (!sources.length) return null;
+  const catalogs = [...new Set(sources.map(source => source.catalog))];
+  return <section className="point-check__gaia" aria-label="Catalog sources near the marked point">
+    <p className="point-check__subhead">Show catalog sources on the map</p>
+    <p className="point-check__footnote">Gaia positions can be predicted for the displayed date. Other catalogs retain their published coordinates; these markers are not verified detections.</p>
+    {catalogs.map(catalog => <details key={catalog} open>
+      <summary>{catalog} sources ({sources.filter(source => source.catalog === catalog).length})</summary>
+      <ul>{sources.filter(source => source.catalog === catalog).map(source => {
+        const active = source.key === shownSourceId;
+        return <li key={source.key}>
+          <span className="point-check__gaia-name">{source.catalog} {source.name}</span>
+          <span className="point-check__gaia-meta">{source.separationArcsec.toFixed(1)}″ from the mark · {source.label.slice(source.label.lastIndexOf('(') + 1, -1)}
+            {!source.placeable && ' · no proper motion, cannot be moved to this date'}</span>
+          {onShowSource && <button type="button" aria-pressed={active} disabled={!source.placeable}
+            onClick={() => onShowSource(active ? null : source)}>{active ? 'Hide' : 'Show on map'}</button>}
+        </li>;
+      })}</ul>
+    </details>)}
+  </section>;
 }
 
-/** Expected leaderboard points and, for an uncatalogued point, which surveys can be measured. */
-function Points({ review, surveys }: { review: CatalogReview; surveys: SurveyEvidence[] }) {
+function Points({ review }: { review: CatalogReview }) {
   const expected = expectedPoints(review);
-  return (
-    <section className="point-check__points" aria-label="Leaderboard points">
-      <p className="point-check__subhead">Leaderboard points</p>
-      <p className="point-check__points-value">{expected.label}</p>
-      <p className="point-check__footnote">{expected.detail}</p>
-      {expected.needsBrightness && surveys.length > 0 && (
-        <ul className="point-check__surveys">
-          {surveys.map(survey => (
-            <li key={survey.label} data-loaded={survey.loaded || undefined}>
-              <span>{survey.label}</span>
-              {survey.loaded ? <span className="point-check__chip">saved frames loaded</span>
-                : survey.onLoad ? <button type="button" onClick={survey.onLoad}>Load {survey.label} frames here</button>
-                : <span className="point-check__chip">{survey.note ?? "not loaded"}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+  return <section className="point-check__points" aria-label="Leaderboard points">
+    <p className="point-check__subhead">Leaderboard points</p>
+    <p className="point-check__points-value">{expected.label}</p>
+    <p className="point-check__footnote">{expected.detail}</p>
+  </section>;
 }
