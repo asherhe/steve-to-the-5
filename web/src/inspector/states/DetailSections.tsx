@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 import { sourceAsText } from "../describe";
 import { fmtDecDms, fmtDeg, fmtRaHms, fmtWithUnit } from "../format";
 import type { GaiaDetail, NearbySource, ObjectIdentity, PredictedPosition } from "../types";
-import { Hint } from "./Hint";
+import { InspectorInfoTip } from "./InspectorInfoTip";
 
 interface Props {
   source: NearbySource;
@@ -35,9 +35,9 @@ export function DetailSections({ source, detail, predicted, identity }: Props) {
       <Section title="Position">
         <p className="si-group__note">
           Where Gaia measured the source at epoch {source.refEpoch.toFixed(1)} (ICRS).
-          <Hint term="the reference epoch">
+          <InspectorInfoTip term="Reference epoch">
             The date the catalog position refers to. A moving star is somewhere else today.
-          </Hint>
+          </InspectorInfoTip>
         </p>
         <dl className="si-fields">
           <Field label="RA" value={`${fmtRaHms(source.ra)}  (${fmtDeg(source.ra)}°)`} />
@@ -51,9 +51,9 @@ export function DetailSections({ source, detail, predicted, identity }: Props) {
       <Section title="Motion">
         <p className="si-group__note">
           Raw Gaia values. 1000 mas is one arcsecond.
-          <Hint term="parallax">
+          <InspectorInfoTip term="Parallax">
             The star's apparent yearly wobble caused by Earth's orbit. Larger parallax means a nearer star.
-          </Hint>
+          </InspectorInfoTip>
         </p>
         <dl className="si-fields">
           <Field label="PM (RA·cosδ)" value={shown(fmtWithUnit(source.pmRaCosDecMasYr, "mas/yr", 3, d?.pmRaCosDecErrorMasYr))} />

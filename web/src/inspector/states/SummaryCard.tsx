@@ -1,7 +1,7 @@
 import { brightness, colour, distance, distanceText, motion, motionText, shortId } from "../describe";
 import { fmtNumber } from "../format";
 import type { GaiaDetail, NearbySource } from "../types";
-import { Hint } from "./Hint";
+import { InspectorInfoTip } from "./InspectorInfoTip";
 
 /** A verified name for the source. Only ever set from a catalog cross-identification by
  *  source ID; never inferred from position. */
@@ -48,17 +48,17 @@ export function SummaryCard({ source, detail, title }: Props) {
           {bright && (
             <span>
               {bright.word} · G {fmtNumber(bright.gMag, 2)}
-              <Hint term="G magnitude">
+              <InspectorInfoTip term="G magnitude">
                 Brightness in Gaia's broad optical band. Smaller numbers are brighter; the unaided eye reaches about 6.
-              </Hint>
+              </InspectorInfoTip>
             </span>
           )}
           {tint && (
             <span className={`si-chip si-chip--${tint.word.toLowerCase()}`}>
               {tint.word} · BP−RP {fmtNumber(tint.bpRp, 2)}
-              <Hint term="BP−RP colour">
+              <InspectorInfoTip term="BP−RP colour">
                 Gaia's optical colour: blue minus red brightness. Dust can redden it; it is not a temperature.
-              </Hint>
+              </InspectorInfoTip>
             </span>
           )}
         </p>
@@ -69,9 +69,9 @@ export function SummaryCard({ source, detail, title }: Props) {
           <dt>Distance</dt>
           <dd>
             {distanceText(far)}
-            <Hint term="this distance">
+            <InspectorInfoTip term="Distance from parallax">
               Computed from Gaia's parallax, the tiny yearly shift caused by Earth's orbit. It is stated only when the parallax is at least five times its uncertainty.
-            </Hint>
+            </InspectorInfoTip>
           </dd>
         </div>
         {move && (
@@ -90,9 +90,9 @@ export function SummaryCard({ source, detail, title }: Props) {
               )}
               {motionText(move)}
               {move.kind === "fast" && <span className="si-chip si-chip--fast">Fast mover</span>}
-              <Hint term="proper motion">
+              <InspectorInfoTip term="Proper motion">
                 How fast the source drifts across the sky, measured by Gaia. One SPHEREx pixel is 6.2 arcseconds.
-              </Hint>
+              </InspectorInfoTip>
               {directed && (
                 <span className="si-card__sub">
                   about {directed.pixelsPerDecade < 10 ? directed.pixelsPerDecade.toFixed(1) : Math.round(directed.pixelsPerDecade)} SPHEREx

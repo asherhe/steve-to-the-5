@@ -1,6 +1,7 @@
 import { predictAtObservation } from "../propagate";
 import type { GaiaDetail, MarkAction, NearbySource, SelectedFrameMeta } from "../types";
 import { DetailSections } from "./DetailSections";
+import { InspectorInfoTip } from "./InspectorInfoTip";
 import { SummaryCard } from "./SummaryCard";
 
 interface Props {
@@ -45,6 +46,11 @@ export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTim
           <h4 className="si-group__title">
             Predicted position
             <span className="si-badge si-badge--predicted">predicted</span>
+            <InspectorInfoTip term="Predicted position">
+              Gaia measured this star in 2016. Because it drifts over time, we calculate where it
+              should be on the SPHEREx observation date. This is a calculation, not a new
+              measurement, so it is labelled a prediction and kept separate from the image.
+            </InspectorInfoTip>
           </h4>
           <p className="si-group__note">
             {selectedFrame

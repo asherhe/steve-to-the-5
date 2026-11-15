@@ -352,7 +352,7 @@ describe("summary card and detail sections", () => {
 
   it("explains a term when its hint is toggled", async () => {
     renderState(states.matched);
-    const hint = screen.getByRole("button", { name: "What is this distance?" });
+    const hint = screen.getByRole("button", { name: 'What does "Distance from parallax" mean?' });
     expect(hint).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(hint);
     expect(hint).toHaveAttribute("aria-expanded", "true");

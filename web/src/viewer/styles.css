@@ -559,3 +559,132 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 
 .search-box .compact-name-control { flex: 1; }
 .instrument-bar:focus-within { z-index: 1000; }
+/* Beginner help: question-mark tooltips next to unfamiliar terms. */
+.info-tip { position: relative; display: inline-flex; vertical-align: middle; }
+.info-tip-button {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  min-height: 0;
+  padding: 0;
+  margin-inline-start: 0.1rem;
+  border: 1px solid #5a81a8;
+  border-radius: 50%;
+  background: #1c2a3b;
+  color: #9fd0ff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+.info-tip-button:hover:enabled { background: #28415c; }
+.info-tip-inline {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid #5a81a8;
+  border-radius: 50%;
+  background: #1c2a3b;
+  color: #9fd0ff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.info-tip-bubble {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max(16rem, 60vw);
+  max-width: 20rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #45546a;
+  border-radius: 0.6rem;
+  background: #0e1520;
+  box-shadow: 0 0.6rem 1.6rem #0009;
+  color: #d6def0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.info-tip-term {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #9fd0ff;
+  font-weight: 600;
+}
+
+/* "How this works" button sits alongside the panel buttons. */
+.panel-buttons .tutorial-open { color: #d9f3ff; }
+.panel-buttons .tutorial-open span[aria-hidden] { color: #9fd0ff; font-weight: 700; }
+
+/* Short labelled intro line inside a floating pane, carrying a help tip. */
+.pane-intro {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* First-run / on-demand tour. */
+.tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: var(--gap);
+  background: #05080fcc;
+  backdrop-filter: blur(2px);
+}
+.tutorial-dialog {
+  width: min(32rem, 100%);
+  max-height: min(90dvh, 44rem);
+  overflow: auto;
+  padding: 1.25rem;
+  border: 1px solid #45546a;
+  border-radius: 0.9rem;
+  background: #111824;
+  box-shadow: 0 1rem 3rem #000a;
+}
+.tutorial-dialog .panel-heading h2 { font-size: 1.25rem; }
+.tutorial-body { line-height: 1.6; }
+.tutorial-body p { margin: 0 0 0.75rem; }
+.tutorial-body ul { margin: 0 0 0.75rem; padding-left: 1.2rem; }
+.tutorial-body li { margin-bottom: 0.3rem; }
+.tutorial-progress {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+.tutorial-progress li {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #37465b;
+}
+.tutorial-progress li.is-current { background: #90c7ff; }
+.tutorial-controls { justify-content: space-between; }
+.tutorial-controls .tutorial-primary {
+  color: #06202e;
+  background: #8ccbff;
+  border-color: #8ccbff;
+  font-weight: 600;
+}
+.tutorial-controls .tutorial-primary:hover:enabled { background: #a7d8ff; }
+
+@media (max-width: 42rem) {
+  .info-tip-bubble { width: min(18rem, 78vw); }
+}

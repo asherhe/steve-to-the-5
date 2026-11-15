@@ -1,45 +1,121 @@
-# Implementation contract and five agent handoffs
+# Implementation contract and the five owned slices
 
-Read the shared project brief first. The coordinator commits this contract as OpenAPI plus representative response fixtures. JSON uses camelCase, coordinates are ICRS decimal degrees, timestamps are UTC ISO 8601, angular and wavelength units appear in field names, and external source IDs are strings. Nullable measurements use null. Validate finite coordinates, Dec in [−90, 90], RA in [0, 360), and positive bounded search sizes. Normalize sexagesimal input in the viewer. Use an error body {code, message} for malformed requests, missing records and unauthorized writes. The fixtures below describe interfaces to implement, not existing endpoints.
+Read `spherex-project-brief.md` first. This file is the shared interface and the per-owner
+map for the repository as it stands. It describes the routes and components that now exist,
+not just a plan; each owner's README carries the exact request/response detail, limits and
+verification. JSON uses camelCase, coordinates are ICRS decimal degrees, timestamps are UTC
+ISO 8601, angular and wavelength units appear in field names, and external source IDs are
+strings. Nullable measurements use `null`. Validate finite coordinates, Dec in [−90, 90],
+RA in [0, 360), and positive bounded search sizes. The viewer normalizes sexagesimal input.
+Malformed requests, missing records and unauthorized writes use an error body
+`{code, message}`. The coordinator owns the shared OpenAPI/generated types, root
+dependencies, app entry points, deployment and merges; route any contract change through it.
 
-## Shared interface
+## Shared interface (as implemented)
 
-| Operations | Minimum request and response |
+| Operations | Request and response |
 |---|---|
-| GET /api/comparisons?ra&dec&fovArcmin | Returns {status, comparison}. Status is ready, single_epoch, no_coverage, no_comparable_pair or upstream_unavailable. Comparison, when present, has {id, field, wavelengthRangeUm, stretch, grid, frames}. Field has {ra, dec, fovArcmin}. Grid records dimensions and sky projection. Each frame has {id, observedAtUtc, wavelengthUm, release, imageUrl, sourceUrl, qualityFlags}. Store the manifest and rendered assets durably before returning a shareable ID. |
-| GET /api/comparisons/{id} | Returns the saved manifest and immutable asset references. Republishing data or changing default wavelength selection does not change a prior comparison. |
-| GET /api/resolve?name | Returns {name, ra, dec}. Use bundled target presets independent of external name lookup. |
-| GET /api/catalogs/nearby?ra&dec&radiusArcsec | Returns {sources}. Each row has {sourceId, ra, dec, refEpoch, pmRaCosDecMasYr, pmDecMasYr, parallaxMas, gMag, separationArcsec}. Distinguish empty results from service errors. |
-| GET /api/catalogs/gaia/{sourceId} | Returns the same astrometry plus available uncertainties, radial velocity, BP/RP magnitude and source provenance. Optional fields can be null. Display measured values with units. |
-| GET /api/findings?ra&dec&radiusDeg&zoom | Returns bounded {items}, each a pin {id, ra, dec, title} or cluster {ra, dec, count, zoomTo}. Return clusters at wider zoom and apply a bounded result limit. |
-| POST /api/findings | Authenticated request {comparisonId, ra, dec, title, note, marks}. Optional marks are {frameId, ra, dec} entries. Validate IDs against the saved comparison. Return {id}. |
-| GET /api/findings/{id}, POST /api/findings/{id}/replies | GET returns public finding evidence, author display name and replies. POST takes {text} and derives author identity from auth, returning the created reply. |
+| GET /api/comparisons?ra&dec&fovArcmin | Returns `{status, comparison, diagnostics}`. Status is `ready`, `single_epoch`, `no_coverage`, `no_comparable_pair` or `upstream_unavailable`. `comparison`, when present, has `{id, field, wavelengthRangeUm, stretch, grid, frames}` plus additive fields (observation IDs, detector, time bounds, bandwidths, source hashes, per-frame and common coverage, resolved `config`, limitations, provenance). Field is `{ra, dec, fovArcmin}`; `grid` carries dimensions and a FITS celestial WCS. Each frame has `{id, observedAtUtc, wavelengthUm, release, imageUrl, sourceUrl, qualityFlags}` plus time bounds, validity and alignment. Manifest and rendered assets are stored durably before a shareable ID is returned. |
+| GET /api/comparisons/{id} | The saved manifest and immutable asset references, exactly as stored; never queries IRSA. Republishing data or changing default selection does not change a prior comparison. |
+| GET /api/comparisons/{id}/assets/{name} | Immutable PNG or original FITS bytes with ETag; image URLs are same-origin relative paths. |
+| GET /api/resolve?name | `{name, ra, dec}` from bundled presets; external SIMBAD lookup is opt-in and live-only. |
+| GET /api/catalogs/nearby?ra&dec&radiusArcsec | `{sources}`; each row `{sourceId, ra, dec, refEpoch, pmRaCosDecMasYr, pmDecMasYr, parallaxMas, gMag, separationArcsec}`. Empty result is distinct from an error. |
+| GET /api/catalogs/gaia/{sourceId} | Astrometry plus available uncertainties, radial velocity, BP/RP magnitude and provenance; optional fields may be `null`. |
+| GET /api/health | Catalog liveness and mode (offline fixtures vs live). |
+| GET /api/findings?ra&dec&radiusDeg&zoom | Bounded `{items}` (≤ 100), each a pin `{id, ra, dec, title}` or cluster `{ra, dec, count, zoomTo}`. Zoom < 8 returns 5° grid clusters; higher zoom returns pins. |
+| POST /api/findings | Authenticated `{comparisonId, ra, dec, title, note, marks?}`; optional marks are `{frameId, ra, dec}`. IDs validated against the saved comparison. Returns `{id}`. |
+| GET /api/findings/{id}, POST /api/findings/{id}/replies | GET returns public evidence, author display name and most-recent 200 replies. POST takes `{text}`, derives author identity from auth, returns the reply. |
 
-Shared frontend slots are fixture-tested React components. Viewer exposes field selection, sky click, active frame, map zoom, marker selection and overlay registration via controlled props and callbacks. The inspector and findings UI render in ordinary standalone harnesses during development. The app shell places them in a common map panel at integration. Use query parameters `comparison` and `finding` for exact replay and thread opening. A findings pin and a selected image position use the same sky coordinates.
+Frontend slots are fixture-tested React components. The viewer app shell exposes field
+selection, sky click, active frame, map zoom, marker selection and overlay registration via
+controlled props and callbacks, and hosts the inspector and discussion in draggable panes.
+The inspector and findings UI also run in standalone harnesses during development. Query
+parameters `comparison` and `finding` drive exact replay and thread opening. A findings pin
+and a selected image position use the same sky coordinates.
 
-## Assign one brief per agent
+## The five owned slices
 
-Give each agent both documents and their numbered brief. Start the agent in its own worktree. Ask it to first return a short implementation checklist with its dependencies, file ownership and acceptance commands, then build its assigned slice. Other agents are working concurrently. Keep edits inside the assigned paths, preserve other changes, and send shared changes to the coordinator. End with a commit, verification result, integration notes and open gaps.
+Each slice is owned end to end and verified independently against fixtures. Keep edits inside
+the assigned paths, preserve other contributors' work, and send shared changes to the
+coordinator. The engagement leaderboard (`web/src/leaderboard/**`) currently ships as a
+labeled placeholder owned alongside the viewer app shell; it is not one of the five core
+owners.
 
-### 1. SPHEREx archive and image preparation
-Own `services/archive/**` and `fixtures/archive/**`. Implement both comparison routes and durable asset/manifest storage. Use IRSA SIA2 with DR1 and QR3, followed by on-premises URL cutouts with center and size. Use wavelength at the target, image flags and WCS to select comparable exposures and register them on one grid. Use one fixed shared stretch. Return actual dates and release/source links. Save one real fixture and a five-target coverage log. Test one epoch, mismatched channels, invalid crop, upstream failure and ID replay. [IRSA cutout notebook](https://caltech-ipac.github.io/irsa-tutorials/spherex-cutouts/)
+### 1. SPHEREx archive and image preparation — `services/archive/**`, `fixtures/archive/**`
 
-### 2. Map, playback and display settings
-Own `web/src/viewer/**`. Build the base Aladin map, coordinate and preset search, field control, matched monochrome blink, timeline and comparison metadata. Implement the map’s panel host and marker primitives. Consume typed inspector and activity slots using fixture components. Show changing fields, fetch progress, empty results and saved-example states. Display preset extensions belong here after the MVP. Verify identical framing while stepping, responsive panels and replay from a copied link.
+A standalone FastAPI service implementing both comparison routes, the assets route, and
+durable immutable evidence storage. It queries IRSA SIA2 over DR1 and QR3 Wide Survey
+collections directly over HTTPX (no account; downloads restricted to HTTPS IRSA SPHEREx
+paths), selects comparable exposures by wavelength, flags and WCS, registers them on one
+ICRS TAN grid at 6.2 arcsec/pixel, and renders one fixed shared stretch. Returns actual dates
+and release/source links. Domain statuses are listed above; HTTP errors are `{code, message}`
+(422 `INVALID_REQUEST`, 404 `NOT_FOUND`, 429 `BUILD_BUSY`, 503 `PROCESSING_LIMIT`,
+500 `EVIDENCE_CORRUPT`, 409 `EVIDENCE_CONFLICT`). An incomplete search never yields a
+fabricated negative. Bounded work: one build per process, 180 s deadline, bounded
+candidates/cutouts, retries with backoff, 20 MB per response. IDs are content hashes; storage
+is content-addressed with an atomic checksummed manifest and no conflicting overwrite.
+Retained: a live WISE 0855 example, a curated tutorial pair, synthetic fixtures, a five-target
+coverage log and an OpenAPI export at `fixtures/archive/openapi.json`. Full detail and limits:
+`services/archive/README.md` and `services/archive/INTEGRATION.md`.
 
-### 3. Catalog service and source inspector
-Own `services/catalogs/**` and `web/src/inspector/**`. Build name resolution, bounded Gaia DR3 TAP cone search and exact source-ID detail. Export the inspector as a component that takes sky position and optional selected frame metadata and emits a mark action. Present catalog position, reference epoch, proper motion, parallax and photometry if available. If adding a propagated marker, account for epoch and label it as predicted. Use known, ambiguous, unmatched and unavailable fixtures. No shared map windowing edits. [Gaia TAP client](https://docs.astropy.org/projects/astroquery/en/stable/gaia/gaia.html)
+### 2. Map, playback, display and app shell — `web/src/viewer/**`
 
-### 4. Findings backend and auth
-Own `services/findings/**` and `supabase/**`. Implement findings and replies routes, migrations, auth integration and viewport query. Public reads expose display names and evidence, with emails kept private. Authenticated writes derive identity from the session. Validate evidence references, limit result and text sizes, use plain text rendering and give the coordinator a hide action. Keep Supabase privileged credentials server-side. Deliver fixture responses plus smoke tests for anonymous read, anonymous write denial, valid post, invalid comparison and second-account reply.
+Owns the Aladin Lite base map, the SPHEREx all-sky HiPS reference layer and the DSS optical
+toggle, the spectral-ruler slice selection, one-line and advanced coordinate/preset/name
+search, the field control (1–30 arcmin), matched monochrome playback (`usePlayback`,
+`ComparisonPlayback`, `TimeControls`), the dated sky overlay, the draggable panel host
+(`FloatingPane`) and marker primitives, and the beginner tutorial and inline term explainers.
+It consumes the inspector and findings/discussion slots and the activity layer via typed
+props, using fixtures in development. The production adapter (`production.ts`) implements
+search, saved replay and name lookup against same-origin `/api` routes using types generated
+from the archive OpenAPI. It renders changing fields, fetch progress, empty results and
+saved-example states, preserves exact framing while stepping, and restores evidence from a
+copied link. As the app shell it mounts the other slices. Detail: `web/src/viewer/README.md`.
 
-### 5. Findings UI and map activity
-Own `web/src/findings/**`. Build activity toggle, cluster/pin data adapter, selected-pin discussion panel, signed-in composer and reply form. Use stub marker callbacks and fixture API responses in a standalone harness. Accept comparison ID and sky selection as props from the app shell. **Show evidence** restores exact frames and annotations, and **Copy link** includes both IDs. Handle loading, no findings, failed writes and sign-in return. Verify the complete fixture-backed flow before backend integration.
+### 3. Catalog service and source inspector — `services/catalogs/**`, `web/src/inspector/**`
+
+A FastAPI catalog service (offline fixtures by default, opt-in live Gaia DR3 TAP) implementing
+name resolution, bounded Gaia DR3 cone search, exact source-ID detail and a health route.
+Errors are `{code, message}` (400 `invalid_request`, 404 `not_found`, 503
+`upstream_unavailable`, distinct from an empty result); radius ≤ 300 arcsec, ≤ 200 rows, 20 s
+TAP timeout, no credentials. The inspector (`SourceInspector`) is a slot component taking a
+sky position and optional selected-frame metadata; it presents catalog position, reference
+epoch, proper motion, parallax and photometry with units through idle/loading/matched/
+ambiguous/unmatched/unavailable states, propagates a selected-frame position and labels it
+`predicted`, and emits a mark action. No shared map-windowing edits. Detail:
+`services/catalogs/README.md`, `services/catalogs/docs/API.md`, `web/src/inspector/README.md`.
+
+### 4. Findings backend and auth — `services/findings/**`, `supabase/**`
+
+A FastAPI router (`create_router(supabase, load_saved_comparison)`) mounted in the shared app,
+owning `/api/findings` and backed by Supabase (Postgres + Auth). Implements the viewport,
+create, thread and reply routes with viewport SQL functions; three ordered migrations create
+the tables and functions with antipodal-roundoff and RA-wrap fixes. Public reads expose
+display names ("Sky observer" fallback) and evidence with emails private; writes derive
+identity from the session. Validates evidence references and limits (title ≤ 120,
+note/reply ≤ 2,000, ≤ 20 marks referencing the saved comparison), renders text as plain text,
+and gives the coordinator a SQL `hidden_at` hide action. The server key stays server-side; the
+tables/RPCs deny direct browser access. Detail: `services/findings/README.md`.
+
+### 5. Findings UI and map activity — `web/src/findings/**`
+
+Owns the activity toggle, the cluster/pin data adapter, the selected-pin discussion panel, the
+signed-in composer and reply form. It uses stub marker callbacks and fixture API responses in
+a standalone harness, accepts a comparison ID and sky selection as props from the app shell,
+and talks to `/api/findings` through its own client (never Supabase directly). "Show evidence"
+restores exact frames and annotations; "Copy link" includes both IDs. It handles loading,
+no-findings, failed-write and sign-in-return states.
 
 ## Merge and demo order
 
-The coordinator wires archive + map first, then catalog inspector, then findings backend + UI. Test contracts against fixtures before merging and smoke test real data after the first join. Before release, verify on the deployed origin with a cold request and a simulated archive failure. Use two browser sessions to prove public read, auth, posting and reply. Log actual coverage for each required target and show one observed change with metadata and source links. 
-
+The coordinator wires archive + map first, then the catalog inspector, then the findings
+backend + UI, with the leaderboard placeholder mounted beside the app shell. Test contracts
+against fixtures before merging and smoke test real data after the first join. Before release,
+verify on the deployed origin with a cold request and a simulated archive failure, and use two
+browser sessions to prove public read, auth, posting and reply. Log actual coverage for each
+required target and show one observed change with metadata and source links. Treat every
+checked-in verification record as historical until rerun, and keep synthetic fixtures, saved
+real examples, live archive checks and deployed checks clearly distinct.
 
 ## Additive five-target naming contract
 

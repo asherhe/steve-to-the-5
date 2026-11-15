@@ -3,6 +3,7 @@ import type { Field, SkyPosition } from "./comparison";
 import { nameIssue, partialNameIssue } from "./targetNames";
 import { TargetNameInput } from "./TargetNameInput";
 import { parseAngle, targetPresets } from "./coordinates";
+import { InfoTip } from "./InfoTip";
 
 export interface FieldLimits {
   min: number;
@@ -68,7 +69,11 @@ export function FieldSearch({
     <div>
       <form className="field-form" onSubmit={submit} noValidate>
         <label>
-          Right ascension
+          Right ascension <InfoTip term="Right ascension (RA)">
+            The east&ndash;west coordinate on the sky, like longitude on Earth. Given in degrees
+            (0&ndash;360) or as hours:minutes:seconds. Together with declination it points at an
+            exact spot on the sky.
+          </InfoTip>
           <input value={raInput} onChange={(event) => setRa(event.target.value)}
             placeholder="269.4521 or 17:57:48" aria-invalid={checked.coordinates && ra === null}
             aria-describedby={checked.coordinates && ra === null ? "ra-error" : undefined} />
@@ -77,7 +82,11 @@ export function FieldSearch({
           )}
         </label>
         <label>
-          Declination
+          Declination <InfoTip term="Declination (Dec)">
+            The north&ndash;south coordinate on the sky, like latitude on Earth. Runs from
+            &minus;90&deg; (south celestial pole) to +90&deg; (north). Pairs with right ascension
+            to pin a location.
+          </InfoTip>
           <input value={decInput} onChange={(event) => setDec(event.target.value)}
             placeholder="+4.6934 or +04:41:36" aria-invalid={checked.coordinates && dec === null}
             aria-describedby={checked.coordinates && dec === null ? "dec-error" : undefined} />
@@ -86,7 +95,10 @@ export function FieldSearch({
           )}
         </label>
         <label>
-          Field width (arcmin)
+          Field width (arcmin) <InfoTip term="Field width (arcmin)">
+            How wide a patch of sky to fetch, measured in arcminutes. One arcminute is 1/60th of a
+            degree, roughly 1/30th the width of the full Moon. Smaller numbers zoom in tighter.
+          </InfoTip>
           <input type="number" step="any" min={limits.min} max={limits.max} value={size}
             onChange={(event) => setSize(event.target.value)} aria-invalid={checked.size && !validSize}
             aria-describedby="size-hint" />

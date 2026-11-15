@@ -60,7 +60,7 @@ motion with a compass direction, and the separation from the selected point. The
 button follows. Every raw catalog value sits below in sections that start collapsed
 (`states/DetailSections.tsx`): Position, Motion, Photometry, Predicted coordinates and
 Identifiers & links, plus **Copy ID** and **Copy all as text**. "?" buttons
-(`states/Hint.tsx`) define terms such as parallax and reference epoch.
+(`states/InspectorInfoTip.tsx`) define terms such as parallax and reference epoch.
 
 The wording and thresholds live in `describe.ts`. They are derived from the Gaia row
 and labelled as such; they are not observations from SPHEREx images and do not classify

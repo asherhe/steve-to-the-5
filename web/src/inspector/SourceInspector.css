@@ -256,47 +256,6 @@
   display: none;
 }
 
-/* ---- Hints ---- */
-.source-inspector .si-hint {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  min-height: 0;
-  margin-left: 6px;
-  padding: 0;
-  border: 1px solid var(--si-border);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--si-muted);
-  font: 600 11px/1 system-ui, sans-serif;
-  cursor: pointer;
-  vertical-align: 1px;
-  /* Enlarge the touch target without changing the layout. */
-  position: relative;
-}
-.source-inspector .si-hint::after {
-  content: "";
-  position: absolute;
-  /* Taller than wide so a hint at the right edge cannot widen the panel. */
-  inset: -10px -4px;
-}
-.source-inspector .si-hint[aria-expanded="true"] {
-  border-color: var(--si-accent);
-  color: var(--si-accent);
-}
-.si-hint__text {
-  display: block;
-  margin-top: 4px;
-  color: var(--si-muted);
-  font-size: 12px;
-  font-weight: 400;
-  white-space: normal;
-}
-.si-hint__text[hidden] {
-  display: none;
-}
-
 /* ---- Collapsed detail sections ---- */
 .si-sections {
   margin-top: 14px;
@@ -311,7 +270,7 @@
   font-weight: 600;
 }
 .si-section__summary:focus-visible,
-.source-inspector .si-hint:focus-visible,
+.source-inspector .si-info__button:focus-visible,
 .source-inspector .si-copy:focus-visible {
   outline: 2px solid var(--si-accent);
   outline-offset: 2px;
@@ -381,13 +340,80 @@
   font-size: 12px;
 }
 
-/* Hit-area padding on hints must never create a horizontal scrollbar in the host panel. */
-.si-card,
-.si-sections {
-  overflow-x: clip;
-}
-
 .si-section .si-field__label {
   flex: 0 0 auto;
   max-width: 50%;
+}
+/* Beginner help: "?" disclosures next to catalog terms. Scoped to the inspector. */
+.source-inspector .si-info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.source-inspector .si-info__button {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--si-accent);
+  border-radius: 50%;
+  background: var(--si-panel);
+  color: var(--si-accent);
+  font: 600 10px/1 inherit;
+  cursor: help;
+}
+.source-inspector .si-info__button:hover {
+  filter: brightness(1.15);
+}
+.source-inspector .si-info__bubble {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 240px;
+  max-width: 70vw;
+  padding: 10px 12px;
+  border: 1px solid var(--si-border);
+  border-radius: 8px;
+  background: #0c1118;
+  box-shadow: 0 10px 28px #000a;
+  color: var(--si-fg);
+  font: 13px/1.5 inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.source-inspector .si-info__term {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--si-accent);
+  font-weight: 600;
+}
+
+/* In the card and sections the "?" sits at the end of a row. Show its explanation in the
+   flow below that row rather than as a floating bubble, so it can never extend past the
+   panel edge or be cut off by a short, scrolling host pane. */
+.source-inspector .si-card .si-info,
+.source-inspector .si-sections .si-info {
+  display: contents;
+}
+/* Host pages may set a global minimum button height; keep every "?" round. */
+.source-inspector .si-info__button {
+  min-height: 0;
+}
+.source-inspector .si-card .si-info__button,
+.source-inspector .si-sections .si-info__button {
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+.source-inspector .si-card .si-info__bubble,
+.source-inspector .si-sections .si-info__bubble {
+  position: static;
+  display: block;
+  width: auto;
+  max-width: none;
+  margin-top: 6px;
+  box-shadow: none;
+  font-weight: 400;
+  white-space: normal;
 }

@@ -3,6 +3,7 @@ import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 import { bandColors } from "./SpectralRuler";
 import { bandForWavelength } from "./spherexSurvey";
+import { InfoTip } from "./InfoTip";
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -75,14 +76,26 @@ export function ComparisonPlayback({
             </>
           )}
           <span className="cutout-chip">
-            Shared stretch {comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
+            Shared stretch{" "}
+            <InfoTip term="Shared stretch">
+              A brightness scale applied identically to every frame, so the same pixel value looks
+              the same across dates. Without a shared stretch, images could look different just
+              because they were scaled differently, not because anything changed.
+            </InfoTip>
+            {" "}{comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
           </span>
         </div>
         <figcaption>
           <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
           <span className="frame-meta">
             {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}
-            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
+            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm{" "}
+            <InfoTip term="Wavelength (µm)">
+              The color of infrared light being shown, in micrometres (µm, millionths of a metre).
+              SPHEREx sees infrared, which is beyond what human eyes detect. Different wavelengths
+              make different objects stand out.
+            </InfoTip>
+            {" · "}{frame.release.toUpperCase()}
             {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
           </span>
           {frame.observationStartUtc && frame.observationEndUtc && (
@@ -96,10 +109,18 @@ export function ComparisonPlayback({
       {(frame.validFraction !== undefined || frame.alignment) && (
         <dl className="stats">
           {frame.validFraction !== undefined && (
-            <div><dt>Valid pixels</dt><dd>{(frame.validFraction * 100).toFixed(1)}%</dd></div>
+            <div><dt>Valid pixels <InfoTip term="Valid pixels">
+              The share of pixels in this frame with usable data. The rest are masked or uncovered
+              (for example, edges, gaps, or flagged detector regions). A low fraction means less of
+              the patch can be trusted for comparison.
+            </InfoTip></dt><dd>{(frame.validFraction * 100).toFixed(1)}%</dd></div>
           )}
           {frame.alignment && (
-            <div><dt>Alignment</dt><dd data-caution={frame.alignment === "wcs_only_not_empirically_verified" || undefined}>
+            <div><dt>Alignment <InfoTip term="Alignment">
+              How the frames were registered onto a common grid so the same sky position lands on
+              the same pixel. &ldquo;Verified&rdquo; means it was checked against background stars;
+              otherwise it relies on the recorded pointing (WCS) only.
+            </InfoTip></dt><dd data-caution={frame.alignment === "wcs_only_not_empirically_verified" || undefined}>
               {alignmentLabels[frame.alignment] ?? frame.alignment}
             </dd></div>
           )}
