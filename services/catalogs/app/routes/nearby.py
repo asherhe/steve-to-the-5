@@ -12,6 +12,7 @@ from app.deps import get_provider
 from app.errors import upstream_unavailable
 from app.gaia.provider import UpstreamError
 from app.models import NearbyResponse
+from app.presets import gaia_identity
 from app.validation import validate_dec, validate_ra, validate_radius_arcsec
 
 router = APIRouter()
@@ -33,4 +34,4 @@ def nearby(
         sources = provider.nearby(ra, dec, radius_arcsec, settings.max_rows)
     except UpstreamError as exc:
         raise upstream_unavailable(str(exc)) from exc
-    return NearbyResponse(sources=sources)
+    return NearbyResponse(sources=[row.model_copy(update={"identity": gaia_identity(row.source_id, settings)}) for row in sources])

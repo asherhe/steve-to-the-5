@@ -1,8 +1,7 @@
+import type { components } from "./catalog.generated";
 // Types for the source inspector (task 3).
 //
-// These mirror the catalog service contract (camelCase, units in field names, nullable
-// measurements as null). They are a LOCAL mirror until the coordinator publishes shared
-// generated types; swap to the generated types at integration and reconcile any difference.
+// Catalog response shapes come from the generated shared OpenAPI contract.
 
 /** A sky position in ICRS decimal degrees. A findings pin and a selected image position
  *  use these same coordinates. */
@@ -19,51 +18,17 @@ export interface SelectedFrameMeta {
   wavelengthUm?: number | null;
 }
 
-/** One row from GET /api/catalogs/nearby. */
-export interface NearbySource {
-  sourceId: string;
-  ra: number;
-  dec: number;
-  refEpoch: number;
-  pmRaCosDecMasYr: number | null;
-  pmDecMasYr: number | null;
-  parallaxMas: number | null;
-  gMag: number | null;
-  separationArcsec: number;
-}
-
-export interface NearbyResponse {
-  sources: NearbySource[];
-}
-
-export interface SourceProvenance {
-  catalog: string;
-  dataRelease: string;
-  sourceTableUrl?: string | null;
-  sourceDetailUrl?: string | null;
-}
-
-/** GET /api/catalogs/gaia/{sourceId}. Optional measurements may be null. */
-export interface GaiaDetail {
-  sourceId: string;
-  ra: number;
-  dec: number;
-  refEpoch: number;
-  pmRaCosDecMasYr: number | null;
-  pmDecMasYr: number | null;
-  parallaxMas: number | null;
-  gMag: number | null;
-  raErrorMas: number | null;
-  decErrorMas: number | null;
-  pmRaCosDecErrorMasYr: number | null;
-  pmDecErrorMasYr: number | null;
-  parallaxErrorMas: number | null;
-  radialVelocityKmS: number | null;
-  radialVelocityErrorKmS: number | null;
-  bpMag: number | null;
-  rpMag: number | null;
-  provenance: SourceProvenance;
-}
+/** Shared catalog contract, generated from the FastAPI schema. Response models emit
+ * nullable measurement keys even where OpenAPI permits omission. */
+export type ObjectIdentity = components["schemas"]["ObjectIdentity"];
+export type ResolveResult = components["schemas"]["ResolveResult"];
+export type PositionProvenance = components["schemas"]["PositionProvenance"];
+export type NearbySource = Required<Omit<components["schemas"]["NearbySource"], "identity">> &
+  Pick<components["schemas"]["NearbySource"], "identity">;
+export type NearbyResponse = { sources: NearbySource[] };
+export type SourceProvenance = components["schemas"]["SourceProvenance"];
+export type GaiaDetail = Required<Omit<components["schemas"]["GaiaDetail"], "identity">> &
+  Pick<components["schemas"]["GaiaDetail"], "identity">;
 
 export interface ApiErrorBody {
   code: string;
@@ -89,6 +54,9 @@ export interface MarkAction {
   dec: number;
   sourceId: string;
   predicted: boolean;
+  /** Display enrichment only; never serialized into saved evidence marks. */
+  displayName?: string;
+  refEpoch?: number;
 }
 
 /** The inspector's view state, independent of how data is fetched. */

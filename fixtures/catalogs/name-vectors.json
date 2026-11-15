@@ -1,0 +1,47 @@
+[
+  {
+    "query": "  GJ699  ",
+    "normalized": "gj 699",
+    "target": "barnards-star"
+  },
+  {
+    "query": "Barnard’s Star",
+    "normalized": "barnard's star",
+    "target": "barnards-star"
+  },
+  {
+    "query": "HIP87937",
+    "normalized": "hip 87937",
+    "target": "barnards-star"
+  },
+  {
+    "query": "ε Indi B",
+    "normalized": "epsilon indi b",
+    "target": "epsilon-indi-b"
+  },
+  {
+    "query": "WISE J085510.83−071442.5",
+    "normalized": "wise j085510.83-071442.5",
+    "target": "wise-0855"
+  },
+  {
+    "query": "rW   aUr",
+    "normalized": "rw aur",
+    "target": "rw-aurigae"
+  },
+  {
+    "query": "r dra",
+    "normalized": "r dra",
+    "target": "r-draconis"
+  },
+  {
+    "query": "WISE J085510.83+071442.5",
+    "normalized": "wise j085510.83+071442.5",
+    "target": null
+  },
+  {
+    "query": "RW Aur A",
+    "normalized": "rw aur a",
+    "target": null
+  }
+]

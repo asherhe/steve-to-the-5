@@ -11,7 +11,8 @@
       "pmDecMasYr": 10362.542,
       "parallaxMas": 546.976,
       "gMag": 8.194,
-      "separationArcsec": 0.42
+      "separationArcsec": 0.42,
+      "identity": null
     }
   ]
 }

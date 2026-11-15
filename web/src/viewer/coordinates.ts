@@ -1,4 +1,4 @@
-import type { SkyPosition } from "./comparison";
+import { namedTargets } from "./targetNames";
 
 const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 const separated = /^([+-]?\d+)(?::|\s+)(\d+)(?::|\s+)(\d+(?:\.\d+)?)$/;
@@ -26,22 +26,7 @@ export function parseAngle(input: string, axis: "ra" | "dec"): number | null {
   return valid ? degrees : null;
 }
 
-const targetCoordinates = [
-  // SIMBAD ICRS J2000.0 coordinates for Barnard's Star.
-  ["Barnard’s Star", "17:57:48.49847", "+04:41:36.11388"],
-  // SIMPLE archive, Epsilon Indi B system.
-  ["Epsilon Indi B", "331.0656", "-56.7901"],
-  // Coordinates supplied in the challenge brief.
-  ["WISE 0855", "08:55:10.831", "-07:14:42.53"],
-  // Chandra Cycle 21 target list.
-  ["RW Aurigae", "05:07:49.5", "+30:24:05.0"],
-  // AAVSO Bulletin coordinates.
-  ["R Draconis", "16:32:40.2258", "+66:45:17.943"],
-] as const;
-
-export const targetPresets = targetCoordinates.map(([name, rightAscension, declination]): SkyPosition & { name: string } => {
-  const ra = parseAngle(rightAscension, "ra");
-  const dec = parseAngle(declination, "dec");
-  if (ra === null || dec === null) throw new Error(`Invalid preset coordinates for ${name}`);
-  return { name, ra, dec };
-});
+// Coordinates and names come from the same reviewed snapshot as /api/resolve.
+export const targetPresets = namedTargets.map(target => ({
+  name: target.identity!.displayName, ra: target.ra, dec: target.dec,
+}));

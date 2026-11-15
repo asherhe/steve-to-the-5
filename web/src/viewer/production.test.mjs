@@ -71,16 +71,20 @@ test("bounds agree with OpenAPI; invalid fields never issue requests", async () 
   }
   assert.equal(calls.length,0);
 });
-test("name resolution uses the same-origin catalog route and distinguishes missing names and outages", async () => {
-  const presets = JSON.parse(await readFile(new URL("../../../services/catalogs/fixtures/catalogs/presets.json", import.meta.url),"utf8"));
-  const preset = presets.presets[0];
-  const expected = {name:preset.name,ra:preset.ra,dec:preset.dec};
-  const {source,calls} = client(expected);
-  assert.deepEqual(await source.resolveName(preset.name), expected);
-  assert.equal(calls[0].path, `/api/resolve?name=${encodeURIComponent(preset.name)}`);
+test("bundled names need no service; other identifiers use the same-origin resolver", async () => {
+  const {source,calls} = client({name:"HD 123",ra:1,dec:2});
+  const bundled = await source.resolveName("GJ699");
+  assert.equal(bundled.identity.objectId,"barnards-star");
+  assert.equal(calls.length,0);
+  assert.deepEqual(await source.resolveName("HD 123"),{name:"HD 123",ra:1,dec:2});
+  assert.equal(calls[0].path,"/api/resolve?name=HD%20123");
   assert.equal(await client({code:"not_found",message:"Missing"},404).source.resolveName("unknown"),null);
-  await assert.rejects(client({code:"upstream_unavailable",message:"Outage"},503).source.resolveName("unknown"), error=>error.code==="upstream_unavailable");
-  await assert.rejects(client({...expected,ra:NaN}).source.resolveName("invalid"), error=>error.code==="invalid_response");
+  for (const code of ["upstream_unavailable","resolver_disabled","ambiguous_name"]) {
+    await assert.rejects(client({code,message:"Lookup unavailable"},503).source.resolveName("unknown"), error=>error.code===code);
+  }
+  await assert.rejects(client({name:"invalid",ra:NaN,dec:1}).source.resolveName("invalid"), error=>error.code==="invalid_response");
+  await assert.rejects(client({name:"invalid",ra:1,dec:1,identity:{displayName:"Fake"}}).source.resolveName("invalid"), error=>error.code==="invalid_response");
+  await assert.rejects(source.resolveName("epsilon indi"), error=>error.code==="ambiguous_name");
 });
 test("all three operations forward cancellation; saved IDs are path-encoded", async () => {
   const signal = AbortSignal.abort();

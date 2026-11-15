@@ -23,11 +23,11 @@ def test_alias_resolves_case_insensitive(client):
     assert resp.json()["name"] == "Barnard's Star"
 
 
-def test_unknown_name_is_not_found(client):
+def test_unknown_name_with_disabled_lookup_is_not_a_nonexistence_claim(client):
     resp = client.get("/api/resolve", params={"name": "Planet Nine"})
-    assert resp.status_code == 404
+    assert resp.status_code == 503
     body = resp.json()
-    assert body["code"] == "not_found"
+    assert body["code"] == "resolver_disabled"
     assert "message" in body
 
 

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { Field, SkyPosition } from "./comparison";
+import { nameIssue, partialNameIssue, targetSuggestions } from "./targetNames";
 import { parseAngle, targetPresets } from "./coordinates";
 
 export interface FieldLimits {
@@ -26,6 +27,18 @@ export function FieldSearch({
   const [decInput, setDec] = useState(String(field.dec));
   const [size, setSize] = useState(String(field.fovArcmin));
   const [name, setName] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [nameError, setNameError] = useState("");
+  const suggestions = targetSuggestions(name);
+  function chooseName(value: string) {
+    setName(value);
+    setExpanded(false);
+    setActive(-1);
+    setNameError("");
+    setChecked(current => ({ ...current, size: true }));
+    if (validSize) onResolve(value, fovArcmin);
+  }
   const [checked, setChecked] = useState({ coordinates: false, size: false });
   const ra = parseAngle(raInput, "ra");
   const dec = parseAngle(decInput, "dec");
@@ -38,17 +51,19 @@ export function FieldSearch({
     if (ra !== null && dec !== null && validSize) onSearch({ ra, dec, fovArcmin });
   }
 
-  function pickTarget(position: SkyPosition) {
+  function pickTarget(position: SkyPosition & { name: string }) {
     setRa(String(position.ra));
     setDec(String(position.dec));
     setChecked({ coordinates: false, size: true });
-    if (validSize) onSearch({ ...position, fovArcmin });
+    chooseName(position.name);
   }
 
   function resolve(event: FormEvent) {
     event.preventDefault();
     setChecked((current) => ({ ...current, size: true }));
-    if (validSize && name.trim()) onResolve(name.trim(), fovArcmin);
+    const issue = nameIssue(name) ?? partialNameIssue(name);
+    if (issue) { setExpanded(true); setNameError(issue.message); return; }
+    if (validSize && name.trim()) chooseName(name.trim());
   }
 
   return (
@@ -85,16 +100,42 @@ export function FieldSearch({
       </form>
       <div className="presets" role="group" aria-label="Challenge target presets">
         {targetPresets.map(({ name: target, ra, dec }) => (
-          <button type="button" key={target} onClick={() => pickTarget({ ra, dec })}>{target}</button>
+          <button type="button" key={target} onClick={() => pickTarget({ name: target, ra, dec })}>{target}</button>
         ))}
       </div>
       <form className="controls name-form" onSubmit={resolve}>
         <label>
           Object name
-          <input value={name} onChange={(event) => setName(event.target.value)} />
+          <input role="combobox" aria-autocomplete="list" aria-expanded={expanded && suggestions.length > 0}
+            aria-controls="target-suggestions" aria-activedescendant={expanded && active >= 0 ? `target-option-${active}` : undefined}
+            aria-describedby="name-search-hint" maxLength={256} value={name}
+            onChange={event => { setName(event.target.value); setExpanded(true); setActive(-1); setNameError(""); }}
+            onKeyDown={event => {
+              if (event.key === "Escape" && expanded) { event.preventDefault(); event.stopPropagation(); setExpanded(false); setActive(-1); }
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && suggestions.length) {
+                event.preventDefault(); setExpanded(true);
+                setActive(index => event.key === "ArrowDown" ? (index + 1) % suggestions.length : (index <= 0 ? suggestions.length - 1 : index - 1));
+              }
+              if (event.key === "Enter" && expanded && active >= 0 && suggestions[active]) {
+                event.preventDefault(); chooseName(suggestions[active].target.identity!.displayName);
+              }
+            }} />
         </label>
         <button type="submit" disabled={!name.trim()}>Resolve and compare</button>
       </form>
+      <small id="name-search-hint">Suggestions filter the five challenge targets and their aliases. Other full identifiers use optional external lookup.</small>
+      {nameError && <p role="alert">{nameError}</p>}
+      {expanded && suggestions.length > 0 && <ul id="target-suggestions" role="listbox" aria-label="Matching challenge targets" className="target-suggestions">
+        {suggestions.map(({ target, matchedAlias }, index) => <li key={target.identity!.objectId} role="none">
+          <button type="button" role="option" id={`target-option-${index}`} aria-selected={active === index}
+            onClick={() => chooseName(target.identity!.displayName)}>
+            <strong>{target.identity!.displayName}</strong>
+            <span>{target.identity!.canonicalDesignation} · {target.identity!.component}</span>
+            <small>Matches {matchedAlias}</small>
+          </button>
+        </li>)}
+      </ul>}
+
     </div>
   );
 }

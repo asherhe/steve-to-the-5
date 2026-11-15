@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AladinImageSurvey, AladinView } from "aladin-lite";
+import type { MarkAction, ResolveResult } from "../inspector/types";
 import type { Field, SkyPosition } from "./comparison";
 import { findSpherexSurvey, spherexMosaicDoi, spherexSliceWavelengthsUm } from "./spherexSurvey";
 
@@ -11,6 +12,7 @@ export function SkyMap({
   onCompare,
   onInspect,
   catalogMark,
+  target,
   notice,
   slice,
   onStateChange,
@@ -20,7 +22,8 @@ export function SkyMap({
   focus: Field | null;
   onCompare: (field: Field) => void;
   onInspect: (position: SkyPosition) => void;
-  catalogMark: SkyPosition | null;
+  catalogMark: MarkAction | null;
+  target: ResolveResult | null;
   notice: string;
   /** Cube slice shown as the reference layer. */
   slice: number;
@@ -33,7 +36,8 @@ export function SkyMap({
   const layer = useRef<AladinImageSurvey | null>(null);
   const currentSlice = useRef(slice);
   currentSlice.current = slice;
-  const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
+  const markPosition = useRef<((position: MarkAction | null) => void) | null>(null);
+  const targetPosition = useRef<((position: ResolveResult | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
   const [surveyAttempt, setSurveyAttempt] = useState(0);
@@ -87,11 +91,17 @@ export function SkyMap({
           showSimbadPointerControl: false,
         });
         view.current.gotoRaDec(initialCenter.ra, initialCenter.dec);
-        const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle" });
+        const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle", displayLabel: true, labelColumn: "label", labelColor: "#7edaff", labelFont: "12px sans-serif" });
         view.current.addCatalog(catalog);
         markPosition.current = (position) => {
           catalog.clear();
-          if (position) catalog.addSources([Aladin.source(position.ra, position.dec)]);
+          if (position) catalog.addSources([Aladin.source(position.ra, position.dec, { label: `${position.displayName ?? `Gaia DR3 ${position.sourceId}`} (${position.predicted ? "predicted" : `catalog epoch ${position.refEpoch ?? 2016}`})` })]);
+        };
+        const fields = Aladin.catalog({ name: "Requested target field center", color: "#ffd68a", sourceSize: 20, shape: "cross", displayLabel: true, labelColumn: "label", labelColor: "#ffd68a", labelFont: "12px sans-serif" });
+        view.current.addCatalog(fields);
+        targetPosition.current = target => {
+          fields.clear();
+          if (target) fields.addSources([Aladin.source(target.ra, target.dec, { label: `Search field: ${target.identity?.displayName ?? target.name} (field center)` })]);
         };
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -106,6 +116,7 @@ export function SkyMap({
       view.current = null;
       layer.current = null;
       markPosition.current = null;
+      targetPosition.current = null;
     };
   }, [initialCenter, surveyAttempt]);
 
@@ -137,6 +148,8 @@ export function SkyMap({
   useEffect(() => {
     markPosition.current?.(catalogMark);
   }, [catalogMark, state]);
+
+  useEffect(() => { targetPosition.current?.(target); }, [target, state]);
 
   function toggleProjection() {
     const sky = view.current;
@@ -171,6 +184,7 @@ export function SkyMap({
         )}
       </div>
       <div className="sky-dock">
+      {(target || catalogMark) && <small className="map-name-legend">{target && `Search field: ${target.identity?.displayName ?? target.name} (field center, not a detection). `}{catalogMark && `Marked source: ${catalogMark.displayName ?? `Gaia DR3 ${catalogMark.sourceId}`} (${catalogMark.predicted ? "predicted position" : "catalog position"}).`}</small>}
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         <div className="controls">

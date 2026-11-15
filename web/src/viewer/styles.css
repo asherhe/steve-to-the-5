@@ -428,3 +428,13 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
   }
   .floating-panel.leaderboard-panel { width: auto; max-height: 42dvh; }
 }
+
+/* Naming is context inside the existing panels and instrument bar. */
+.target-suggestions { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.target-suggestions button { width: 100%; text-align: left; display: grid; gap: .25rem; }
+.target-suggestions [aria-selected="true"] { outline: 2px solid #7edaff; }
+.target-suggestions span, .target-suggestions small { color: #b8c6d8; }
+.target-context { border-left: 2px solid #ffd68a; padding: .65rem; margin: .75rem 0; background: #ffffff06; }
+.target-context p { margin: .4rem 0; }
+.target-readout dd { max-width: 13rem; overflow-wrap: anywhere; }
+.map-name-legend { display: block; padding: .2rem .5rem; color: #dbe4f1; }

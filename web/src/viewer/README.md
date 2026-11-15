@@ -260,3 +260,8 @@ findings component/client and browser session through the app shell, mount/proxy
 same-origin routes, and use two distinct sessions to test post, public replay,
 signed-out write denial and a signed-in reply. Checkpoint 7 is not complete until
 those checks pass. Deployment checks do not apply to this local-only app.
+
+## Common names
+
+See [five-target naming behavior and verification](../../../docs/common-names.md).
+The development name search now supports the five curated targets and failure scenarios.

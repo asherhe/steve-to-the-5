@@ -8,6 +8,7 @@
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "types": ["vite/client"]
   },
   "include": ["*.ts", "*.tsx", "harness"]

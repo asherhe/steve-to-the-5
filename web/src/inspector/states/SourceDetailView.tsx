@@ -18,12 +18,14 @@ interface Props {
 export function SourceDetailView({ source, detail, selectedFrame, onMark }: Props) {
   const d = detail;
 
-  const predicted = selectedFrame
+  const identity = detail?.identity ?? source.identity;
+  const frameEpoch = selectedFrame ? isoToDecimalYear(selectedFrame.observedAtUtc) : NaN;
+  const predicted = selectedFrame && Number.isFinite(frameEpoch) && Number.isFinite(source.refEpoch) && Number.isFinite(source.pmRaCosDecMasYr) && Number.isFinite(source.pmDecMasYr) && source.pmRaCosDecMasYr !== null && source.pmDecMasYr !== null
     ? propagate(
         source.ra,
         source.dec,
         source.refEpoch,
-        isoToDecimalYear(selectedFrame.observedAtUtc),
+        frameEpoch,
         source.pmRaCosDecMasYr,
         source.pmDecMasYr
       )
@@ -39,6 +41,8 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
       dec: markDec,
       sourceId: source.sourceId,
       predicted: predicted !== null,
+      displayName: identity?.commonName || identity?.displayName,
+      refEpoch: source.refEpoch,
     });
   }
 
@@ -48,9 +52,13 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
         <span className="si-detail__catalog">
           {d ? d.provenance.dataRelease : "Gaia DR3"}
         </span>
+        {identity && <strong>{identity.commonName || identity.displayName || identity.canonicalDesignation}</strong>}
         <span className="si-detail__id">{source.sourceId}</span>
       </header>
 
+      <p>{identity ? "Verified catalog cross-identification. Image detection is not established." : "Nearby Gaia source. Association with the requested target is unverified."}</p>
+      {identity && <details><summary>Name provenance</summary><p>{identity.canonicalDesignation} · {identity.component}</p>{identity.provenance.map(item => <p key={item.url}><a href={item.url} target="_blank" rel="noreferrer">{item.source}</a> · {item.retrievedAtUtc.slice(0, 10)}</p>)}</details>}
+      {selectedFrame && !predicted && <p>Frame-time prediction unavailable: complete proper motion and epoch are required.</p>}
       <section className="si-group" aria-label="Observed position">
         <h4 className="si-group__title">Observed position</h4>
         <dl className="si-fields">

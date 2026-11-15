@@ -199,3 +199,44 @@ describe("self-fetching flow", () => {
     );
   });
 });
+
+
+describe("identity enrichment is independent of spatial selection", () => {
+  it("keeps an unassociated candidate labeled by Gaia ID", () => {
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark} initialState={states.matched} />);
+    expect(screen.getByText(knownSource.sourceId)).toBeInTheDocument();
+    expect(screen.getByText(/association with the requested target is unverified/i)).toBeInTheDocument();
+    expect(screen.queryByText("Barnard’s Star")).not.toBeInTheDocument();
+  });
+
+  it("shows verified names without removing IDs or claiming image detection", async () => {
+    const { namedTargets } = await import("../../viewer/targetNames");
+    const identity = namedTargets[0].identity!;
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark}
+      initialState={{ kind: "matched", source: { ...knownSource, identity }, detail: null }} />);
+    expect(screen.getByText("Barnard’s Star")).toBeInTheDocument();
+    expect(screen.getByText(knownSource.sourceId)).toBeInTheDocument();
+    expect(screen.getByText(/image detection is not established/i)).toBeInTheDocument();
+  });
+
+  it("does not call missing proper motion a frame-time prediction", () => {
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark}
+      selectedFrame={{frameId:"frame",observedAtUtc:"2026-01-01T00:00:00Z"}}
+      initialState={{kind:"matched",source:{...knownSource,pmDecMasYr:null},detail:null}} />);
+    expect(screen.queryByRole("heading",{name:/predicted position/i})).not.toBeInTheDocument();
+    expect(screen.getByText(/frame-time prediction unavailable/i)).toBeInTheDocument();
+  });
+});
+
+
+describe("component-specific verified labels", () => {
+  it("labels the Gaia Ba source without labeling it as the entire B pair", async () => {
+    const { default: identities } = await import("../../../../fixtures/catalogs/source-identities.json");
+    const identity = identities[0];
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark}
+      initialState={{kind:"matched",source:{...knownSource,sourceId:"6412596012146801152",identity},detail:null}} />);
+    expect(screen.getByText("Epsilon Indi Ba")).toBeInTheDocument();
+    expect(screen.getByText("6412596012146801152")).toBeInTheDocument();
+    expect(screen.queryByText("Epsilon Indi B",{exact:true})).not.toBeInTheDocument();
+  });
+});

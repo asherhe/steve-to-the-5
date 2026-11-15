@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
-import { CatalogApiError, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
+import { CatalogApiError, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta, type ResolveResult } from "../inspector";
 import { LeaderboardPanel, type LeaderboardDataSource, type LeaderboardEntry } from "../leaderboard";
 import { targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
@@ -75,8 +75,8 @@ type Request =
 type Panel = "search" | "comparison" | "gaia";
 
 type Preview =
-  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" }
-  | { kind: "error"; message: string }
+  | { kind: "idle" | "loading" | "missing" | "name_not_found" }
+  | { kind: "error" | "catalog_error"; message: string }
   | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison; finding?: SavedFinding };
 
@@ -104,6 +104,8 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
   const [comparisonMark, setComparisonMark] = useState<{ comparisonId: string; mark: MarkAction } | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
+  const [resolvedTarget, setResolvedTarget] = useState<{ request: Request; result: ResolveResult } | null>(null);
+  const target = resolvedTarget?.request === request ? resolvedTarget.result : null;
   const [copyStatus, setCopyStatus] = useState("");
   const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
   const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">("loading");
@@ -183,6 +185,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
 
     async function load() {
       setPreview({ kind: "loading" });
+      setResolvedTarget(null);
       setCopyStatus("");
       let resolving = false;
       try {
@@ -214,6 +217,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           }
           resolving = false;
           if (signal.aborted) return;
+          setResolvedTarget({ request: current, result: position });
           field = { ra: position.ra, dec: position.dec, fovArcmin: current.fovArcmin };
           setFocus(field);
         } else {
@@ -229,7 +233,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
             ? error.message : "The archive service could not be reached." });
         } else {
           const missing = error instanceof CatalogApiError && error.code === "not_found";
-          setPreview({ kind: missing ? "name_not_found" : "catalog_error" });
+          setPreview(missing ? { kind: "name_not_found" } : { kind: "catalog_error", message: error instanceof CatalogApiError ? error.message : "Name lookup is unavailable. Try a preset or enter sky coordinates." });
         }
       }
     }
@@ -268,7 +272,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
     preview.kind === "saved" ? "Saved comparison" :
     preview.kind === "missing" ? "Saved comparison not found" :
     preview.kind === "name_not_found" ? "Object name not found. Try a preset or enter sky coordinates." :
-    preview.kind === "catalog_error" ? "Name lookup is unavailable. Try a preset or enter sky coordinates." :
+    preview.kind === "catalog_error" ? preview.message :
     preview.kind === "error" ? preview.message :
     preview.kind === "idle" ? "Choose a field to compare." :
     "Loading comparison…";
@@ -320,7 +324,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       else if (leaderboardOpen) closeLeaderboard();
     }}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice}
+        onInspect={inspect} catalogMark={catalogMark} target={target} notice={mapNotice}
         slice={mapSlice} onStateChange={setMapState}
         dock={<SpectralRuler mapSlice={mapSlice} onSelectSlice={setMapSlice} disabled={mapState !== "ready"}
           frameWavelengthUm={frameShown?.wavelengthUm ?? null}
@@ -339,6 +343,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           </nav>
         )}
         <dl className="readouts" aria-label="Current field">
+          {target && <div className="target-readout"><dt>Requested target</dt><dd>{target.identity?.commonName || target.identity?.displayName || target.name}</dd></div>}
           <div><dt>RA</dt><dd>{readoutField ? formatAngle(readoutField.ra) : "—"}</dd></div>
           <div><dt>Dec</dt><dd>{readoutField ? formatAngle(readoutField.dec, true) : "—"}</dd></div>
           <div><dt>Width</dt><dd>{readoutField ? `${readoutField.fovArcmin.toFixed(2)} arcmin` : "—"}</dd></div>
@@ -389,7 +394,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           }} />
         {activeMark && (
           <p role="status">
-            {activeMark.predicted ? "Predicted Gaia position" : "Gaia catalog position"} for {activeMark.sourceId}
+            {activeMark.predicted ? "Predicted Gaia position" : "Gaia catalog position"} for {activeMark.displayName ? `${activeMark.displayName} · ` : ""}{activeMark.sourceId}
             {" at RA "}{activeMark.ra.toFixed(6)}°, Dec {activeMark.dec.toFixed(6)}°.{" "}
             <button type="button" onClick={() => {
               if (inspectingCutout) setComparisonMark(null);
@@ -420,6 +425,17 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           onLoadSaved={(id, findingId) => { setRequest({ kind: "saved", id, findingId }); setPanel("comparison"); }}
           onReset={() => setRequest(null)} />}
         <p role="status">{status}</p>
+        {target && <section className="target-context" aria-label="Requested target">
+          <strong>{target.identity?.commonName || target.identity?.displayName || target.name}</strong>
+          {target.identity && <p>{target.identity.canonicalDesignation} · {target.identity.component}</p>}
+          <p>Name resolved. Identification of an image source and visible target detection are not established by this lookup.</p>
+          <small>{target.positionProvenance?.source ?? "Resolver reference position"}{target.positionProvenance?.refEpochJulianYear != null ? ` · epoch ${target.positionProvenance.refEpochJulianYear.toFixed(1)}` : " · position epoch unspecified"}</small>
+          {target.identity && <details><summary>Name references and aliases</summary>
+            <p>{target.identity.aliases.join(" · ")}</p>
+            {target.identity.relatedDesignations.length > 0 && <p>Distinct related objects: {target.identity.relatedDesignations.join(" · ")}</p>}
+            {target.identity.provenance.map(item => <p key={item.url}><a href={item.url} target="_blank" rel="noreferrer">{item.source}</a> · snapshot {item.retrievedAtUtc.slice(0, 10)} · {item.kind.replaceAll("_", " ")}</p>)}
+          </details>}
+        </section>}
         {preview.kind === "loading" && request?.kind !== "saved" && <p>An archive search can take a few minutes.</p>}
         {typeof diagnostics?.message === "string" && <p>{diagnostics.message}</p>}
         {comparison && diagnostics?.complete === false && <p>This comparison comes from an incomplete archive search.</p>}

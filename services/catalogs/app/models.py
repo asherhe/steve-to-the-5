@@ -18,13 +18,47 @@ class CamelModel(BaseModel):
     )
 
 
+class NameProvenance(CamelModel):
+    source: str
+    url: str
+    retrieved_at_utc: str
+    kind: str
+
+
+class CatalogReference(CamelModel):
+    catalog: str
+    data_release: str | None = None
+    id: str
+
+
+class ObjectIdentity(CamelModel):
+    object_id: str
+    common_name: str | None
+    canonical_designation: str
+    display_name: str
+    aliases: list[str]
+    component: str
+    related_designations: list[str]
+    catalog_ids: list[CatalogReference]
+    provenance: list[NameProvenance]
+
+
+class PositionProvenance(CamelModel):
+    source: str
+    ref_epoch_julian_year: float | None
+    role: str
+
+
 class ResolveResult(CamelModel):
     name: str
     ra: float
     dec: float
+    identity: ObjectIdentity | None = None
+    position_provenance: PositionProvenance | None = None
 
 
 class NearbySource(CamelModel):
+    identity: ObjectIdentity | None = None
     source_id: str
     ra: float
     dec: float
@@ -48,6 +82,7 @@ class SourceProvenance(CamelModel):
 
 
 class GaiaDetail(CamelModel):
+    identity: ObjectIdentity | None = None
     source_id: str
     ra: float
     dec: float

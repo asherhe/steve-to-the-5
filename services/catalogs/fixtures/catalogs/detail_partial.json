@@ -3,7 +3,7 @@
   "_description": "A faint Gaia DR3 source with several measurements unavailable: no radial velocity, no parallax, no BP/RP photometry. Optional fields are null. Synthetic values; not a dated live query.",
   "sourceId": "5726817066742913024",
   "ra": 133.79561,
-  "dec": -7.24470,
+  "dec": -7.2447,
   "refEpoch": 2016.0,
   "pmRaCosDecMasYr": -0.118,
   "pmDecMasYr": 4.009,
@@ -23,5 +23,6 @@
     "dataRelease": "Gaia DR3",
     "sourceTableUrl": "https://gea.esac.esa.int/archive/",
     "sourceDetailUrl": "https://gea.esac.esa.int/archive/?source_id=5726817066742913024"
-  }
+  },
+  "identity": null
 }

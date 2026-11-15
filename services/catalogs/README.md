@@ -108,3 +108,15 @@ synthetic (mode `offline-fixtures`).
 - No shared map-windowing edits; the inspector consumes positions and emits a mark action.
 - Shared schema / generated types / root dependencies / app shell / deployment belong to the
   coordinator. Open gaps are listed in [`PLAN.md`](PLAN.md).
+
+## Reviewed names and cross-identifications
+
+See [common names](../../docs/common-names.md) for the shared naming snapshot, component
+ambiguity, optional identity enrichment, generated contract, cache and verification.
+Unknown names with external lookup disabled now return `resolver_disabled` (503),
+rather than a statement that the object does not exist.
+
+Checkpoint 1 also returns `incomplete_name` (400) for known partial curated queries.
+It enriches R Dra and the Epsilon Indi **Ba** Gaia source by exact DR3 ID. RW Aur
+component joins remain unresolved. See the dated reports and live trust-bundle review
+command in `docs/common-names.md`; external lookup remains disabled by default.

@@ -1,0 +1,822 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SPHEREx catalog service",
+    "description": "Name resolution, bounded Gaia DR3 cone search and exact source-ID detail. Mode: offline fixtures.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/resolve": {
+      "get": {
+        "summary": "Resolve",
+        "operationId": "resolve_api_resolve_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalogs/nearby": {
+      "get": {
+        "summary": "Nearby",
+        "operationId": "nearby_api_catalogs_nearby_get",
+        "parameters": [
+          {
+            "name": "ra",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "Ra"
+            }
+          },
+          {
+            "name": "dec",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "Dec"
+            }
+          },
+          {
+            "name": "radiusArcsec",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "title": "Radiusarcsec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NearbyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalogs/gaia/{source_id}": {
+      "get": {
+        "summary": "Gaia Detail",
+        "operationId": "gaia_detail_api_catalogs_gaia__source_id__get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GaiaDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Api Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CatalogReference": {
+        "properties": {
+          "catalog": {
+            "type": "string",
+            "title": "Catalog"
+          },
+          "dataRelease": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Datarelease"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "catalog",
+          "id"
+        ],
+        "title": "CatalogReference"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "GaiaDetail": {
+        "properties": {
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "title": "Sourceid"
+          },
+          "ra": {
+            "type": "number",
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "title": "Dec"
+          },
+          "refEpoch": {
+            "type": "number",
+            "title": "Refepoch"
+          },
+          "pmRaCosDecMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmracosdecmasyr"
+          },
+          "pmDecMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmdecmasyr"
+          },
+          "parallaxMas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallaxmas"
+          },
+          "gMag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gmag"
+          },
+          "raErrorMas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raerrormas"
+          },
+          "decErrorMas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decerrormas"
+          },
+          "pmRaCosDecErrorMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmracosdecerrormasyr"
+          },
+          "pmDecErrorMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmdecerrormasyr"
+          },
+          "parallaxErrorMas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallaxerrormas"
+          },
+          "radialVelocityKmS": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radialvelocitykms"
+          },
+          "radialVelocityErrorKmS": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radialvelocityerrorkms"
+          },
+          "bpMag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpmag"
+          },
+          "rpMag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rpmag"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/SourceProvenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sourceId",
+          "ra",
+          "dec",
+          "refEpoch",
+          "provenance"
+        ],
+        "title": "GaiaDetail"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "NameProvenance": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "retrievedAtUtc": {
+            "type": "string",
+            "title": "Retrievedatutc"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "url",
+          "retrievedAtUtc",
+          "kind"
+        ],
+        "title": "NameProvenance"
+      },
+      "NearbyResponse": {
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/NearbySource"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sources"
+        ],
+        "title": "NearbyResponse"
+      },
+      "NearbySource": {
+        "properties": {
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceId": {
+            "type": "string",
+            "title": "Sourceid"
+          },
+          "ra": {
+            "type": "number",
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "title": "Dec"
+          },
+          "refEpoch": {
+            "type": "number",
+            "title": "Refepoch"
+          },
+          "pmRaCosDecMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmracosdecmasyr"
+          },
+          "pmDecMasYr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pmdecmasyr"
+          },
+          "parallaxMas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallaxmas"
+          },
+          "gMag": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gmag"
+          },
+          "separationArcsec": {
+            "type": "number",
+            "title": "Separationarcsec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sourceId",
+          "ra",
+          "dec",
+          "refEpoch",
+          "separationArcsec"
+        ],
+        "title": "NearbySource"
+      },
+      "ObjectIdentity": {
+        "properties": {
+          "objectId": {
+            "type": "string",
+            "title": "Objectid"
+          },
+          "commonName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commonname"
+          },
+          "canonicalDesignation": {
+            "type": "string",
+            "title": "Canonicaldesignation"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aliases"
+          },
+          "component": {
+            "type": "string",
+            "title": "Component"
+          },
+          "relatedDesignations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Relateddesignations"
+          },
+          "catalogIds": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogReference"
+            },
+            "type": "array",
+            "title": "Catalogids"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/NameProvenance"
+            },
+            "type": "array",
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "objectId",
+          "commonName",
+          "canonicalDesignation",
+          "displayName",
+          "aliases",
+          "component",
+          "relatedDesignations",
+          "catalogIds",
+          "provenance"
+        ],
+        "title": "ObjectIdentity"
+      },
+      "PositionProvenance": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "refEpochJulianYear": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refepochjulianyear"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "refEpochJulianYear",
+          "role"
+        ],
+        "title": "PositionProvenance"
+      },
+      "ResolveResult": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ra": {
+            "type": "number",
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "title": "Dec"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "positionProvenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "ra",
+          "dec"
+        ],
+        "title": "ResolveResult"
+      },
+      "SourceProvenance": {
+        "properties": {
+          "catalog": {
+            "type": "string",
+            "title": "Catalog"
+          },
+          "dataRelease": {
+            "type": "string",
+            "title": "Datarelease"
+          },
+          "sourceTableUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcetableurl"
+          },
+          "sourceDetailUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcedetailurl"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "catalog",
+          "dataRelease"
+        ],
+        "title": "SourceProvenance"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
