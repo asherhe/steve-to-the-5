@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isoToDecimalYear, propagate } from "../propagate";
+import { isoToDecimalYear, predictAtObservation, propagate } from "../propagate";
 
 // Shared test vector, identical to services/catalogs/tests/test_propagate.py.
 describe("propagate", () => {
@@ -30,5 +30,13 @@ describe("propagate", () => {
     const mid = isoToDecimalYear("2025-07-02T12:00:00Z");
     expect(mid).toBeGreaterThan(2025.4);
     expect(mid).toBeLessThan(2025.6);
+  });
+
+  it("cannot predict a position for an invalid observation time", () => {
+    const source = {
+      sourceId: "123", ra: 10, dec: 20, refEpoch: 2016,
+      pmRaCosDecMasYr: 0, pmDecMasYr: 3600,
+    };
+    expect(predictAtObservation(source, "invalid time")).toBeNull();
   });
 });

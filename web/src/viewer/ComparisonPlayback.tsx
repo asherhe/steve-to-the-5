@@ -1,31 +1,9 @@
-import { useEffect, useState } from "react";
+import type { Playback } from "./usePlayback";
 import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
 import { bandColors } from "./SpectralRuler";
 import { bandForWavelength } from "./spherexSurvey";
 import { InfoTip } from "./InfoTip";
-
-function formatInterval(ms: number): string {
-  const minutes = Math.round(Math.abs(ms) / 60_000);
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor((minutes % 1440) / 60);
-  const parts = [days && `${days}d`, (days || hours) && `${hours}h`, `${minutes % 60}m`].filter(Boolean);
-  return parts.join(" ");
-}
-
-const icons = {
-  previous: <path d="m15 6-6 6 6 6" />,
-  next: <path d="m9 6 6 6-6 6" />,
-  play: <path d="M7 5v14l11-7z" fill="currentColor" stroke="none" />,
-  pause: <path d="M8 5v14M16 5v14" />,
-};
-
-function Icon({ name }: { name: keyof typeof icons }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      aria-hidden="true">{icons[name]}</svg>
-  );
-}
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -35,33 +13,24 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect, onFrameChange,
+  comparison, playback, selectedPosition, frameMark, savedMarks = [], onInspect,
 }: {
   comparison: Comparison;
-  visible?: boolean;
+  playback: Playback;
   selectedPosition: SkyPosition | null;
-  frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
+  frameMark: SkyPosition | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
   onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
-  /** Called with the frame on screen, for the spectral ruler. */
-  onFrameChange?: (frame: ComparisonFrame) => void;
 }) {
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [failed, setFailed] = useState(false);
-  const [loadedFrame, setLoadedFrame] = useState<string | null>(null);
-  const [imageAttempt, setImageAttempt] = useState(0);
-  const frames = comparison.frames;
-  const frame = frames[index];
-  const multi = frames.length > 1;
+  const { frame, index, frames, attempt: imageAttempt } = playback;
+  const failed = playback.assets[frame.id]?.state === "failed";
   const { width, height } = comparison.grid;
   const wcs = cutoutWcs(comparison.grid);
-  const canInspect = !!wcs && loadedFrame === frame.id && !failed;
+  const canInspect = !!wcs && playback.assets[frame.id]?.state === "ready" && !failed;
 
   function inspect(x: number, y: number) {
     if (!canInspect || !wcs) return;
-    setPlaying(false);
+    playback.pause();
     onInspect(wcs.toSky({ x, y }), frame);
   }
 
@@ -74,31 +43,6 @@ export function ComparisonPlayback({
     );
   }
 
-  useEffect(() => {
-    onFrameChange?.(frame);
-  }, [frame, onFrameChange]);
-
-  useEffect(() => {
-    if (!visible) setPlaying(false);
-  }, [visible]);
-
-  useEffect(() => {
-    if (!visible || !playing || failed || !multi || loadedFrame !== frame.id) return;
-    const timer = setTimeout(() => {
-      setLoadedFrame(null);
-      setIndex((current) => (current + 1) % frames.length);
-    }, 1000 / speed);
-    return () => clearTimeout(timer);
-  }, [visible, playing, failed, multi, frames.length, speed, frame.id, loadedFrame]);
-
-  function select(next: number) {
-    setPlaying(false);
-    setFailed(false);
-    setIndex(next);
-  }
-
-  const times = frames.map(({ observedAtUtc }) => Date.parse(observedAtUtc));
-  const span = Math.max(...times) - Math.min(...times);
   const band = bandForWavelength(frame.wavelengthUm);
 
   return (
@@ -108,17 +52,13 @@ export function ComparisonPlayback({
           {failed ? (
             <div role="status">
               This frame could not be loaded.{" "}
-              <button type="button" onClick={() => {
-                setImageAttempt((attempt) => attempt + 1);
-                setFailed(false);
-              }}>Retry frame</button>
+              <button type="button" onClick={playback.retry}>Retry frame</button>
             </div>
           ) : (
             <>
               <img key={`${frame.id}-${imageAttempt}`} src={frame.imageUrl} width={width}
                 height={height} alt={`SPHEREx frame ${index + 1} of ${frames.length}`}
-                onLoad={() => setLoadedFrame(frame.id)}
-                onError={() => { setFailed(true); setPlaying(false); }} />
+                onError={playback.fail} />
               {canInspect && (
                 <button type="button" className="cutout-inspect" aria-label="Inspect image. Press Enter to inspect its center."
                   onClick={(event) => {
@@ -131,8 +71,8 @@ export function ComparisonPlayback({
               {wcs && savedMarks.filter(mark => mark.frameId === frame.id).map((mark, i) =>
                 <span key={i}>{marker(wcs.toImage(mark), "Saved finding mark", "cutout-selection")}</span>)}
               {wcs && selectedPosition && marker(wcs.toImage(selectedPosition), "Selected sky position", "cutout-selection")}
-              {wcs && frameMark?.frameId === frame.id && marker(wcs.toImage(frameMark),
-                frameMark.predicted ? "Predicted Gaia position" : "Gaia catalog position", "cutout-gaia-mark")}
+              {wcs && frameMark && marker(wcs.toImage(frameMark),
+                "Predicted Gaia position", "cutout-gaia-mark")}
             </>
           )}
           <span className="cutout-chip">
@@ -163,44 +103,8 @@ export function ComparisonPlayback({
           )}
         </figcaption>
       </figure>
-      {multi && span > 0 && (
-        <div className="timeline" aria-hidden="true">
-          <div className="timeline-track">
-            {times.map((time, i) => (
-              <span key={frames[i].id} className={`timeline-tick${i === index ? " timeline-tick-current" : ""}`}
-                style={{ left: `${4 + 92 * (time - Math.min(...times)) / span}%` }} />
-            ))}
-            <span className="timeline-span">Δt {formatInterval(span)}</span>
-          </div>
-          <div className="timeline-ends">
-            <span>{frames[times.indexOf(Math.min(...times))].observedAtUtc.slice(0, 10)}</span>
-            <span>{frames[times.indexOf(Math.max(...times))].observedAtUtc.slice(0, 10)}</span>
-          </div>
-        </div>
-      )}
-      {multi && (
-        <div className="playback-controls">
-          <div className="controls">
-            <button type="button" onClick={() => select(index - 1)} disabled={index === 0}><Icon name="previous" />Previous</button>
-            <button type="button" className="primary" onClick={() => setPlaying(!playing)} disabled={failed}>
-              <Icon name={playing ? "pause" : "play"} />{playing ? "Pause" : "Play"}
-            </button>
-            <button type="button" onClick={() => select(index + 1)} disabled={index === frames.length - 1}>Next<Icon name="next" /></button>
-          </div>
-          <div className="controls">
-            <label className="playback-scrub">
-              Observation {index + 1} of {frames.length}
-              <input type="range" min={0} max={frames.length - 1} value={index}
-                aria-valuetext={frame.observedAtUtc} onChange={(event) => select(Number(event.target.value))} />
-            </label>
-            <label>
-              Playback speed
-              <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
-                <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option>
-              </select>
-            </label>
-          </div>
-        </div>
+      {frames.length > 1 && (
+        <p className="hint">Observation {index + 1} of {frames.length}. Use the Time window to blink or select another date.</p>
       )}
       {(frame.validFraction !== undefined || frame.alignment) && (
         <dl className="stats">

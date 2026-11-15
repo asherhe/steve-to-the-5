@@ -39,6 +39,11 @@ const pair: Comparison = {
   frames,
 };
 
+const irregular: Comparison = {
+  ...pair, id: "fixture-irregular-times",
+  frames: [frames[0], {...frames[1],id:"fixture-epoch-middle",observedAtUtc:"2025-07-01T03:10:00Z"},frames[1]],
+};
+
 const single: Comparison = {
   ...pair,
   id: "fixture-single-epoch",
@@ -86,7 +91,7 @@ export function fixtureDataSource(scenario: Scenario): ViewerDataSource {
     },
     async loadSaved(id, signal) {
       await wait(signal);
-      return [pair, single].find((comparison) => comparison.id === id) ?? null;
+      return [pair, single, irregular].find((comparison) => comparison.id === id) ?? null;
     },
     async resolveName(name, signal) {
       await wait(signal);

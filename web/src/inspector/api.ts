@@ -55,9 +55,12 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
   const doFetch = options.fetchImpl ?? fetch;
 
   return {
-    async nearby(ra: number, dec: number, radiusArcsec: number): Promise<NearbyResponse> {
+    async nearby(ra: number, dec: number, radiusArcsec: number): Promise<NearbyResponse & { catalogMode?: "live" | "fixture" }> {
       const url = `${baseUrl}/catalogs/nearby?ra=${ra}&dec=${dec}&radiusArcsec=${radiusArcsec}`;
-      return readCatalogResponse<NearbyResponse>(await doFetch(url));
+      const response = await doFetch(url);
+      const result = await readCatalogResponse<NearbyResponse>(response);
+      const mode = response.headers.get("X-SPHEREx-Catalog-Mode");
+      return { ...result, catalogMode: mode === "live" || mode === "fixture" ? mode : undefined };
     },
 
     async detail(sourceId: string): Promise<GaiaDetail> {

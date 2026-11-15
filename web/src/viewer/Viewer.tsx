@@ -1,15 +1,55 @@
-import { useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
-import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
-import { CatalogApiError, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
-import { LeaderboardPanel, type LeaderboardDataSource, type LeaderboardEntry } from "../leaderboard";
-import { targetPresets } from "./coordinates";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type RefObject,
+} from "react";
+import type {
+  Comparison,
+  ComparisonFrame,
+  ComparisonResult,
+  Field,
+  SkyPosition,
+  ViewerDataSource,
+} from "./comparison";
+import {
+  angularSeparationArcsec,
+  CatalogApiError,
+  predictAtObservation,
+  type CatalogAstrometry,
+  type SourceInspectorProps,
+  type MarkAction,
+  type SelectedFrameMeta,
+} from "../inspector";
+import {
+  LeaderboardPanel,
+  type LeaderboardDataSource,
+  type LeaderboardEntry,
+} from "../leaderboard";
+import { barnardGaiaSourceId, targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { SkyMap } from "./SkyMap";
+import { SearchBox } from "./SearchBox";
 import { archiveFieldLimits, ArchiveRequestError } from "./archive";
+import { FloatingPane } from "./FloatingPane";
+import { TimeControls } from "./TimeControls";
+import { usePlayback } from "./usePlayback";
 import { ComparisonPlayback } from "./ComparisonPlayback";
+import { cutoutWcs } from "./cutoutWcs";
 import { SpectralRuler, bandColors } from "./SpectralRuler";
-import { bandForWavelength, spherexMosaicSlice } from "./spherexSurvey";
-import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
+import {
+  bandForWavelength,
+  spherexMosaicGuideTimeUtc,
+  spherexMosaicSlice,
+} from "./spherexSurvey";
+import {
+  EvidenceReplayError,
+  evidenceLink,
+  validateFinding,
+  type SavedFinding,
+  type EvidenceDiscussionProps,
+} from "./evidence";
 import { InfoTip } from "./InfoTip";
 import { Tutorial, useTutorial } from "./Tutorial";
 import "./styles.css";
@@ -32,13 +72,20 @@ const badges: Record<ComparisonResult["status"], string> = {
 };
 
 /** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
-function useHeightVariable(workspace: RefObject<HTMLElement | null>, selector: string, variable: string) {
+function useHeightVariable(
+  workspace: RefObject<HTMLElement | null>,
+  selector: string,
+  variable: string,
+) {
   useEffect(() => {
     const host = workspace.current;
     const element = host?.querySelector(selector);
     if (!host || !element) return;
     const observer = new ResizeObserver(() => {
-      host.style.setProperty(variable, `${element.getBoundingClientRect().height}px`);
+      host.style.setProperty(
+        variable,
+        `${element.getBoundingClientRect().height}px`,
+      );
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -61,7 +108,10 @@ export interface ViewerProps {
   dataSource: ViewerDataSource;
   Inspector: ComponentType<Omit<SourceInspectorProps, "client">>;
   Discussion?: ComponentType<EvidenceDiscussionProps>;
-  loadFinding?: (id: string, signal?: AbortSignal) => Promise<SavedFinding | null>;
+  loadFinding?: (
+    id: string,
+    signal?: AbortSignal,
+  ) => Promise<SavedFinding | null>;
   Controls?: ComponentType<ViewerControlsProps>;
   /** Optional engagement layer; the leaderboard button is hidden without it. */
   leaderboard?: LeaderboardDataSource;
@@ -77,39 +127,73 @@ type Request =
 type Panel = "search" | "comparison" | "gaia";
 
 type Preview =
-  | { kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error" }
+  | {
+      kind: "idle" | "loading" | "missing" | "name_not_found" | "catalog_error";
+    }
   | { kind: "error"; message: string }
   | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison; finding?: SavedFinding };
 
 const narrowScreen = "(max-width: 42rem)";
 
-export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Controls, leaderboard, savedExampleId, synthetic = false }: ViewerProps) {
+export function Viewer({
+  dataSource,
+  Inspector,
+  Discussion,
+  loadFinding,
+  Controls,
+  leaderboard,
+  savedExampleId,
+  synthetic = false,
+}: ViewerProps) {
   const [request, setRequest] = useState<Request | null>(() => {
     const id = new URLSearchParams(location.search).get("comparison");
-    const findingId = new URLSearchParams(location.search).get("finding") ?? undefined;
+    const findingId =
+      new URLSearchParams(location.search).get("finding") ?? undefined;
     return id || findingId ? { kind: "saved", id: id ?? "", findingId } : null;
   });
   const [focus, setFocus] = useState<Field | null>(null);
-  const [panel, setPanel] = useState<Panel | null>(() =>
-    (new URLSearchParams(location.search).has("comparison") || new URLSearchParams(location.search).has("finding")) ? "comparison" : null);
-  const panelButtons = useRef<Partial<Record<Panel, HTMLButtonElement>>>({});
-  // The leaderboard sits on the left and can stay open beside the right-hand panels.
+  const [panels, setPanels] = useState<Record<Panel, boolean>>({
+    search: false,
+    comparison: new URLSearchParams(location.search).has("finding"),
+    gaia: false,
+  });
+  const [timeOpen, setTimeOpen] = useState(
+    () =>
+      new URLSearchParams(location.search).has("comparison") ||
+      new URLSearchParams(location.search).has("finding"),
+  );
+  const [layoutReset, setLayoutReset] = useState(0);
+  function openPanel(panel: Panel) {
+    setPanels((old) => ({ ...old, [panel]: true }));
+  }
+  const timeButton = useRef<HTMLButtonElement>(null);
+  const panelButtons = useRef<Partial<Record<Panel, HTMLElement>>>({});
+  // The leaderboard is its own window so it can stay open beside the other panes.
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardButton = useRef<HTMLButtonElement>(null);
   const [mapNotice, setMapNotice] = useState("");
-  const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
+  const [inspecting, setInspecting] = useState<{
+    position: SkyPosition;
+    onSpherexMosaic: boolean;
+  } | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
-    comparisonId: string; position: SkyPosition; frame: SelectedFrameMeta;
+    comparisonId: string;
+    position: SkyPosition;
+    frame: SelectedFrameMeta;
   } | null>(null);
   const [inspectFrame, setInspectFrame] = useState(false);
   const [catalogMark, setCatalogMark] = useState<MarkAction | null>(null);
-  const [comparisonMark, setComparisonMark] = useState<{ comparisonId: string; mark: MarkAction } | null>(null);
+  const [comparisonMark, setComparisonMark] = useState<{
+    comparisonId: string;
+    source: CatalogAstrometry;
+  } | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [copyStatus, setCopyStatus] = useState("");
   const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
-  const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">("loading");
-  const [frameOnScreen, setFrameOnScreen] = useState<ComparisonFrame | null>(null);
+  const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">(
+    "loading",
+  );
   const workspace = useRef<HTMLElement>(null);
   useHeightVariable(workspace, ".instrument-bar", "--header-height");
   useHeightVariable(workspace, ".sky-dock", "--dock-height");
@@ -120,14 +204,15 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       const id = params.get("comparison") ?? "";
       const findingId = params.get("finding") ?? undefined;
       setRequest(id || findingId ? { kind: "saved", id, findingId } : null);
-      setPanel(id || findingId ? "comparison" : null);
+      setTimeOpen(!!(id || findingId));
+      setPanels((old) => ({ ...old, comparison: !!findingId }));
     }
     window.addEventListener("popstate", restore);
     return () => window.removeEventListener("popstate", restore);
   }, []);
 
   function closePanel(current: Panel) {
-    setPanel(null);
+    setPanels((old) => ({ ...old, [current]: false }));
     panelButtons.current[current]?.focus();
   }
 
@@ -135,16 +220,6 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
     setLeaderboardOpen(false);
     leaderboardButton.current?.focus();
   }
-
-  function toggleLeaderboard() {
-    // Search shares the left edge, and on narrow screens every panel is a bottom sheet.
-    if (!leaderboardOpen && panel && (panel === "search" || window.matchMedia(narrowScreen).matches)) setPanel(null);
-    setLeaderboardOpen(!leaderboardOpen);
-  }
-
-  useEffect(() => {
-    if (panel === "search" || (panel && window.matchMedia(narrowScreen).matches)) setLeaderboardOpen(false);
-  }, [panel]);
 
   function goToEntry(entry: LeaderboardEntry) {
     setMapNotice("");
@@ -154,24 +229,36 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   function showEntryEvidence(entry: LeaderboardEntry) {
     if (!entry.comparisonId) return;
     if (window.matchMedia(narrowScreen).matches) setLeaderboardOpen(false);
-    setRequest({ kind: "saved", id: entry.comparisonId, findingId: entry.findingId ?? undefined });
-    setPanel("comparison");
+    setRequest({
+      kind: "saved",
+      id: entry.comparisonId,
+      findingId: entry.findingId ?? undefined,
+    });
+    setTimeOpen(true);
+    openPanel("comparison");
   }
 
-  function inspect(position: SkyPosition) {
-    setInspecting(position);
+  function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
+    setInspecting({ position, onSpherexMosaic });
     setInspectFrame(false);
-    setPanel("gaia");
+    openPanel("gaia");
   }
-
-  function inspectCutout(comparisonId: string, position: SkyPosition, frame: ComparisonFrame) {
+  function inspectCutout(
+    comparisonId: string,
+    position: SkyPosition,
+    frame: ComparisonFrame,
+  ) {
     setFrameSelection({
       comparisonId,
       position,
-      frame: { frameId: frame.id, observedAtUtc: frame.observedAtUtc, wavelengthUm: frame.wavelengthUm },
+      frame: {
+        frameId: frame.id,
+        observedAtUtc: frame.observedAtUtc,
+        wavelengthUm: frame.wavelengthUm,
+      },
     });
     setInspectFrame(true);
-    setPanel("gaia");
+    openPanel("gaia");
     panelButtons.current.gaia?.focus();
   }
 
@@ -193,15 +280,29 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         if (current.kind === "saved") {
           let finding: SavedFinding | undefined;
           if (current.findingId) {
-            if (!loadFinding) throw new EvidenceReplayError("Finding replay is not connected yet. Open the comparison without the finding parameter.");
-            finding = await loadFinding(current.findingId, signal) ?? undefined;
+            if (!loadFinding)
+              throw new EvidenceReplayError(
+                "Finding replay is not connected yet. Open the comparison without the finding parameter.",
+              );
+            finding =
+              (await loadFinding(current.findingId, signal)) ?? undefined;
             if (signal.aborted) return;
-            if (!finding) throw new EvidenceReplayError("Saved finding not found. Check the finding ID.");
+            if (!finding)
+              throw new EvidenceReplayError(
+                "Saved finding not found. Check the finding ID.",
+              );
           }
-          const comparison = await source.loadSaved(current.id || finding?.comparisonId || "", signal);
+          const comparison = await source.loadSaved(
+            current.id || finding?.comparisonId || "",
+            signal,
+          );
           if (comparison && finding) validateFinding(finding, comparison);
           if (!signal.aborted) {
-            setPreview(comparison ? { kind: "saved", comparison, finding } : { kind: "missing" });
+            setPreview(
+              comparison
+                ? { kind: "saved", comparison, finding }
+                : { kind: "missing" },
+            );
             if (comparison) setFocus(comparison.field);
           }
           return;
@@ -217,21 +318,35 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           }
           resolving = false;
           if (signal.aborted) return;
-          field = { ra: position.ra, dec: position.dec, fovArcmin: current.fovArcmin };
+          field = {
+            ra: position.ra,
+            dec: position.dec,
+            fovArcmin: current.fovArcmin,
+          };
           setFocus(field);
         } else {
           field = current.field;
         }
 
         const result = await source.search(field, signal);
-        if (!signal.aborted) setPreview({ kind: "search", result, field });
+        if (!signal.aborted) {
+          setPreview({ kind: "search", result, field });
+          if (result.comparison && synthetic) setFocus(result.comparison.field);
+        }
       } catch (error) {
         if (signal.aborted) return;
         if (!resolving) {
-          setPreview({ kind: "error", message: error instanceof ArchiveRequestError || error instanceof EvidenceReplayError
-            ? error.message : "The archive service could not be reached." });
+          setPreview({
+            kind: "error",
+            message:
+              error instanceof ArchiveRequestError ||
+              error instanceof EvidenceReplayError
+                ? error.message
+                : "The archive service could not be reached.",
+          });
         } else {
-          const missing = error instanceof CatalogApiError && error.code === "not_found";
+          const missing =
+            error instanceof CatalogApiError && error.code === "not_found";
           setPreview({ kind: missing ? "name_not_found" : "catalog_error" });
         }
       }
@@ -239,48 +354,122 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
 
     void load();
     return () => controller.abort();
-  }, [dataSource, loadFinding, request]);
+  }, [dataSource, loadFinding, request, synthetic]);
 
   function search(field: Field) {
+    setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
     setFocus(field);
     setRequest({ kind: "field", field });
-    setPanel("comparison");
+    setTimeOpen(true);
+  }
+
+  function resolve(name: string, fovArcmin: number) {
+    setPanels((old) => ({ ...old, search: false }));
+    setMapNotice("");
+    setRequest({ kind: "name", name, fovArcmin });
+    setTimeOpen(true);
   }
 
   function compareViewport(field: Field) {
     if (!inFieldRange(field.fovArcmin, fieldLimits)) {
-      setMapNotice(`Zoom to a field width of ${fieldLimits.min}–${fieldLimits.max} arcmin before comparing.`);
+      setMapNotice(
+        `Zoom to a field width of ${fieldLimits.min}–${fieldLimits.max} arcmin before comparing.`,
+      );
       return;
     }
     setMapNotice("");
     setRequest({ kind: "field", field });
-    setPanel("comparison");
+    setTimeOpen(true);
   }
 
   const comparison =
-    preview.kind === "search" ? preview.result.comparison :
-    preview.kind === "saved" ? preview.comparison : null;
-  const selection = frameSelection?.comparisonId === comparison?.id ? frameSelection : null;
-  const frameMark = comparisonMark?.comparisonId === comparison?.id ? comparisonMark?.mark ?? null : null;
-  const inspectingCutout = inspectFrame && selection;
-  const activeMark = inspectingCutout ? frameMark : catalogMark;
+    preview.kind === "search"
+      ? preview.result.comparison
+      : preview.kind === "saved"
+        ? preview.comparison
+        : null;
+  const playback = usePlayback(
+    comparison,
+    timeOpen && preview.kind !== "loading",
+  );
+  const selection =
+    frameSelection?.comparisonId === comparison?.id ? frameSelection : null;
+  const markedSource =
+    comparisonMark?.comparisonId === comparison?.id
+      ? comparisonMark?.source
+      : null;
+  const frame = playback.frame;
+  const prediction =
+    markedSource && frame
+      ? predictAtObservation(markedSource, frame.observedAtUtc)
+      : null;
+  const imagePoint =
+    comparison && prediction
+      ? cutoutWcs(comparison.grid)?.toImage(prediction)
+      : null;
+  const frameMark =
+    comparison &&
+    frame &&
+    playback.assets[frame.id]?.state === "ready" &&
+    imagePoint &&
+    imagePoint.x >= -0.5 &&
+    imagePoint.x < comparison.grid.width - 0.5 &&
+    imagePoint.y >= -0.5 &&
+    imagePoint.y < comparison.grid.height - 0.5
+      ? prediction
+      : null;
+  const inspectingCutout =
+    inspectFrame && selection && playback.frame
+      ? {
+          ...selection,
+          frame: {
+            frameId: playback.frame.id,
+            observedAtUtc: playback.frame.observedAtUtc,
+            wavelengthUm: playback.frame.wavelengthUm,
+          },
+        }
+      : null;
+  const markedSourceId = inspectingCutout
+    ? markedSource?.sourceId
+    : catalogMark?.sourceId;
+  const markedPosition = inspectingCutout ? prediction : catalogMark;
+  const mosaicInspection =
+    !inspectFrame && inspecting?.onSpherexMosaic ? inspecting : null;
+  const mosaicGuideSourceId =
+    mosaicInspection &&
+    angularSeparationArcsec(mosaicInspection.position, initialCenter) <= 60
+      ? barnardGaiaSourceId
+      : undefined;
 
   const status =
-    preview.kind === "search" ? scenarios[preview.result.status] :
-    preview.kind === "saved" ? "Saved comparison" :
-    preview.kind === "missing" ? "Saved comparison not found" :
-    preview.kind === "name_not_found" ? "Object name not found. Try a preset or enter sky coordinates." :
-    preview.kind === "catalog_error" ? "Name lookup is unavailable. Try a preset or enter sky coordinates." :
-    preview.kind === "error" ? preview.message :
-    preview.kind === "idle" ? "Choose a field to compare." :
-    "Loading comparison…";
-  const diagnostics = preview.kind === "search" ? preview.result.diagnostics : comparison?.diagnostics;
+    preview.kind === "search"
+      ? scenarios[preview.result.status]
+      : preview.kind === "saved"
+        ? "Saved comparison"
+        : preview.kind === "missing"
+          ? "Saved comparison not found"
+          : preview.kind === "name_not_found"
+            ? "Object name not found. Try a preset or enter sky coordinates."
+            : preview.kind === "catalog_error"
+              ? "Name lookup is unavailable. Try a preset or enter sky coordinates."
+              : preview.kind === "error"
+                ? preview.message
+                : preview.kind === "idle"
+                  ? "Choose a field to compare."
+                  : "Loading comparison…";
+  const diagnostics =
+    preview.kind === "search"
+      ? preview.result.diagnostics
+      : comparison?.diagnostics;
   const kind = comparison?.provenance?.evidenceKind;
-  const fallbackAvailable = preview.kind === "error" ||
-    (preview.kind === "search" && preview.result.status === "upstream_unavailable");
+  const fallbackAvailable =
+    preview.kind === "error" ||
+    (preview.kind === "search" &&
+      preview.result.status === "upstream_unavailable");
 
   function openExample() {
+    setTimeOpen(true);
     setRequest({ kind: "saved", id: savedExampleId });
   }
 
@@ -289,191 +478,499 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   }
 
   function showEvidence(finding: SavedFinding) {
-    setRequest({ kind: "saved", id: finding.comparisonId, findingId: finding.id });
-    setPanel("comparison");
+    setRequest({
+      kind: "saved",
+      id: finding.comparisonId,
+      findingId: finding.id,
+    });
+    setTimeOpen(true);
   }
 
   async function copyLink(id: string, findingId?: string) {
     try {
       await navigator.clipboard.writeText(comparisonLink(id, findingId));
-      setCopyStatus(findingId ? "Evidence link copied." : "Comparison link copied.");
+      setCopyStatus(
+        findingId ? "Evidence link copied." : "Comparison link copied.",
+      );
     } catch {
       setCopyStatus("Copying failed. Use the saved evidence link below.");
     }
   }
   const finding = preview.kind === "saved" ? preview.finding : undefined;
 
-  const source = synthetic || kind === "synthetic_fixture" ? "synthetic" :
-    kind === "saved_real_example" ? "saved real" : "live archive";
+  const source =
+    synthetic || kind === "synthetic_fixture"
+      ? "synthetic"
+      : kind === "saved_real_example"
+        ? "saved real"
+        : "live archive";
   const badge =
-    preview.kind === "search" ? (comparison ? `${badges[preview.result.status]} · ${source}` : badges[preview.result.status]) :
-    preview.kind === "saved" ? `${preview.comparison.frames.length > 1 ? "Matched pair" : "Single epoch"} · ${source}` :
-    preview.kind === "loading" ? "Loading" :
-    preview.kind === "idle" ? "No field selected" :
-    preview.kind === "name_not_found" || preview.kind === "missing" ? "Not found" : "Unavailable";
-  const tone = comparison ? "ready" : preview.kind === "idle" || preview.kind === "loading" ? "idle" : "problem";
-  const readoutField = comparison?.field ?? (preview.kind === "search" ? preview.field : focus);
-  const bands = comparison ? [...new Set(comparison.wavelengthRangeUm.map(bandForWavelength))] : [];
-  const frameShown = comparison && frameOnScreen && comparison.frames.includes(frameOnScreen) ? frameOnScreen : null;
+    preview.kind === "search"
+      ? comparison
+        ? `${badges[preview.result.status]} · ${source}`
+        : badges[preview.result.status]
+      : preview.kind === "saved"
+        ? `${preview.comparison.frames.length > 1 ? "Matched pair" : "Single epoch"} · ${source}`
+        : preview.kind === "loading"
+          ? "Loading"
+          : preview.kind === "idle"
+            ? "No field selected"
+            : preview.kind === "name_not_found" || preview.kind === "missing"
+              ? "Not found"
+              : "Unavailable";
+  const tone = comparison
+    ? "ready"
+    : preview.kind === "idle" || preview.kind === "loading"
+      ? "idle"
+      : "problem";
+  const readoutField =
+    comparison?.field ?? (preview.kind === "search" ? preview.field : focus);
+  const bands = comparison
+    ? [...new Set(comparison.wavelengthRangeUm.map(bandForWavelength))]
+    : [];
+  const frameShown = comparison ? playback.frame : null;
 
   return (
-    <main className="sky-workspace" ref={workspace} onKeyDown={(event) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      if (panel) closePanel(panel);
-      else if (leaderboardOpen) closeLeaderboard();
-    }}>
-      <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice}
-        slice={mapSlice} onStateChange={setMapState}
-        dock={<SpectralRuler mapSlice={mapSlice} onSelectSlice={setMapSlice} disabled={mapState !== "ready"}
-          frameWavelengthUm={frameShown?.wavelengthUm ?? null}
-          frameLabel={frameShown && comparison ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm` : null} />} />
+    <main className="sky-workspace" ref={workspace}>
+      <SkyMap
+        initialCenter={initialCenter}
+        focus={focus}
+        onCompare={compareViewport}
+        onInspect={inspect}
+        onAdvancedSearch={() => openPanel("search")}
+        catalogMark={catalogMark}
+        notice={mapNotice}
+        slice={mapSlice}
+        onStateChange={setMapState}
+        dated={
+          comparison && playback.frame
+            ? {
+                comparison,
+                frame: playback.frame,
+                assets: playback.assets,
+                attempt: playback.attempt,
+                selected: selection?.position ?? null,
+                marks: finding?.marks ?? [],
+                predictedMark: frameMark,
+              }
+            : null
+        }
+        onInspectDated={(position) => {
+          playback.pause();
+          if (comparison && playback.frame)
+            inspectCutout(comparison.id, position, playback.frame);
+        }}
+        dock={
+          <SpectralRuler
+            mapSlice={mapSlice}
+            onSelectSlice={setMapSlice}
+            disabled={mapState !== "ready"}
+            frameWavelengthUm={frameShown?.wavelengthUm ?? null}
+            frameLabel={
+              frameShown && comparison
+                ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm`
+                : null
+            }
+          />
+        }
+      />
       <header className="instrument-bar">
         <div className="brand">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
           </svg>
           <span>SPHEREx / Field viewer</span>
         </div>
+        <SearchBox
+          fovArcmin={initialField.fovArcmin}
+          onSearch={search}
+          onResolve={resolve}
+        />
         {leaderboard && (
-          <nav className="panel-buttons bar-start" aria-label="Engagement panels">
-            <button type="button" ref={leaderboardButton} aria-expanded={leaderboardOpen}
-              aria-controls="leaderboard-panel" onClick={toggleLeaderboard}>Leaderboard</button>
+          <nav
+            className="panel-buttons bar-start"
+            aria-label="Engagement panels"
+          >
+            <button
+              type="button"
+              ref={leaderboardButton}
+              aria-expanded={leaderboardOpen}
+              aria-controls="leaderboard-panel"
+              onClick={() => setLeaderboardOpen(!leaderboardOpen)}
+            >
+              Leaderboard
+            </button>
           </nav>
         )}
         <dl className="readouts" aria-label="Current field">
-          <div><dt>RA</dt><dd>{readoutField ? formatAngle(readoutField.ra) : "—"}</dd></div>
-          <div><dt>Dec</dt><dd>{readoutField ? formatAngle(readoutField.dec, true) : "—"}</dd></div>
-          <div><dt>Width</dt><dd>{readoutField ? `${readoutField.fovArcmin.toFixed(2)} arcmin` : "—"}</dd></div>
-          <div><dt>Frames</dt><dd>
-            {comparison ? <>
-              {bands.map((band) => band && <span key={band} className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />)}
-              {bands.some(Boolean) && `B${bands.filter(Boolean).join("–")} · `}
-              {comparison.wavelengthRangeUm.map((value) => value.toFixed(4)).join("–")} µm
-            </> : "—"}
-          </dd></div>
+          <div>
+            <dt>RA</dt>
+            <dd>{readoutField ? formatAngle(readoutField.ra) : "—"}</dd>
+          </div>
+          <div>
+            <dt>Dec</dt>
+            <dd>{readoutField ? formatAngle(readoutField.dec, true) : "—"}</dd>
+          </div>
+          <div>
+            <dt>Width</dt>
+            <dd>
+              {readoutField
+                ? `${readoutField.fovArcmin.toFixed(2)} arcmin`
+                : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>Frames</dt>
+            <dd>
+              {comparison ? (
+                <>
+                  {bands.map(
+                    (band) =>
+                      band && (
+                        <span
+                          key={band}
+                          className="band-swatch"
+                          style={{ background: bandColors[band - 1] }}
+                          aria-hidden="true"
+                        />
+                      ),
+                  )}
+                  {bands.some(Boolean) &&
+                    `B${bands.filter(Boolean).join("–")} · `}
+                  {comparison.wavelengthRangeUm
+                    .map((value) => value.toFixed(4))
+                    .join("–")}{" "}
+                  µm
+                </>
+              ) : (
+                "—"
+              )}
+            </dd>
+          </div>
         </dl>
         <div className="bar-actions">
-          <span className="status-badge" data-tone={tone}><span className="status-dot" aria-hidden="true" />{badge}</span>
+          <span className="status-badge" data-tone={tone}>
+            <span className="status-dot" aria-hidden="true" />
+            {badge}
+          </span>
           <nav className="panel-buttons" aria-label="Viewer panels">
-            {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
-              <button key={id} type="button" ref={(button) => {
-                if (button) panelButtons.current[id] = button;
-              }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
-                onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
+            <button
+              ref={timeButton}
+              type="button"
+              aria-expanded={timeOpen}
+              aria-controls="time-window"
+              onClick={() => setTimeOpen(!timeOpen)}
+            >
+              Time
+            </button>
+            {(
+              [
+                ["search", "Advanced"],
+                ["comparison", "Comparison"],
+                ["gaia", "Gaia"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                ref={(button) => {
+                  if (button) panelButtons.current[id] = button;
+                }}
+                aria-expanded={panels[id]}
+                aria-controls={`${id}-panel`}
+                onClick={() => setPanels((old) => ({ ...old, [id]: !old[id] }))}
+              >
+                {label}
+              </button>
             ))}
-            <button type="button" className="tutorial-open" onClick={tutorial.openTutorial}>
+            <button
+              type="button"
+              className="tutorial-open"
+              onClick={tutorial.openTutorial}
+            >
               <span aria-hidden="true">?</span> How this works
+            </button>
+            <button
+              type="button"
+              aria-label="Reset layout"
+              title="Reset window positions"
+              onClick={() => setLayoutReset((value) => value + 1)}
+            >
+              ↺
             </button>
           </nav>
         </div>
       </header>
       {leaderboard && (
-        <section id="leaderboard-panel" aria-labelledby="leaderboard-heading"
-          className="floating-panel panel-left leaderboard-panel" hidden={!leaderboardOpen}>
-          <div className="panel-heading">
-            <h2 id="leaderboard-heading">Rarity leaderboard</h2>
-            <button type="button" onClick={closeLeaderboard}>Close</button>
-          </div>
-          <LeaderboardPanel dataSource={leaderboard} open={leaderboardOpen}
-            onGoTo={goToEntry} onShowEvidence={showEntryEvidence} />
-        </section>
+        <FloatingPane
+          id="leaderboard-panel"
+          title="Rarity leaderboard"
+          anchor="left"
+          open={leaderboardOpen}
+          reset={layoutReset}
+          onClose={closeLeaderboard}
+        >
+          <LeaderboardPanel
+            dataSource={leaderboard}
+            open={leaderboardOpen}
+            onGoTo={goToEntry}
+            onShowEvidence={showEntryEvidence}
+          />
+        </FloatingPane>
       )}
-      <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
-        <div className="panel-heading">
-          <h2 id="gaia-heading">Gaia source inspector <InfoTip term="Gaia catalog">
+      <FloatingPane
+        id="gaia-panel"
+        title="Source inspector"
+        open={panels.gaia}
+        onClose={() => closePanel("gaia")}
+        reset={layoutReset}
+      >
+        <p className="pane-intro">
+          Gaia source inspector{" "}
+          <InfoTip term="Gaia catalog">
             Gaia is a European Space Agency mission that precisely measured the positions,
             distances, and motions of nearly two billion stars. This panel checks whether a known
             Gaia star sits at the point you clicked.
-          </InfoTip></h2>
-          <button type="button" onClick={() => closePanel("gaia")}>Close</button>
-        </div>
-        {inspectingCutout && <p>Selected SPHEREx frame <time dateTime={inspectingCutout.frame.observedAtUtc}>
-          {inspectingCutout.frame.observedAtUtc}
-        </time> · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec {inspectingCutout.position.dec.toFixed(6)}°</p>}
-        <Inspector skyPosition={inspectFrame ? selection?.position ?? null : inspecting}
-          selectedFrame={inspectingCutout ? inspectingCutout.frame : null}
-          onMark={(mark) => {
-            if (inspectingCutout) setComparisonMark({ comparisonId: inspectingCutout.comparisonId, mark });
-            else setCatalogMark(mark);
-          }} />
-        {activeMark && (
-          <p role="status">
-            {activeMark.predicted ? "Predicted Gaia position" : "Gaia catalog position"} for {activeMark.sourceId}
-            {" at RA "}{activeMark.ra.toFixed(6)}°, Dec {activeMark.dec.toFixed(6)}°.{" "}
-            <button type="button" onClick={() => {
-              if (inspectingCutout) setComparisonMark(null);
-              else setCatalogMark(null);
-            }}>Clear mark</button>
+          </InfoTip>
+        </p>
+        {inspectingCutout && (
+          <p>
+            Selected SPHEREx frame{" "}
+            <time dateTime={inspectingCutout.frame.observedAtUtc}>
+              {inspectingCutout.frame.observedAtUtc}
+            </time>{" "}
+            · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec{" "}
+            {inspectingCutout.position.dec.toFixed(6)}°
           </p>
         )}
-      </section>
-      <section id="search-panel" aria-labelledby="search-heading" className="floating-panel panel-left" hidden={panel !== "search"}>
-        <div className="panel-heading">
-          <h2 id="search-heading">Compare a field</h2>
-          <button type="button" onClick={() => closePanel("search")}>Close</button>
-        </div>
-        <FieldSearch field={initialField} limits={fieldLimits} onSearch={search}
-          onResolve={(name, fovArcmin) => {
-            setMapNotice("");
-            setRequest({ kind: "name", name, fovArcmin });
-            setPanel("comparison");
-          }} />
-      </section>
-      <section id="comparison-panel" aria-labelledby="comparison-heading" className="floating-panel panel-right" hidden={panel !== "comparison"}>
-        <div className="panel-heading">
-          <h2 id="comparison-heading">Comparison <InfoTip term="Blink comparison">
+        <Inspector
+          skyPosition={
+            inspectFrame
+              ? (selection?.position ?? null)
+              : (inspecting?.position ?? null)
+          }
+          selectedFrame={inspectingCutout ? inspectingCutout.frame : null}
+          mosaicGuideTimeUtc={
+            mosaicInspection ? spherexMosaicGuideTimeUtc : undefined
+          }
+          mosaicGuideSourceId={mosaicGuideSourceId}
+          onMark={(mark) => {
+            if (inspectingCutout)
+              setComparisonMark({
+                comparisonId: inspectingCutout.comparisonId,
+                source: mark.astrometry,
+              });
+            else setCatalogMark(mark);
+          }}
+        />
+        {markedSourceId && (
+          <p role="status">
+            {inspectingCutout
+              ? "Predicted Gaia position"
+              : catalogMark?.predicted
+                ? "Approximate Gaia position on the SPHEREx mosaic"
+                : "Gaia catalog position"}{" "}
+            for {markedSourceId}
+            {markedPosition && (
+              <>
+                {" at RA "}
+                {markedPosition.ra.toFixed(6)}°, Dec{" "}
+                {markedPosition.dec.toFixed(6)}°
+              </>
+            )}
+            .{" "}
+            <button
+              type="button"
+              onClick={() => {
+                if (inspectingCutout) setComparisonMark(null);
+                else setCatalogMark(null);
+              }}
+            >
+              Clear mark
+            </button>
+          </p>
+        )}
+      </FloatingPane>
+      <FloatingPane
+        id="search-panel"
+        title="Advanced search"
+        anchor="left"
+        open={panels.search}
+        onClose={() => closePanel("search")}
+        reset={layoutReset}
+      >
+        <FieldSearch
+          field={initialField}
+          limits={fieldLimits}
+          onSearch={search}
+          onResolve={resolve}
+        />
+      </FloatingPane>
+      <FloatingPane
+        id="time-window"
+        title="Time"
+        anchor="time"
+        badge={
+          comparison
+            ? synthetic || kind === "synthetic_fixture" || kind === "fixture"
+              ? "Synthetic"
+              : kind === "saved_real_example"
+                ? "Saved example"
+                : "SPHEREx"
+            : undefined
+        }
+        open={timeOpen}
+        reset={layoutReset}
+        onClose={() => {
+          playback.pause();
+          setTimeOpen(false);
+          timeButton.current?.focus();
+        }}
+      >
+        {Controls && (
+          <details className="fixture-tools">
+            <summary>Development fixtures</summary>
+            <p>Comparison images and metadata are synthetic.</p>
+            <Controls
+              onSearch={search}
+              onLoadSaved={(id, findingId) => {
+                setRequest({ kind: "saved", id, findingId });
+                setTimeOpen(true);
+              }}
+              onReset={() => setRequest(null)}
+            />
+          </details>
+        )}
+        {!comparison && <p role="status">{status}</p>}
+        {preview.kind === "loading" && request?.kind !== "saved" && (
+          <p>An archive search can take a few minutes.</p>
+        )}
+        {typeof diagnostics?.message === "string" && (
+          <p>{diagnostics.message}</p>
+        )}
+        {comparison && diagnostics?.complete === false && (
+          <p>This comparison comes from an incomplete archive search.</p>
+        )}
+        {fallbackAvailable && request && (
+          <div className="controls">
+            <button type="button" onClick={() => setRequest({ ...request })}>
+              Retry
+            </button>
+            {request.kind !== "saved" && (
+              <button type="button" onClick={openExample}>
+                {synthetic ? "Open saved fixture" : "Open saved real example"}
+              </button>
+            )}
+          </div>
+        )}
+        {!synthetic && preview.kind === "idle" && (
+          <button type="button" onClick={openExample}>
+            Open saved real example
+          </button>
+        )}
+        {preview.kind === "search" && !comparison && (
+          <p>
+            Requested RA {preview.field.ra.toFixed(6)}°, Dec{" "}
+            {preview.field.dec.toFixed(6)}°, width{" "}
+            {preview.field.fovArcmin.toFixed(2)} arcmin.
+          </p>
+        )}
+        {preview.kind === "idle" && (
+          <button type="button" onClick={() => search(initialField)}>
+            Load images of Barnard’s Star
+          </button>
+        )}
+        {preview.kind === "loading" && (
+          <button type="button" onClick={() => setRequest(null)}>
+            Cancel
+          </button>
+        )}
+        {comparison && (
+          <>
+            <TimeControls
+              comparison={comparison}
+              playback={playback}
+              onDetails={() => openPanel("comparison")}
+            />
+          </>
+        )}
+      </FloatingPane>
+      <FloatingPane
+        id="comparison-panel"
+        title="Compare details"
+        open={panels.comparison}
+        reset={layoutReset}
+        onClose={() => closePanel("comparison")}
+      >
+        <p className="pane-intro">
+          Blink comparison{" "}
+          <InfoTip term="Blink comparison">
             The dated images are stacked on the same grid and brightness scale, then shown one
             after another. Objects that moved or changed brightness between the dates appear to
             jump or flicker; the steady background stays put. This is how moving objects are
             spotted.
-          </InfoTip></h2>
-          <button type="button" onClick={() => closePanel("comparison")}>Close</button>
-        </div>
-        {synthetic && <p>Development fixtures. Comparison images and metadata are synthetic.</p>}
-        {Controls && <Controls onSearch={search}
-          onLoadSaved={(id, findingId) => { setRequest({ kind: "saved", id, findingId }); setPanel("comparison"); }}
-          onReset={() => setRequest(null)} />}
-        <p role="status">{status}</p>
-        {preview.kind === "loading" && request?.kind !== "saved" && <p>An archive search can take a few minutes.</p>}
-        {typeof diagnostics?.message === "string" && <p>{diagnostics.message}</p>}
-        {comparison && diagnostics?.complete === false && <p>This comparison comes from an incomplete archive search.</p>}
-        {fallbackAvailable && request && (
-          <div className="controls">
-            <button type="button" onClick={() => setRequest({ ...request })}>Retry</button>
-            {request.kind !== "saved" && <button type="button" onClick={openExample}>
-              {synthetic ? "Open saved fixture" : "Open saved real example"}
-            </button>}
-          </div>
-        )}
-        {!synthetic && preview.kind === "idle" && (
-          <button type="button" onClick={openExample}>Open saved real example</button>
-        )}
-        {preview.kind === "search" && (
-          <p>
-            Requested RA {preview.field.ra.toFixed(6)}°, Dec {preview.field.dec.toFixed(6)}°,
-            width {preview.field.fovArcmin.toFixed(2)} arcmin.
-          </p>
-        )}
+          </InfoTip>
+        </p>
+        {!comparison && <p>Load dated images using the Time window.</p>}
         {comparison && (
           <>
-            <p>{synthetic || kind === "synthetic_fixture" ? "Synthetic comparison" :
-              kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
-            <ComparisonPlayback key={comparison.id} comparison={comparison} visible={panel === "comparison"}
-              selectedPosition={selection?.position ?? null} frameMark={frameMark} savedMarks={finding?.marks}
-              onInspect={(position, frame) => inspectCutout(comparison.id, position, frame)}
-              onFrameChange={setFrameOnScreen} />
-            {finding && Discussion && <Discussion finding={finding} onShowEvidence={showEvidence}
-              onCopyLink={(value) => void copyLink(value.comparisonId, value.id)} />}
-            {finding && <p><a href={comparisonLink(comparison.id, finding.id)}>Saved evidence link</a></p>}
+            <p>
+              {synthetic || kind === "synthetic_fixture" || kind === "fixture"
+                ? "Synthetic comparison"
+                : kind === "saved_real_example"
+                  ? "Saved real SPHEREx example"
+                  : "SPHEREx archive observations"}
+            </p>
+            <ComparisonPlayback
+              key={comparison.id}
+              comparison={comparison}
+              playback={playback}
+              selectedPosition={selection?.position ?? null}
+              frameMark={frameMark}
+              savedMarks={finding?.marks}
+              onInspect={(position, frame) =>
+                inspectCutout(comparison.id, position, frame)
+              }
+            />
+            {finding && Discussion && (
+              <Discussion
+                finding={finding}
+                onShowEvidence={showEvidence}
+                onCopyLink={(value) =>
+                  void copyLink(value.comparisonId, value.id)
+                }
+              />
+            )}
+            {finding && (
+              <p>
+                <a href={comparisonLink(comparison.id, finding.id)}>
+                  Saved evidence link
+                </a>
+              </p>
+            )}
             <div className="controls">
               <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
-              <button type="button" onClick={() => void copyLink(comparison.id)}>Copy comparison link</button>
+              <button
+                type="button"
+                onClick={() => void copyLink(comparison.id)}
+              >
+                Copy comparison link
+              </button>
             </div>
             {copyStatus && <p role="status">{copyStatus}</p>}
           </>
         )}
-      </section>
+      </FloatingPane>
       <Tutorial open={tutorial.open} onClose={tutorial.close} />
     </main>
   );

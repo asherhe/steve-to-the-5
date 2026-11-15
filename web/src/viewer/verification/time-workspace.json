@@ -1,0 +1,66 @@
+{
+  "checkedAtUtc": "2026-11-15T02:47:37.285672+00:00",
+  "scope": "Floating time workspace on localhost",
+  "unitTests": {
+    "passed": 16,
+    "command": "node --test web/src/viewer/timeline.test.mjs web/src/viewer/evidence.test.mjs web/src/viewer/production.test.mjs"
+  },
+  "build": "TypeScript and Vite production build passed; existing Aladin bundle-size warning remains.",
+  "browserChecks": {
+    "time-window.browser.mjs": "passed: irregular gaps, A/B blink, pointer/keyboard scrub, details/inspector state, mouse/touch dragging, close/collapse/reset, resizing, retry, single epoch, saved finding replay",
+    "overlay.browser.mjs": "passed: asymmetric RGBA diagnostic aligns with saved WCS footprint; exact RGB (224,32,16), (30,200,70), (60,120,200); transparent pixels preserve background; map zoom/pan/projection issue no comparison search",
+    "production.browser.mjs": "passed: built-app same-origin contract mocks and fixture exclusion",
+    "harness/evidence.browser.mjs": "passed: saved marks, clipboard/deep links, changed defaults, missing and mismatched IDs at desktop/mobile sizes"
+  },
+  "retainedRealPair": {
+    "kind": "executed_local_real_services",
+    "origin": "http://127.0.0.1:5178",
+    "comparisonId": "e618fdf2cf94dcb0d5321b4fabc3852e3a5d9e0449dad96b4a160ee08f2ad61f",
+    "evidenceKind": "real_archive",
+    "dimensions": [
+      59,
+      59
+    ],
+    "wavelengthRangeUm": [
+      1.5346771169993776,
+      1.5727389205331392
+    ],
+    "stretch": {
+      "lower": -0.0020993436055899623,
+      "softening": 0.1,
+      "type": "asinh",
+      "unit": "MJy/sr",
+      "upper": 1.3899087567605404
+    },
+    "frames": [
+      {
+        "id": "ac876c2d5d9f4bc8a6c88d59c1d802fce6e2ef5b10ff85ffa5cd1e0366c2667c",
+        "observedAtUtc": "2025-05-06T02:36:36.432000Z",
+        "alignment": "reference_frame",
+        "imageSha256": "364c1187865dddfdd91fa819de4c3be20945e84c044b166472a3386f110603d9"
+      },
+      {
+        "id": "e2139338b0f2954a0cfc6f55c92d57f6e97fa2d1fe017abcf9e1e5a32d3666e8",
+        "observedAtUtc": "2026-05-13T16:14:39.062400Z",
+        "alignment": "verified",
+        "imageSha256": "a5b921b2311647b021c2e4f17d446ab8d1ddc29cb11264282154d96c9103056c"
+      }
+    ],
+    "gaiaSourcesNearSelectedCutout": 4,
+    "checks": [
+      "real_archive_images_decoded_stepped_and_played",
+      "live_gaia_inspector_and_frame_specific_prediction_mark",
+      "fresh_anonymous_session_replays_identical_manifest_and_image_bytes_without_search"
+    ],
+    "limitations": [
+      "Retained real observations replayed locally; no new archive coverage survey.",
+      "Findings/auth are outside this playback verification.",
+      "No significant motion, variability, or discovery claim."
+    ]
+  },
+  "limitations": [
+    "Native overlay diagnostic uses synthetic data and a bounded ICRS TAN grid; it is a display check, not an empirical sky alignment measurement.",
+    "Reference HiPS requests were unavailable/blocked in some local tests; dated PNG overlay, time controls and details remained usable.",
+    "No backend selection, retained image bytes, observation timestamps, wavelength selection, or shared stretch was changed."
+  ]
+}

@@ -16,13 +16,14 @@ export function IdleView() {
   );
 }
 
-export function UnmatchedView() {
+export function UnmatchedView({ mosaic = false }: { mosaic?: boolean }) {
   return (
     <div className="si-state si-state--unmatched">
       <p className="si-state__title">No catalog source here</p>
       <p className="si-state__detail">
-        No Gaia DR3 source falls within the search radius. This is a valid empty result, not a
-        service error.
+        {mosaic
+          ? "None of the nearby Gaia catalog sources projects within the search radius at the mosaic guide date."
+          : "No Gaia DR3 source falls within the search radius. This is a valid empty result, not a service error."}
       </p>
     </div>
   );

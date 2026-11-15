@@ -11,7 +11,7 @@ const catalogClient = createCatalogClient();
 // Placeholder until a scoring system exists; see docs/engagement-social-integration.md.
 const leaderboard = createPlaceholderLeaderboard();
 function Inspector(props: Omit<ComponentProps<typeof SourceInspector>, "client">) {
-  return <SourceInspector {...props} client={catalogClient} />;
+  return <SourceInspector {...props} client={catalogClient} requireLiveCatalog />;
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Viewer root is missing.");

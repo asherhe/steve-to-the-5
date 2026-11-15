@@ -5,7 +5,7 @@ service error (upstream_unavailable).
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 
 from app.config import get_settings
 from app.deps import get_provider
@@ -19,6 +19,7 @@ router = APIRouter()
 
 @router.get("/api/catalogs/nearby", response_model=NearbyResponse)
 def nearby(
+    response: Response,
     ra: float = Query(...),
     dec: float = Query(...),
     radius_arcsec: float = Query(..., alias="radiusArcsec"),
@@ -33,4 +34,5 @@ def nearby(
         sources = provider.nearby(ra, dec, radius_arcsec, settings.max_rows)
     except UpstreamError as exc:
         raise upstream_unavailable(str(exc)) from exc
+    response.headers["X-SPHEREx-Catalog-Mode"] = "live" if settings.live else "fixture"
     return NearbyResponse(sources=sources)

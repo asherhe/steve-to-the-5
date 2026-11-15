@@ -2,7 +2,7 @@
 .leaderboard { display: grid; gap: 0.5rem; font-size: 0.875rem; }
 .leaderboard p { margin: 0; }
 .leaderboard-tabs { display: flex; gap: 0.25rem; }
-.floating-panel .leaderboard-tabs button { flex: 1; min-height: 2.25rem; padding-block: 0.25rem; }
+.floating-pane .leaderboard-tabs button { flex: 1; min-height: 2.25rem; padding-block: 0.25rem; }
 .leaderboard-notice {
   padding: 0.5rem;
   border: 1px dashed #6b5530;
@@ -17,8 +17,9 @@
 .leaderboard-entry[data-tier="rare"] { --tier: #6aa8e8; }
 .leaderboard-entry[data-tier="very_rare"] { --tier: #b58cf0; }
 .leaderboard-entry[data-tier="extremely_rare"] { --tier: #f0b35c; }
-.floating-panel .leaderboard-goto,
-.floating-panel .leaderboard-goto:hover:enabled {
+.leaderboard-entry[data-tier="unscored"] { border-left-style: dashed; }
+.floating-pane .leaderboard-goto,
+.floating-pane .leaderboard-goto:hover:enabled {
   display: flex;
   gap: 0.625rem;
   align-items: flex-start;
@@ -35,7 +36,7 @@
   text-align: left;
   cursor: pointer;
 }
-.floating-panel .leaderboard-goto:hover:enabled { background: rgba(255, 255, 255, 0.03); }
+.floating-pane .leaderboard-goto:hover:enabled { background: rgba(255, 255, 255, 0.03); }
 .leaderboard-rank { min-width: 1.5rem; font: 600 0.875rem/1.4 var(--mono, monospace); font-variant-numeric: tabular-nums; color: var(--tier); }
 .leaderboard-body { display: grid; gap: 0.15rem; flex: 1; min-width: 0; }
 .leaderboard-line { display: flex; justify-content: space-between; gap: 0.5rem; }
@@ -51,7 +52,7 @@
   color: #c9d3e2;
   font: 400 0.625rem/1.3rem var(--mono, monospace);
 }
-.floating-panel .leaderboard-evidence {
+.floating-pane .leaderboard-evidence {
   min-height: 2rem;
   margin: 0 0.25rem 0.6rem 2.375rem;
   padding: 0.15rem 0.6rem;
