@@ -1,0 +1,135 @@
+{
+  "checkedAtUtc": "2026-11-15T08:18:30.494103+00:00",
+  "kind": "live_public_catalog_adapter_probe",
+  "note": "Cone neighbors and Solar System predictions do not establish identity, image detection, or novelty. No review was posted.",
+  "query": {
+    "ra": 304.693508808,
+    "dec": 42.4436872991,
+    "radiusArcsec": 120.0,
+    "observedAtUtc": "2025-10-30T17:30:35.064000Z"
+  },
+  "field": "Retained real SPHEREx example field; no candidate identification claimed",
+  "elapsedSeconds": 5.05,
+  "checks": [
+    {
+      "catalog": "Gaia DR3",
+      "status": "partial",
+      "scope": "Gaia DR3, reference epoch 2016.0; positions in degrees, motions mas/yr, parallax mas, G magnitude",
+      "sourceUrl": "https://gaia.aip.de/metadata/gaiadr3/gaia_source/",
+      "servedBy": "AIP Gaia mirror (Potsdam)",
+      "retrievedAtUtc": "2026-11-15T08:18:30Z",
+      "responseSha256": null,
+      "limitations": [
+        "Uses the existing Gaia failover and cache. Inspect a source for its full astrometry and frame-time prediction.",
+        "The cone is centered on the selected image point; high proper motion can cause missed associations."
+      ],
+      "rowCount": 50
+    },
+    {
+      "catalog": "SIMBAD",
+      "status": "candidates",
+      "scope": "SIMBAD basic object records in the selected cone",
+      "sourceUrl": "https://simbad.harvard.edu/simbad/sim-tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+TOP+51+%2A+FROM+basic+WHERE+1%3DCONTAINS%28POINT%28%27ICRS%27%2Cra%2Cdec%29%2CCIRCLE%28%27ICRS%27%2C304.693508808%2C42.4436872991%2C0.03333333333333333%29%29",
+      "servedBy": "SIMBAD mirror (CfA Harvard)",
+      "retrievedAtUtc": "2026-11-15T08:18:26.916784Z",
+      "responseSha256": "e1771c00af24948c33d490e254f7b4b22d1ecbc7fcabc95fb0c0fce26ef21a21",
+      "limitations": [
+        "Rows are nearby catalog entries, not confirmed counterparts. Positions are not propagated."
+      ],
+      "rowCount": 3
+    },
+    {
+      "catalog": "CatWISE2020",
+      "status": "unavailable",
+      "scope": "Search did not complete",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "limitations": [
+        "The catalog could not be checked. Retry later; no absence or points are inferred."
+      ],
+      "rowCount": 0
+    },
+    {
+      "catalog": "UltracoolSheet",
+      "status": "no_candidates",
+      "scope": "UltracoolSheet 2.1.0 Main table, positions propagated to J2000 by the compilation",
+      "sourceUrl": "https://zenodo.org/records/15802304/files/UltracoolSheet%20-%20Main.csv?download=1",
+      "servedBy": "Zenodo release 15802304",
+      "retrievedAtUtc": "2026-11-15T08:18:27.850306Z",
+      "responseSha256": "2307303072ebf729be6e7af6ec67c0a9feed6c2ab6f0adb35444bfab5724a184",
+      "limitations": [
+        "Pinned July 2025 release; newer discoveries may be absent.",
+        "J2000 positions are not moved to the selected observation date. High proper motion can move objects outside this cone.",
+        "Column definitions and original-paper reference codes: https://zenodo.org/records/15802304"
+      ],
+      "rowCount": 0
+    },
+    {
+      "catalog": "SkyBoT",
+      "status": "no_candidates",
+      "scope": "Known Solar System objects at the selected frame time; geocentric predictions",
+      "sourceUrl": "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php?RA=304.693508808&DEC=42.4436872991&SR=0.03333333333333333&TIME=2025-10-30T17%3A30%3A35.064000Z&MAXREC=51&VERB=3&RESPONSEFORMAT=votable&-loc=500",
+      "servedBy": "IMCCE/LTE",
+      "retrievedAtUtc": "2026-11-15T08:18:28.276239Z",
+      "responseSha256": "6b49fa8f3ece27463ca2d7b52855a478419eea8248820316490702e917830ae8",
+      "limitations": [
+        "Geocentric predictions differ from a spacecraft viewpoint, especially for nearby objects.",
+        "A combined frame spans time; this query uses its displayed time only."
+      ],
+      "rowCount": 0
+    },
+    {
+      "catalog": "VizieR",
+      "status": "unavailable",
+      "scope": "Search did not complete",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "limitations": [
+        "The catalog could not be checked. Retry later; no absence or points are inferred."
+      ],
+      "rowCount": 0
+    }
+  ],
+  "skybotFollowUp": {
+    "seed": {
+      "documentation": "https://ssp.imcce.fr/webservices/skybot/api/conesearch/",
+      "query": {
+        "RA": 148.666,
+        "DEC": 16.3833,
+        "SR": 2,
+        "TIME": "2025-10-30T17:30:35.064000Z",
+        "MAXREC": 10,
+        "VERB": 3,
+        "RESPONSEFORMAT": "votable",
+        "-observer": "500"
+      },
+      "rowsReturned": 10
+    },
+    "check": {
+      "catalog": "SkyBoT",
+      "status": "candidates",
+      "scope": "Known Solar System objects at the selected frame time; geocentric predictions",
+      "sourceUrl": "https://ssp.imcce.fr/webservices/skybot/api/conesearch.php?RA=148.70630061258&DEC=16.407162394877&SR=0.03333333333333333&TIME=2025-10-30T17%3A30%3A35.064000Z&MAXREC=51&VERB=3&RESPONSEFORMAT=votable&-loc=500",
+      "servedBy": "IMCCE/LTE",
+      "retrievedAtUtc": "2026-11-15T08:18:55.208815Z",
+      "responseSha256": "9b1f715684caa0d7d31f013d836aaab2cd6a209c0747833ef6941cb37c780940",
+      "limitations": [
+        "Geocentric predictions differ from a spacecraft viewpoint, especially for nearby objects.",
+        "A combined frame spans time; this query uses its displayed time only."
+      ],
+      "rowCount": 1
+    },
+    "note": "A seed catalog prediction selected a separate 120 arcsec cone for a nonempty adapter test. This is not a SPHEREx image detection.",
+    "returnedIdentifiers": [
+      {
+        "Num": "-",
+        "Name": "2015 KM417",
+        "Class": "MB>Middle"
+      }
+    ]
+  }
+}

@@ -26,6 +26,9 @@ def create_router(pipeline):
             field = FieldRequest(ra=ra, dec=dec, fovArcmin=fovArcmin)
         except ValidationError as exc:
             raise ArchiveError("INVALID_REQUEST", "Finite RA/Dec and a field of 1–30 arcminutes are required", 422) from exc
+        recorded = pipeline.store.matching_recorded_field(field) if hasattr(pipeline.store, "matching_recorded_field") else None
+        if recorded is not None:
+            return JSONResponse(recorded, headers={"X-SPHEREx-Evidence": "saved-real-example"})
         # Reject at once instead of queueing: excess requests never wait for the lock.
         if not building.acquire(blocking=False):
             raise ArchiveError("BUILD_BUSY", "Another comparison build is running; retry shortly. "
@@ -69,7 +72,8 @@ def create_app(pipeline=None):
     if pipeline is None:
         root = Path(os.environ.get("SPHEREX_STORAGE_DIR", Path(__file__).parent / ".local-data"))
         config = ProcessingConfig()
-        examples = Path(__file__).resolve().parents[2] / "fixtures" / "archive" / "real" / "evidence"
+        fixtures = Path(__file__).resolve().parents[2] / "fixtures" / "archive"
+        examples = [fixtures / name / "evidence" for name in ("real", "real-wise0855", "real-epsindib", "real-rdraconis")]
         pipeline = Pipeline(IRSAClient(config, root / "cache", search_attempts=6, cutout_attempts=5), LocalStore(root / "evidence", examples), config)
     app.include_router(create_router(pipeline))
     install_error_handlers(app)

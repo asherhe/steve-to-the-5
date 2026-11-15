@@ -1,13 +1,14 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { boundPane } from "./timeline";
 let topLayer = 5;
-export function FloatingPane({ id, title, open = true, onClose, anchor = "right", reset = 0, defaultCollapsed = false, badge, children }: {
+export function FloatingPane({ id, title, open = true, onClose, anchor = "right", reset = 0, defaultCollapsed = false, badge, size = "normal", children }: {
   id: string; title: string; open?: boolean; onClose?: () => void; anchor?: "left" | "right" | "time" | "map";
-  reset?: number; defaultCollapsed?: boolean; badge?: ReactNode; children: ReactNode;
+  size?: "normal" | "wide" | "large"; reset?: number; defaultCollapsed?: boolean; badge?: ReactNode; children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [position, setPosition] = useState<{x:number;y:number} | null>(null);
   const positionRef = useRef(position);
+  const manuallyMoved = useRef(false);
   positionRef.current = position;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [layer, setLayer] = useState(5);
@@ -24,12 +25,12 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
   const lastReset = useRef(reset);
   useLayoutEffect(() => {
     if (lastReset.current !== reset) {
-      lastReset.current = reset; positionRef.current = null; setCollapsed(defaultCollapsed);
+      lastReset.current = reset; positionRef.current = null; manuallyMoved.current = false; setCollapsed(defaultCollapsed);
     }
     if (!open || !ref.current) return;
     function fit() {
       const box = ref.current!.getBoundingClientRect();
-      if (positionRef.current) clamp(positionRef.current.x,positionRef.current.y);
+      if (manuallyMoved.current && positionRef.current) clamp(positionRef.current.x,positionRef.current.y);
       else {
         const mobile = innerWidth < 672;
         // The header bar and spectral dock publish their heights on the workspace; stay clear of both.
@@ -43,11 +44,13 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
       }
     }
     fit(); const observer = new ResizeObserver(fit); observer.observe(ref.current!);
+    const workspace = ref.current!.closest(".sky-workspace");
+    for (const element of workspace?.querySelectorAll(".instrument-bar, .sky-dock") ?? []) observer.observe(element);
     window.addEventListener("resize",fit);
     return () => { observer.disconnect(); window.removeEventListener("resize",fit); };
   }, [open, anchor, collapsed, reset]);
   return <section ref={ref} id={id} role="region" aria-label={title} hidden={!open}
-    className={`floating-pane pane-${anchor}`} style={{left:position?.x,top:position?.y,zIndex:layer}}
+    className={`floating-pane pane-${anchor} pane-size-${size}`} style={{left:position?.x,top:position?.y,zIndex:layer}}
     onPointerDownCapture={() => setLayer(++topLayer)}
     onFocusCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setLayer(++topLayer); }}
     onKeyDown={event => { if(event.key === "Escape" && !event.defaultPrevented && onClose){event.stopPropagation();onClose();} }}>
@@ -56,6 +59,7 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
         onPointerDown={event => {
           if(event.button !== 0)return;
           const box=ref.current!.getBoundingClientRect();
+          manuallyMoved.current = true;
           dragging.current={x:event.clientX,y:event.clientY,left:box.left,top:box.top};
           event.currentTarget.setPointerCapture(event.pointerId);event.preventDefault();
         }} onPointerMove={event => {const drag=dragging.current;if(drag)clamp(drag.left+event.clientX-drag.x,drag.top+event.clientY-drag.y);}}
@@ -64,7 +68,7 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
         onLostPointerCapture={() => {dragging.current=null;}}
         onKeyDown={event => {
           const delta: Record<string,[number,number]>={ArrowLeft:[-20,0],ArrowRight:[20,0],ArrowUp:[0,-20],ArrowDown:[0,20]};
-          if(delta[event.key]){event.preventDefault();const box=ref.current!.getBoundingClientRect();clamp(box.left+delta[event.key][0],box.top+delta[event.key][1]);}
+          if(delta[event.key]){manuallyMoved.current = true;event.preventDefault();const box=ref.current!.getBoundingClientRect();clamp(box.left+delta[event.key][0],box.top+delta[event.key][1]);}
         }}><span aria-hidden="true">⠿</span> {title}</button>
       {badge && <span className="pane-badge">{badge}</span>}
       <button type="button" aria-label={`${collapsed?"Expand":"Collapse"} ${title}`} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>{collapsed?"＋":"−"}</button>

@@ -11,7 +11,7 @@ Malformed requests, missing records and unauthorized writes use an error body
 `{code, message}`. The coordinator owns the shared OpenAPI/generated types, root
 dependencies, app entry points, deployment and merges; route any contract change through it.
 
-## Masterplan backend checkpoint (2026-11-15)
+## Masterplan integration (2026-11-15)
 
 User-authorized additive work on `master-plan`, based on `origin/main` at `5c36016`:
 `GET /api/catalogs/review`, `POST /api/findings/reviews`,
@@ -21,7 +21,7 @@ Finding writes add optional `reviewId` and `survey`; threads add `candidateRevie
 `services/findings/fixtures/openapi.json`, the fourth findings migration, and
 `MASTERPLAN-HANDOFF.md`. The coordinator performed the shared edits in this session.
 The new score measures documented review effort; it is not rarity or detection evidence.
-Frontend integration is pending. Do not claim this backend checkpoint completes the app.
+Frontend integration now mounts auth, candidate review, composer, public ranking, discussion and community activity. WISE links select the correct evidence store. The local completion record is `docs/verification/masterplan-completion.md`; real Supabase and hosted auth remain unconfigured by user direction.
 
 ## Shared interface (as implemented)
 
@@ -30,7 +30,7 @@ Frontend integration is pending. Do not claim this backend checkpoint completes 
 | GET /api/comparisons?ra&dec&fovArcmin | Returns `{status, comparison, diagnostics}`. Status is `ready`, `single_epoch`, `no_coverage`, `no_comparable_pair` or `upstream_unavailable`. `comparison`, when present, has `{id, field, wavelengthRangeUm, stretch, grid, frames}` plus additive fields (observation IDs, detector, time bounds, bandwidths, source hashes, per-frame and common coverage, resolved `config`, limitations, provenance). Field is `{ra, dec, fovArcmin}`; `grid` carries dimensions and a FITS celestial WCS. Each frame has `{id, observedAtUtc, wavelengthUm, release, imageUrl, sourceUrl, qualityFlags}` plus time bounds, validity and alignment. Manifest and rendered assets are stored durably before a shareable ID is returned. |
 | GET /api/comparisons/{id} | The saved manifest and immutable asset references, exactly as stored; never queries IRSA. Republishing data or changing default selection does not change a prior comparison. |
 | GET /api/comparisons/{id}/assets/{name} | Immutable PNG or original FITS bytes with ETag; image URLs are same-origin relative paths. |
-| GET /api/resolve?name | `{name, ra, dec}` from bundled presets; external SIMBAD lookup is opt-in and live-only. |
+| GET /api/resolve?name | `{name, ra, dec}` from bundled presets; external SIMBAD lookup is live-only and enabled by the root dev runner unless explicitly opted out. |
 | GET /api/catalogs/nearby?ra&dec&radiusArcsec | `{sources}`; each row `{sourceId, ra, dec, refEpoch, pmRaCosDecMasYr, pmDecMasYr, parallaxMas, gMag, separationArcsec}`. Empty result is distinct from an error. |
 | GET /api/catalogs/gaia/{sourceId} | Astrometry plus available uncertainties, radial velocity, BP/RP magnitude and provenance; optional fields may be `null`. |
 | GET /api/health | Catalog liveness and mode (offline fixtures vs live). |
@@ -49,8 +49,7 @@ and a selected image position use the same sky coordinates.
 
 Each slice is owned end to end and verified independently against fixtures. Keep edits inside
 the assigned paths, preserve other contributors' work, and send shared changes to the
-coordinator. The engagement leaderboard (`web/src/leaderboard/**`) currently ships as a
-labeled placeholder owned alongside the viewer app shell; it is not one of the five core
+coordinator. The engagement leaderboard (`web/src/leaderboard/**`) is owned alongside the viewer app shell; it is not one of the five core
 owners.
 
 ### 1. SPHEREx archive and image preparation — `services/archive/**`, `fixtures/archive/**`
@@ -78,7 +77,7 @@ search, the field control (1–30 arcmin), matched monochrome playback (`usePlay
 `ComparisonPlayback`, `TimeControls`), the dated sky overlay, the draggable panel host
 (`FloatingPane`) and marker primitives, and the beginner tutorial and inline term explainers.
 It consumes the inspector and findings/discussion slots and the activity layer via typed
-props, using fixtures in development. The production adapter (`production.ts`) implements
+props, with real findings adapters in production and fixtures in development. The production adapter (`production.ts`) implements
 search, saved replay and name lookup against same-origin `/api` routes using types generated
 from the archive OpenAPI. It renders changing fields, fetch progress, empty results and
 saved-example states, preserves exact framing while stepping, and restores evidence from a
@@ -101,7 +100,7 @@ ambiguous/unmatched/unavailable states, propagates a selected-frame position and
 
 A FastAPI router (`create_router(supabase, load_saved_comparison)`) mounted in the shared app,
 owning `/api/findings` and backed by Supabase (Postgres + Auth). Implements the viewport,
-create, thread and reply routes with viewport SQL functions; three ordered migrations create
+create, thread and reply routes with viewport SQL functions; four ordered migrations create
 the tables and functions with antipodal-roundoff and RA-wrap fixes. Public reads expose
 display names ("Sky observer" fallback) and evidence with emails private; writes derive
 identity from the session. Validates evidence references and limits (title ≤ 120,
@@ -115,13 +114,13 @@ Owns the activity toggle, the cluster/pin data adapter, the selected-pin discuss
 signed-in composer and reply form. It uses stub marker callbacks and fixture API responses in
 a standalone harness, accepts a comparison ID and sky selection as props from the app shell,
 and talks to `/api/findings` through its own client (never Supabase directly). "Show evidence"
-restores exact frames and annotations; "Copy link" includes both IDs. It handles loading,
+restores exact frames and annotations; "Copy link" includes both IDs and the WISE/SPHEREx survey. It handles loading,
 no-findings, failed-write and sign-in-return states.
 
 ## Merge and demo order
 
 The coordinator wires archive + map first, then the catalog inspector, then the findings
-backend + UI, with the leaderboard placeholder mounted beside the app shell. Test contracts
+backend + UI, with the participation leaderboard and discussion mounted beside the app shell. Test contracts
 against fixtures before merging and smoke test real data after the first join. Before release,
 verify on the deployed origin with a cold request and a simulated archive failure, and use two
 browser sessions to prove public read, auth, posting and reply. Log actual coverage for each

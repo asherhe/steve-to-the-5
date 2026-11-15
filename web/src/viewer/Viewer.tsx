@@ -28,6 +28,10 @@ import {
   type LeaderboardDataSource,
   type LeaderboardEntry,
 } from "../leaderboard";
+import type { CommunityActivityProps } from "../findings/CommunityActivity";
+import type { FindingsViewport } from "../findings/types";
+import type { FindingMarker } from "../findings/adapter";
+import type { CandidateReviewSlotProps } from "../findings/CandidateReviewPane";
 import { barnardGaiaSourceId, targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { compareReachDeg, fieldWidthFromView } from "./compareField";
@@ -137,6 +141,9 @@ export interface ViewerProps {
   dataSource: ViewerDataSource;
   Inspector: ComponentType<Omit<SourceInspectorProps, "client">>;
   Discussion?: ComponentType<EvidenceDiscussionProps>;
+  Review?: ComponentType<CandidateReviewSlotProps>;
+  Activity?: ComponentType<CommunityActivityProps>;
+  Account?: ComponentType<{ mode: "button" | "pane" }>;
   loadFinding?: (
     id: string,
     signal?: AbortSignal,
@@ -162,6 +169,9 @@ export function Viewer({
   wiseDataSource,
   Inspector,
   Discussion,
+  Review,
+  Account,
+  Activity,
   loadFinding,
   Controls,
   leaderboard,
@@ -176,11 +186,11 @@ export function Viewer({
   // Each view keeps its own request and result, so switching back shows what was there.
   const loaders = {
     spherex: useComparisonLoader({
-      source: dataSource, resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      source: dataSource, survey: "spherex", resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
       initial: skyView === "spherex" ? requestFromUrl() : null,
     }),
     wise: useComparisonLoader({
-      source: wiseSource, resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      source: wiseSource, survey: "wise", resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
       initial: skyView === "wise" ? requestFromUrl() : null,
     }),
   };
@@ -201,6 +211,13 @@ export function Viewer({
       new URLSearchParams(location.search).has("comparison") ||
       new URLSearchParams(location.search).has("finding"),
   );
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [viewport, setViewport] = useState<FindingsViewport | null>(null);
+  const [communityMarkers, setCommunityMarkers] = useState<FindingMarker[]>([]);
+  const [reviewOpen, setReviewOpen] = useState(() => new URLSearchParams(location.search).has("reviewFrame"));
+  const [comparisonLarge, setComparisonLarge] = useState(false);
+  const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
+  const [discussionOpen, setDiscussionOpen] = useState(true);
   const [layoutReset, setLayoutReset] = useState(0);
   function openPanel(panel: Panel) {
     setPanels((old) => ({ ...old, [panel]: true }));
@@ -217,6 +234,7 @@ export function Viewer({
   } | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
     comparisonId: string;
+    survey: SkyView;
     position: SkyPosition;
     frame: SelectedFrameMeta;
   } | null>(null);
@@ -243,12 +261,29 @@ export function Viewer({
   const tutorial = useTutorial();
 
   useEffect(() => {
+    for (const view of ["spherex", "wise"] as const) {
+      const value = loaders[view].preview;
+      if (value.kind !== "redirect" || (value.survey === "wise" && !wiseSource)) continue;
+      loaders[view].setRequest(null);
+      loaders[value.survey].setRequest(value.request);
+      setSkyView(value.survey);
+      const url = new URL(location.href);
+      if (value.survey === "wise") url.searchParams.set("view", "wise");
+      else url.searchParams.delete("view");
+      history.replaceState(history.state, "", url);
+    }
+  }, [loaders.spherex.preview, loaders.wise.preview, wiseSource]);
+
+  useEffect(() => {
     function restore() {
       const view = wiseDataSource ? viewFromUrl() : "spherex";
       const saved = requestFromUrl();
       setSkyView(view);
+      setFrameSelection(null); setInspectFrame(false);
       loaders[view].setRequest(saved);
       setTimeOpen(!!saved);
+      setDiscussionOpen(true);
+      setReviewOpen(new URLSearchParams(location.search).has("reviewFrame"));
       setPanels((old) => ({ ...old, comparison: new URLSearchParams(location.search).has("finding") }));
     }
     window.addEventListener("popstate", restore);
@@ -279,6 +314,7 @@ export function Viewer({
   /** Swaps the survey. The map keeps its centre and zoom; each view keeps its own result. */
   function switchView(next: SkyView) {
     if (next === skyView) return;
+    setFrameSelection(null); setInspectFrame(false); setReviewOpen(false);
     setSkyView(next);
     setMapNotice("");
     // A comparison ID in the address belongs to the view it was opened in.
@@ -287,6 +323,7 @@ export function Viewer({
     else url.searchParams.delete("view");
     url.searchParams.delete("comparison");
     url.searchParams.delete("finding");
+    for (const key of ["reviewFrame", "reviewRa", "reviewDec"]) url.searchParams.delete(key);
     history.replaceState(history.state, "", url);
   }
 
@@ -300,21 +337,37 @@ export function Viewer({
     leaderboardButton.current?.focus();
   }
 
+  function activateFindingMarker(marker: FindingMarker) {
+    if (marker.kind === "cluster") {
+      setFocus({ ra: marker.ra, dec: marker.dec, fovArcmin: 360 / 2 ** (marker.zoomTo + 1) * 60 });
+    } else {
+      setCommunityOpen(false);
+      openFinding("", marker.findingId, skyView);
+    }
+  }
+
   function goToEntry(entry: LeaderboardEntry) {
     setMapNotice("");
     setFocus({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin });
   }
 
+  function openFinding(comparisonId: string, findingId: string | undefined, view: SkyView) {
+    if (view === "wise" && !wiseSource) { setMapNotice("The WISE evidence service is not connected."); return; }
+    setFrameSelection(null); setInspectFrame(false); setReviewOpen(false);
+    setSkyView(view);
+    loaders[view].setRequest({ kind: "saved", id: comparisonId, findingId });
+    setTimeOpen(true); setDiscussionOpen(true);
+    openPanel("comparison");
+    const url = new URL(evidenceLink(location.href, comparisonId, findingId));
+    if (view === "wise") url.searchParams.set("view", "wise");
+    else url.searchParams.delete("view");
+    history.replaceState(history.state, "", url);
+  }
+
   function showEntryEvidence(entry: LeaderboardEntry) {
     if (!entry.comparisonId) return;
     if (window.matchMedia(narrowScreen).matches) setLeaderboardOpen(false);
-    setRequest({
-      kind: "saved",
-      id: entry.comparisonId,
-      findingId: entry.findingId ?? undefined,
-    });
-    setTimeOpen(true);
-    openPanel("comparison");
+    openFinding(entry.comparisonId, entry.findingId ?? undefined, entry.survey ?? "spherex");
   }
 
   function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
@@ -327,8 +380,10 @@ export function Viewer({
     position: SkyPosition,
     frame: ComparisonFrame,
   ) {
+    playback.pause();
     setFrameSelection({
       comparisonId,
+      survey: skyView,
       position,
       frame: {
         frameId: frame.id,
@@ -375,12 +430,16 @@ export function Viewer({
       : preview.kind === "saved"
         ? preview.comparison
         : null;
+  useEffect(() => {
+    if (preview.kind === "saved" && preview.comparison.id === savedExampleId)
+      setFocus({ ...preview.comparison.field, fovArcmin: Math.min(30, preview.comparison.field.fovArcmin * 3) });
+  }, [preview, savedExampleId]);
   const playback = usePlayback(
     comparison,
-    timeOpen && preview.kind !== "loading",
+    (timeOpen || panels.comparison) && preview.kind !== "loading",
   );
   const selection =
-    frameSelection?.comparisonId === comparison?.id ? frameSelection : null;
+    frameSelection?.comparisonId === comparison?.id && frameSelection?.survey === skyView ? frameSelection : null;
   const markedSource =
     comparisonMark?.comparisonId === comparison?.id
       ? comparisonMark?.source
@@ -431,6 +490,33 @@ export function Viewer({
       ? barnardGaiaSourceId
       : undefined;
 
+  const restoredReview = useRef<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const frameId = params.get("reviewFrame");
+    const restoreKey = JSON.stringify([skyView, comparison?.id, frameId, params.get("reviewRa"), params.get("reviewDec")]);
+    if (!comparison || !frameId || restoredReview.current === restoreKey) return;
+    const raText = params.get("reviewRa"), decText = params.get("reviewDec");
+    const ra = Number(raText), dec = Number(decText);
+    const selected = comparison.frames.find(f => f.id === frameId);
+    const point = selected && raText && decText && Number.isFinite(ra) && ra >= 0 && ra < 360 && Number.isFinite(dec) && Math.abs(dec) <= 90 ? cutoutWcs(comparison.grid)?.toImage({ ra, dec }) : null;
+    if (selected && point && point.x >= -0.5 && point.x < comparison.grid.width - 0.5 && point.y >= -0.5 && point.y < comparison.grid.height - 0.5) {
+      playback.select(playback.frames.findIndex(f => f.id === selected.id));
+      setFrameSelection({ comparisonId: comparison.id, survey: skyView, position: { ra, dec }, frame: { frameId: selected.id, observedAtUtc: selected.observedAtUtc, wavelengthUm: selected.wavelengthUm } });
+      setInspectFrame(true); setReviewOpen(true);
+    }
+    restoredReview.current = restoreKey;
+  }, [comparison, skyView]);
+
+  function prepareReviewSignIn() {
+    if (!comparison || !inspectingCutout) return;
+    const url = new URL(comparisonLink(comparison.id));
+    url.searchParams.set("reviewFrame", inspectingCutout.frame.frameId);
+    url.searchParams.set("reviewRa", String(inspectingCutout.position.ra));
+    url.searchParams.set("reviewDec", String(inspectingCutout.position.dec));
+    history.replaceState(history.state, "", url);
+  }
+
   const status =
     preview.kind === "search"
       ? (skyView === "wise" && preview.result.status === "ready"
@@ -462,8 +548,11 @@ export function Viewer({
       preview.result.status === "upstream_unavailable");
 
   function openExample() {
+    setMapNotice("Saved WISE 0855 field: 6 arcmin image footprint; the requested object is not confirmed in these frames.");
     setTimeOpen(true);
     setRequest({ kind: "saved", id: savedExampleId });
+    setComparisonLarge(false);
+    openPanel("comparison");
   }
 
   function comparisonLink(id: string, findingId?: string) {
@@ -474,12 +563,7 @@ export function Viewer({
   }
 
   function showEvidence(finding: SavedFinding) {
-    setRequest({
-      kind: "saved",
-      id: finding.comparisonId,
-      findingId: finding.id,
-    });
-    setTimeOpen(true);
+    openFinding(finding.comparisonId, finding.id, finding.survey ?? "spherex");
   }
 
   async function copyLink(id: string, findingId?: string) {
@@ -494,10 +578,18 @@ export function Viewer({
   }
   const finding = preview.kind === "saved" ? preview.finding : undefined;
 
+  useEffect(() => {
+    const mark = finding?.marks[0];
+    if (mark) {
+      const index = playback.frames.findIndex(f => f.id === mark.frameId);
+      if (index >= 0) playback.select(index);
+    }
+  }, [finding?.id]);
+
   const source =
     synthetic || kind === "synthetic_fixture"
       ? "synthetic"
-      : kind === "saved_real_example"
+      : comparison?.id === savedExampleId || kind === "saved_real_example"
         ? "saved real"
         : "live archive";
   const badgeFor = (state: ComparisonResult["status"]) =>
@@ -534,6 +626,9 @@ export function Viewer({
     <main className="sky-workspace" ref={workspace}>
       <SkyMap
         initialCenter={initialCenter}
+        onViewport={setViewport}
+        communityMarkers={communityMarkers}
+        onFindingMarker={activateFindingMarker}
         focus={focus}
         onCompare={compareViewport}
         onInspect={inspect}
@@ -543,6 +638,7 @@ export function Viewer({
         notice={mapNotice}
         slice={mapSlice}
         survey={skyView}
+        onSurveyChange={switchView}
         tiles={tiles}
         compareLimits={fieldLimits}
         pinnedField={pinnedField}
@@ -551,6 +647,7 @@ export function Viewer({
           comparison && playback.frame
             ? {
                 comparison,
+                survey: skyView,
                 frame: playback.frame,
                 assets: playback.assets,
                 attempt: playback.attempt,
@@ -604,15 +701,6 @@ export function Viewer({
           </svg>
           <span>{survey.name} / Field viewer</span>
         </div>
-        {wiseDataSource && (
-          <div className="view-switch" role="group" aria-label="Sky survey">
-            {(["spherex", "wise"] as const).map((view) => (
-              <button key={view} type="button" aria-pressed={skyView === view} onClick={() => switchView(view)}>
-                {surveys[view].name}
-              </button>
-            ))}
-          </div>
-        )}
         <SearchBox
           fovArcmin={initialField.fovArcmin}
           onSearch={search}
@@ -723,6 +811,9 @@ export function Viewer({
                 {label}
               </button>
             ))}
+            {Review && <button type="button" aria-expanded={reviewOpen} aria-controls="review-panel" onClick={() => { playback.pause(); setReviewOpen(!reviewOpen); }}>Review candidate</button>}
+            {Activity && <button type="button" aria-expanded={communityOpen} aria-controls="community-panel" onClick={() => setCommunityOpen(!communityOpen)}>Community</button>}
+            {Account && <Account mode="button" />}
             <button
               type="button"
               className="tutorial-open"
@@ -744,7 +835,7 @@ export function Viewer({
       {leaderboard && (
         <FloatingPane
           id="leaderboard-panel"
-          title="Rarity leaderboard"
+          title="Participation leaderboard"
           anchor="left"
           open={leaderboardOpen}
           reset={layoutReset}
@@ -753,11 +844,22 @@ export function Viewer({
           <LeaderboardPanel
             dataSource={leaderboard}
             open={leaderboardOpen}
+            refresh={leaderboardRefresh}
+            selectedFindingId={finding?.id}
             onGoTo={goToEntry}
             onShowEvidence={showEntryEvidence}
           />
+          {leaderboardOpen && finding && Discussion && discussionOpen && <Discussion finding={finding} onShowEvidence={showEvidence} onCopyLink={value => void copyLink(value.comparisonId, value.id)} onClose={() => setDiscussionOpen(false)} />}
         </FloatingPane>
       )}
+      {Account && <Account mode="pane" />}
+      {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} /></FloatingPane>}
+      {Review && <FloatingPane id="review-panel" title="Candidate review" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>
+        {reviewOpen && <Review comparison={comparison} frame={playback.frame ?? null} position={inspectingCutout && playback.frame && playback.assets[playback.frame.id]?.state === "ready" ? inspectingCutout.position : null} survey={skyView} synthetic={synthetic} onPrepareSignIn={prepareReviewSignIn} onCreated={(id, comparisonId, view) => {
+          setReviewOpen(false); setLeaderboardRefresh(n => n + 1); setLeaderboardOpen(true);
+          openFinding(comparisonId, id, view);
+        }} />}
+      </FloatingPane>}
       <FloatingPane
         id="gaia-panel"
         title="Source inspector"
@@ -769,8 +871,8 @@ export function Viewer({
           Gaia source inspector{" "}
           <InfoTip term="Gaia catalog">
             Gaia is a European Space Agency mission that precisely measured the positions,
-            distances, and motions of nearly two billion stars. This panel checks whether a known
-            Gaia star sits at the point you clicked.
+            distances, and motions of nearly two billion stars. This panel lists nearby catalog sources. A nearby row is not automatically
+            the object in the image you clicked.
           </InfoTip>
         </p>
         {inspectingCutout && (
@@ -783,6 +885,7 @@ export function Viewer({
             {inspectingCutout.position.dec.toFixed(6)}°
           </p>
         )}
+        {Review && inspectingCutout && <button className="primary" type="button" onClick={() => { playback.pause(); setReviewOpen(true); }}>Review this point</button>}
         <Inspector
           skyPosition={
             inspectFrame
@@ -857,7 +960,7 @@ export function Viewer({
           comparison
             ? synthetic || kind === "synthetic_fixture" || kind === "fixture"
               ? "Synthetic"
-              : kind === "saved_real_example"
+              : comparison?.id === savedExampleId || kind === "saved_real_example"
                 ? "Saved example"
                 : survey.name
             : undefined
@@ -991,10 +1094,12 @@ export function Viewer({
       <FloatingPane
         id="comparison-panel"
         title="Compare details"
+        size={comparisonLarge ? "large" : "wide"}
         open={panels.comparison}
         reset={layoutReset}
         onClose={() => closePanel("comparison")}
       >
+        <button type="button" aria-pressed={comparisonLarge} onClick={() => setComparisonLarge(!comparisonLarge)}>{comparisonLarge ? "Standard image view" : "Enlarge image view"}</button>
         {target && (
           <section className="target-context" aria-label="Target details">
             <strong>{targetLabel}</strong>
@@ -1049,6 +1154,7 @@ export function Viewer({
         {!comparison && <p>Load dated images using the Time window.</p>}
         {comparison && (
           <>
+            {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">WISE 0855 field: 6 arcminutes across at RA 133.795129°, Dec −7.245147° (ICRS; source coordinate epoch unspecified). The outline marks the saved field, not a detected object. This SPHEREx pair does not establish that WISE 0855 appears or moves in these frames.</p>}
             <p>
               {synthetic || kind === "synthetic_fixture"
                 ? "Synthetic comparison"
@@ -1068,9 +1174,10 @@ export function Viewer({
                 inspectCutout(comparison.id, position, frame)
               }
             />
-            {finding && Discussion && (
+            {finding && Discussion && discussionOpen && !leaderboardOpen && (
               <Discussion
                 finding={finding}
+                onClose={() => setDiscussionOpen(false)}
                 onShowEvidence={showEvidence}
                 onCopyLink={(value) =>
                   void copyLink(value.comparisonId, value.id)

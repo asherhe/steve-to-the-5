@@ -1,5 +1,5 @@
 // Engagement layer only. An entry references saved evidence by ID; it is never evidence itself,
-// and a rarity score is a game signal, not a measurement or a discovery claim.
+// and participation points measure review effort, never rarity or a discovery.
 
 export type LeaderboardBoard = "daily" | "allTime";
 
@@ -7,6 +7,8 @@ export type RarityTier = "common" | "uncommon" | "rare" | "very_rare" | "extreme
 
 export interface LeaderboardEntry {
   id: string;
+  survey?: "spherex" | "wise";
+  title?: string;
   /** Null when the entry could not be scored (coverage gap, low quality, missing data). */
   rank: number | null;
   /** Public display name only. Emails and private identity never reach this layer. */

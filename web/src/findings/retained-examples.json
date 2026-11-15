@@ -1,0 +1,58 @@
+[
+  {
+    "id": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416",
+    "fovArcmin": 6.0,
+    "frames": [
+      {
+        "id": "ac876c2d5d9f4bc8a6c88d59c1d802fce6e2ef5b10ff85ffa5cd1e0366c2667c",
+        "observedAtUtc": "2025-05-06T02:36:36.432000Z"
+      },
+      {
+        "id": "e2139338b0f2954a0cfc6f55c92d57f6e97fa2d1fe017abcf9e1e5a32d3666e8",
+        "observedAtUtc": "2026-05-13T16:14:39.062400Z"
+      }
+    ]
+  },
+  {
+    "id": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+    "fovArcmin": 1.0,
+    "frames": [
+      {
+        "id": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
+        "observedAtUtc": "2025-10-30T17:30:35.064000Z"
+      },
+      {
+        "id": "ca200998ccbcf9c5d1b7ae255407b5d5452b34f01e205f89e2b44c0034e71ca2",
+        "observedAtUtc": "2025-11-02T14:03:31.737600Z"
+      }
+    ]
+  },
+  {
+    "id": "516ecdf6be6a3a51c918b4359334ea95692c4d6d61e061ad145fafab0acb7c17",
+    "fovArcmin": 6.0,
+    "frames": [
+      {
+        "id": "b89fd0d16700848a0e5f7d2063e0971b28e3873e51538efb4cc290f79eb8c001",
+        "observedAtUtc": "2025-04-27T20:12:15.796799Z"
+      },
+      {
+        "id": "2256e3759ef772bcc49b21a997e85d0b528286287d0dcadcc47d5b37431210ac",
+        "observedAtUtc": "2026-05-03T17:14:22.286399Z"
+      }
+    ]
+  },
+  {
+    "id": "fe26f522bea40aa3c121e8a5bf03118bceda252ee0226f3e0569166addede3d6",
+    "fovArcmin": 6.0,
+    "frames": [
+      {
+        "id": "1ae1fb9260e8792613bfb2820f67769e77fd39958f583af960976c14eddba2d5",
+        "observedAtUtc": "2025-06-06T11:25:30.374400Z"
+      },
+      {
+        "id": "a7a5d16f27ab1be64cebe8ae0e849d9c6f85e3380873b70995338492eb174822",
+        "observedAtUtc": "2026-07-14T21:41:40.934400Z"
+      }
+    ]
+  }
+]

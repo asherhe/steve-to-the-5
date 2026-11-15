@@ -1,3 +1,38 @@
+# Local demo follow-up — 2026-11-15
+
+See `docs/verification/local-demo-update.md` for the current map controls, larger WISE 0855 field, fast recorded-field replay, and browser-only findings simulation. The archive service must restart to serve additional retained fields. Sign-in is disabled by default; `VITE_LIVE_FINDINGS=1` explicitly activates the real adapter once configured.
+
+---
+
+# Local integration continuation — 2026-11-15
+
+The work below the original backend checkpoint has now been implemented on `master-plan`.
+See `docs/verification/masterplan-completion.md` for actual checks and remaining activation.
+The user explicitly chose **local verification; Supabase is not ready**. No hosted database
+was changed, no real auth session was used, and no commit/push/merge/deployment is authorized
+by this implementation assignment.
+
+The production app now mounts sign-in, candidate review, six-catalog report, composer,
+participation leaderboard, public discussion, and community activity. Survey-aware replay
+preserves WISE identity; auth and draft parameters are stripped from shared links. Original
+reviewed frame marks are retained. The example opens an enlarged view with image controls;
+CSS enlargement and overlays do not change saved scientific evidence.
+
+New code starts in `web/src/viewer/App.tsx` and `web/src/findings/{Account,
+CandidateReviewPane,ReviewReport,CommunityActivity}.tsx`. The existing viewer slots,
+findings API/client, Time controls and main interface remain the integration boundaries.
+Generated contract shapes are consumed without introducing a new wire format.
+`review-effort-v1` weights and science corrections below remain unchanged.
+
+Reproduce locally with `scripts/verify-masterplan.py`. Browser tests explicitly intercept
+services; PGlite tests execute real migration SQL with simulated auth/PostgREST transport.
+See `services/findings/README.md` for later Supabase activation and two-session checks.
+Live Gaia/SIMBAD and a nonempty SkyBoT response were observed. CatWISE and VizieR remain
+unavailable on bounded public probes; their UI states are failures, never false empty results.
+Fresh five-target image detection/change claims remain outside these frontend checks.
+
+---
+
 # Masterplan checkpoint — 2026-11-15
 
 The user asked to stop at a verified checkpoint, commit all work on `master-plan`,
@@ -103,7 +138,7 @@ dwarfs has not been established; do not copy that claim into product text.
 
 No archive selection, image rendering, comparison hashes or stored evidence files changed.
 
-## Remaining work — start here
+## Historical remaining work at the backend checkpoint
 
 1. Wire the main app (`web/src/viewer/main.tsx`, `Viewer.tsx`) to the existing findings
    components. Currently it has **no production sign-in or composer** and still uses

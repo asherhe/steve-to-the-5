@@ -6,6 +6,7 @@ import { clearDraft, loadReplyDraft, saveDraft } from './draft.ts';
 import { formatSky, formatUtc } from './format.ts';
 import { buildReplayUrl } from './links.ts';
 import type { EvidenceRequest, FindingDetail, FindingsSession } from './types.ts';
+import { ReviewReport } from './ReviewReport';
 import { LIMITS, charCount, validateReplyText } from './validation.ts';
 
 export type FindingThreadProps = {
@@ -37,7 +38,7 @@ export function FindingThread(p: FindingThreadProps) {
     setText(loadReplyDraft(p.findingId)?.text ?? '');
     p.client
       .getFinding(p.findingId, ctl.signal)
-      .then((finding) => setLoad({ status: 'ready', finding }))
+      .then((finding) => { if (!ctl.signal.aborted) setLoad({ status: 'ready', finding }); })
       .catch((e) => {
         if (isAbortError(e) || ctl.signal.aborted) return;
         setLoad({ status: 'error', message: messageFor(e, 'Could not load this finding.'), notFound: (e as { status?: number }).status === 404 });
@@ -83,7 +84,7 @@ export function FindingThread(p: FindingThreadProps) {
     );
 
   const f = load.finding;
-  const link = () => buildReplayUrl(p.currentHref ?? globalThis.location?.href ?? 'http://localhost/', { comparisonId: f.comparisonId, findingId: f.id });
+  const link = () => buildReplayUrl(p.currentHref ?? globalThis.location?.href ?? 'http://localhost/', { comparisonId: f.comparisonId, findingId: f.id, survey: f.survey ?? 'spherex' });
   return (
     <section className="findings-thread" aria-label="Finding discussion">
       <button type="button" onClick={p.onClose} aria-label="Close discussion">×</button>
@@ -96,7 +97,7 @@ export function FindingThread(p: FindingThreadProps) {
       <p className="hint">An observation or question from a community member, not a validated discovery.</p>
       <p>{f.marks.length} evidence mark{f.marks.length === 1 ? '' : 's'}</p>
       <div className="actions">
-        <button type="button" onClick={() => p.onShowEvidence({ findingId: f.id, comparisonId: f.comparisonId, position: { ra: f.ra, dec: f.dec }, marks: f.marks })}>
+        <button type="button" onClick={() => p.onShowEvidence({ findingId: f.id, comparisonId: f.comparisonId, position: { ra: f.ra, dec: f.dec }, marks: f.marks, survey: f.survey ?? 'spherex' })}>
           Show evidence
         </button>
         <button type="button" onClick={async () => setCopied((await copyText(link())) ? 'ok' : 'failed')}>
@@ -112,6 +113,7 @@ export function FindingThread(p: FindingThreadProps) {
           <input readOnly value={link()} onFocus={(e) => e.currentTarget.select()} />
         </label>
       ) : null}
+      {f.candidateReview && <ReviewReport review={f.candidateReview} />}
       <h4>Replies ({f.replies.length})</h4>
       {f.replies.length === 0 ? <p>No replies yet.</p> : null}
       <ul>
@@ -125,12 +127,13 @@ export function FindingThread(p: FindingThreadProps) {
       <form onSubmit={submit} noValidate aria-label="Reply to this finding">
         <label>
           Reply
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
+          <textarea value={text} onChange={(e) => { setText(e.target.value); saveDraft({ kind: 'reply', findingId: p.findingId, text: e.target.value }); }} rows={3} />
         </label>
         <small>
           {charCount(text)}/{LIMITS.replyMaxChars}
         </small>
         {error ? <p role="alert">{error}</p> : null}
+        {error?.includes('Sign in again') && <button type="button" onClick={p.onRequestSignIn}>Sign in again</button>}
         <button type="submit" disabled={busy}>
           {busy ? 'Posting…' : p.session ? 'Reply' : 'Sign in to reply'}
         </button>

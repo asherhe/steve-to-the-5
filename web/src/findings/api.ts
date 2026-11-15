@@ -8,6 +8,9 @@ import type {
   FindingReply,
   FindingsViewport,
 } from './types.ts';
+import { parseReview } from './reviewContract';
+import type { CandidateReview, ReviewInput, PublicAuthConfig } from './types';
+import type { LeaderboardResult } from '../leaderboard/types';
 import { clampViewport } from './validation.ts';
 
 export class FindingsApiError extends Error {
@@ -39,6 +42,12 @@ export interface FindingsClient {
   getFinding(id: string, signal?: AbortSignal): Promise<FindingDetail>;
   createFinding(req: CreateFindingRequest): Promise<CreateFindingResponse>;
   createReply(findingId: string, req: CreateReplyRequest): Promise<FindingReply>;
+}
+
+export interface ReviewClient extends FindingsClient {
+  createReview(req: ReviewInput, signal?: AbortSignal): Promise<CandidateReview>;
+  leaderboard(board: 'daily' | 'allTime', signal?: AbortSignal): Promise<LeaderboardResult>;
+  authConfig(signal?: AbortSignal): Promise<PublicAuthConfig>;
 }
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
@@ -93,7 +102,7 @@ function asObject(b: unknown, what: string): Record<string, unknown> {
   return b as Record<string, unknown>;
 }
 
-export function createFindingsClient(opts: FindingsClientOptions = {}): FindingsClient {
+export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewClient {
   const base = (opts.baseUrl ?? '').replace(/\/+$/, '');
   const doFetch: FetchLike = opts.fetch ?? ((url, init) => globalThis.fetch(url, init));
 
@@ -117,6 +126,27 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): Findings
   }
 
   return {
+    async authConfig(signal) {
+      const b = asObject(await request('/api/findings/auth/config', { signal }, false), 'auth configuration');
+      if (typeof b.url !== 'string' || typeof b.publishableKey !== 'string' || !b.publishableKey) throw invalid('auth configuration');
+      const url = new URL(b.url);
+      if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) throw invalid('auth configuration');
+      return b as PublicAuthConfig;
+    },
+    async createReview(req, signal) {
+      const review = parseReview(await request('/api/findings/reviews', { method: 'POST', body: JSON.stringify(req), signal }, true));
+      if (review.comparisonId !== req.comparisonId || review.frameId !== req.frameId || review.survey !== (req.survey ?? 'spherex') || review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== (req.radiusArcsec ?? 120)) throw invalid('review identity');
+      return review;
+    },
+    async leaderboard(board, signal) {
+      const b = asObject(await request(`/api/findings/leaderboard?board=${board}`, { signal }, false), 'leaderboard');
+      if (b.board !== board || b.placeholder !== false || !Array.isArray(b.entries) || b.entries.length > 100) throw invalid('leaderboard');
+      for (const raw of b.entries) {
+        const row = asObject(raw, 'leaderboard entry');
+        if (typeof row.id !== 'string' || typeof row.findingId !== 'string' || typeof row.comparisonId !== 'string' || !['wise', 'spherex'].includes(String(row.survey)) || typeof row.displayName !== 'string' || typeof row.title !== 'string' || typeof row.enteredAtUtc !== 'string' || !Number.isInteger(row.rank) || (row.rank as number) < 1 || !Number.isInteger(row.rarityScore) || (row.rarityScore as number) < 0 || (row.rarityScore as number) > 50 || row.tier !== null || !Array.isArray(row.reasons) || !row.reasons.every(x => typeof x === 'string') || typeof row.ra !== 'number' || !Number.isFinite(row.ra) || row.ra < 0 || row.ra >= 360 || typeof row.dec !== 'number' || !Number.isFinite(row.dec) || Math.abs(row.dec) > 90 || typeof row.fovArcmin !== 'number' || !Number.isFinite(row.fovArcmin) || row.fovArcmin <= 0) throw invalid('leaderboard entry');
+      }
+      return b as unknown as LeaderboardResult;
+    },
     async listFindings(viewport, signal) {
       const body = asObject(await request(`/api/findings?${buildListQuery(viewport)}`, { signal }, false), 'findings list');
       if (!Array.isArray(body.items)) throw invalid('findings list');
@@ -133,8 +163,14 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): Findings
       }
       const body = asObject(raw, 'finding');
       if (typeof body.id !== 'string' || typeof body.comparisonId !== 'string' || typeof body.authorDisplayName !== 'string') throw invalid('finding');
+      if (body.survey !== undefined && body.survey !== 'spherex' && body.survey !== 'wise') throw invalid('finding survey');
+      const survey = body.survey === 'wise' ? 'wise' : 'spherex';
+      const candidateReview = body.candidateReview ? parseReview(body.candidateReview) : null;
+      if (candidateReview && (candidateReview.comparisonId !== body.comparisonId || candidateReview.survey !== survey)) throw invalid('finding review identity');
       return {
         ...(body as unknown as FindingDetail),
+        survey,
+        candidateReview,
         marks: Array.isArray(body.marks) ? (body.marks as FindingDetail['marks']) : [],
         replies: Array.isArray(body.replies) ? (body.replies as FindingDetail['replies']) : [],
       };

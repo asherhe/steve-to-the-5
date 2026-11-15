@@ -1,3 +1,7 @@
+# Current local demo
+
+Open `http://localhost:5173/` after `npm run dev`. The map controls switch SPHEREx, DSS and WISE. **Time → Open saved real example** loads the recorded six-arcminute WISE 0855 field. Candidate review, posts, rankings and replies use a clearly labeled browser-only simulation; no sign-in is needed. Set `VITE_LIVE_FINDINGS=1` only when the real backend is configured. See `docs/verification/local-demo-update.md` for coordinates, limitations and checks.
+
 # SPHEREx viewer
 
 From the repository root, use Node.js 20.19+ or 22.12+ and Python 3.12+ with
@@ -368,3 +372,37 @@ See [five-target naming and integration verification](../../../docs/common-names
 Compact and advanced search share offline names and aliases. Exact names select a target
 identity; coordinate searches and saved replay do not infer one. The shared snapshot
 retains the newer Barnard center and its prediction epoch.
+
+### Candidate review workflow
+
+The production entry mounts `App.tsx`: public findings reads, a real leaderboard client,
+Supabase email link/code sign-in, the six-catalog review pane, composer and discussion.
+Select a point on a saved dated image, choose **Review this point**, sign in and run checks.
+The review is invalidated by a different point/frame/radius/survey/account. Posting locks
+its original frame mark and opens the refreshed participation leaderboard and thread.
+Community findings can be toggled in their own pane; pins open threads and clusters zoom.
+
+`Open saved real example` fits the footprint and opens an enlarged Compare details pane.
+Use its image controls or the Time pane to blink. Enlargement changes only CSS dimensions.
+The example can be a different field and is not a claimed cold-object detection.
+
+The main app still works without findings running. Sign-in, review writes and public boards
+show explicit service errors instead of displaying invented entries. Configure Supabase and
+start `npm run dev:findings` when ready; see the findings README. Share links drop auth/draft
+parameters, preserve WISE identity, and load exact saved evidence. A finding-only link reads
+its recorded survey before selecting an evidence store.
+
+Local checks:
+
+```sh
+npm run build
+npm --prefix web test
+node --test web/src/viewer/*.test.mjs
+npm run preview -- --host 127.0.0.1 --port 5188
+# Separate terminal; install Playwright in a local test directory if not present.
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node web/src/viewer/masterplan.browser.mjs
+```
+
+The browser script intercepts auth/catalog/findings, replays retained real image bytes and
+saves screenshots under `.local-test-temp/masterplan-browser/`. It never writes to a real
+account or service. This proves local UI integration, not hosted Supabase authentication.

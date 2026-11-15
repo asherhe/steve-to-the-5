@@ -82,14 +82,14 @@ Choose coordinates inside a real saved comparison with at least two frames. The 
 
 Then open `?comparison=<saved ID>&finding=<printed ID>` in a second browser session and visually confirm the same images, dates and annotations. Test signed-out rendering and sign-in return. Use the coordinator's SQL hide action; confirm the pin disappears, thread reads return 404 and replies return 404. Repeat on the deployed origin. The HTTP command compares manifest content, not image bytes or visual alignment; archive asset retention/immutability remains Brief 1's responsibility.
 
-## Verification status
+## Historical verification before candidate reviews
 
 Local verification uses synthetic evidence and simulated Supabase Auth/PostgREST HTTP responses. All 21 Python tests passed with PGlite installed, including a cross-layer create/read/reply/replay/hide flow executing the actual migrations and SQL functions. The separate migration check passed access denials, coordinate/text limits, 100-item caps, newest-200 reply ordering, RA wrap, polar/antipodal coverage and moderation. `pip check` passed. The tested Starlette version emits a TestClient/httpx deprecation warning; the HTTP tests still pass.
 
 The database-backed Python test explicitly skips if Node/PGlite is missing; a skipped test is not a full verification pass. PGlite is an isolated PostgreSQL-compatible database with stub Supabase roles, not a hosted Supabase test. Real Supabase sessions, PostgREST, concurrent hide/reply transactions, real archive evidence, browser replay and deployed behavior have not been verified in this checkout. No live environment values are configured. Five-target archive coverage and scientific comparability belong to Brief 1 and the coordinator, not this findings backend.
 
 
-## Masterplan backend checkpoint ? 2026-11-15
+## Masterplan backend checkpoint — 2026-11-15
 
 See `MASTERPLAN-HANDOFF.md` at the repository root. The fourth migration adds immutable
 candidate-review snapshots and participation-point rankings. Apply it after the three
@@ -109,7 +109,41 @@ existing migrations; no hosted migration was executed in this checkpoint.
 
 The catalog service must run with `CATALOGS_LIVE=1`; offline responses cannot earn points.
 Set `SPHEREX_CATALOG_BASE_URL` and `WISE_COMPARISON_BASE_URL` as needed (defaults are
-localhost ports 8010 and 8020). Neither browser integration nor hosted auth is complete.
+localhost ports 8010 and 8020). Browser integration is now complete locally; see the
+activation section below. Hosted auth remains unverified.
 Regenerate the shared schema using `scripts/export-findings-contract.py`, then
 `npm run generate:findings-types`. `scripts/verify-masterplan-checkpoint.py` runs all
 checkpoint checks and fails if the isolated database dependency is absent.
+
+## Production browser integration and activation
+
+The viewer includes the real findings client and participation workflow, enabled only with `VITE_LIVE_FINDINGS=1`. The default app uses a clearly labeled browser-only simulation without sign-in. Supabase is not
+configured in the current local verification environment. Do not substitute fixture results
+for a public leaderboard. The app will report sign-in/findings unavailable until configured.
+
+To activate in your approved local/development Supabase instance:
+
+1. Apply all four ordered `supabase/migrations/*_findings*.sql` migrations.
+2. Export the server variables documented in `.env.example` into the terminal running
+   `npm run dev:findings`. The example file is not loaded automatically. Keep the server key
+   out of Vite environment variables, client bundles, logs and Git.
+3. Enable email sign-in. Allow the local viewer origin and paths (for example
+   `http://localhost:5173/**`) in Supabase Auth's redirect allowlist. The app uses PKCE email
+   links; open the link in the same browser. If your email template includes a token, the
+   **Email code** form verifies it in place. No passwords or privileged keys enter the UI.
+4. Run `VITE_LIVE_FINDINGS=1 npm run dev` and `npm run dev:findings` in configured terminals. Confirm all six
+   checks run live; a failed/partial check stays explicit and earns no catalog points.
+5. Use two real sessions: review → post → rank → anonymous exact replay → sign in as the
+   second user → reply. Verify signed-out write denial and moderation. Run
+   `services/findings/verify_live.py --help` for the existing live checker without printing
+   or pasting tokens.
+
+Text drafts live in sessionStorage, expire after 24 hours and stay in the originating tab.
+The sign-in return URL restores the exact comparison/survey/frame/point, validated against
+its saved WCS. It never includes a client score. User-facing links strip auth and review
+return parameters. Email is not a public author display name.
+
+`test_review_database_flow.py` runs the real router and migration SQL through PGlite and
+simulated auth/PostgREST/catalog transport. It verifies review ownership, score computation,
+WISE identity, original marks, anonymous reads, two authors, duplicates and moderation.
+This complements browser contract tests and is not hosted Auth/PostgREST verification.

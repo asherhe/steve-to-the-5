@@ -94,6 +94,7 @@ describe('thread', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show evidence' }));
     expect(spies.evidence).toHaveBeenCalledWith({
       findingId: 'fnd_fixture_001',
+      survey: 'spherex',
       comparisonId: 'cmp_fixture_barnard',
       position: { ra: 269.4521, dec: 4.6934 },
       marks: [

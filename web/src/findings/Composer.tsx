@@ -18,6 +18,10 @@ export type ComposerProps = {
   /** Shell starts sign-in; drafts are already saved when this fires. */
   onRequestSignIn(): void;
   onCreated(findingId: string): void;
+  survey?: 'spherex' | 'wise';
+  reviewId?: string;
+  /** A ranked finding must retain its exact reviewed point and original frame. */
+  requiredMark?: EvidenceMark;
 };
 
 export function Composer(p: ComposerProps) {
@@ -36,19 +40,19 @@ export function Composer(p: ComposerProps) {
     if (d) {
       setTitle(d.title);
       setNote(d.note);
-      if (d.marks.length && !p.marks.length) p.onMarksChange(d.marks);
+      if (!p.requiredMark && d.marks.length && !p.marks.length) p.onMarksChange(d.marks);
     }
   }, [p.comparisonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const errors = validateFindingDraft({ comparisonId: p.comparisonId, selection: p.selection, title, note, marks: p.marks, frameIds: p.frameIds });
 
-  function persist() {
+  function persist(next: { title?: string; note?: string } = {}) {
     if (!p.comparisonId) return;
-    saveDraft({ kind: 'finding', comparisonId: p.comparisonId, title, note, selection: p.selection, marks: p.marks });
+    saveDraft({ kind: 'finding', comparisonId: p.comparisonId, title: next.title ?? title, note: next.note ?? note, selection: p.selection, marks: p.marks });
   }
 
   function addMark() {
-    if (!p.selection || !p.activeFrameId) return;
+    if (!p.selection || !p.activeFrameId || p.requiredMark?.frameId === p.activeFrameId) return;
     p.onMarksChange([...p.marks.filter((m) => m.frameId !== p.activeFrameId), { frameId: p.activeFrameId, ra: p.selection.ra, dec: p.selection.dec }]);
   }
 
@@ -58,6 +62,7 @@ export function Composer(p: ComposerProps) {
     setShowErrors(true);
     setError(null);
     if (hasErrors(errors)) return;
+    if (p.requiredMark && !p.marks.some(m => m.frameId === p.requiredMark!.frameId && m.ra === p.requiredMark!.ra && m.dec === p.requiredMark!.dec)) { setError('Keep the reviewed position on its original frame.'); return; }
     if (!p.session) {
       persist();
       return p.onRequestSignIn();
@@ -66,6 +71,8 @@ export function Composer(p: ComposerProps) {
     try {
       const { id } = await p.client.createFinding({
         comparisonId: p.comparisonId!,
+        survey: p.survey ?? 'spherex',
+        ...(p.reviewId ? { reviewId: p.reviewId } : {}),
         ra: p.selection!.ra,
         dec: p.selection!.dec,
         title: title.trim(),
@@ -95,19 +102,19 @@ export function Composer(p: ComposerProps) {
       {fe.position || fe.comparison ? <p role="alert">{fe.position ?? fe.comparison}</p> : null}
       <label>
         Title
-        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={LIMITS.titleMaxChars * 2} aria-invalid={!!fe.title} />
+        <input value={title} onChange={(e) => { setTitle(e.target.value); persist({ title: e.target.value }); }} maxLength={LIMITS.titleMaxChars * 2} aria-invalid={!!fe.title} />
       </label>
       {fe.title ? <p role="alert">{fe.title}</p> : null}
       <label>
         Note
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} aria-invalid={!!fe.note} />
+        <textarea value={note} onChange={(e) => { setNote(e.target.value); persist({ note: e.target.value }); }} rows={4} aria-invalid={!!fe.note} />
       </label>
       <small>
         {charCount(note)}/{LIMITS.noteMaxChars}
       </small>
       {fe.note ? <p role="alert">{fe.note}</p> : null}
       <div className="marks">
-        <button type="button" onClick={addMark} disabled={!p.selection || !p.activeFrameId}>
+        <button type="button" onClick={addMark} disabled={!p.selection || !p.activeFrameId || p.requiredMark?.frameId === p.activeFrameId}>
           Mark this position on the current frame
         </button>
         {p.marks.length ? (
@@ -115,7 +122,7 @@ export function Composer(p: ComposerProps) {
             {p.marks.map((m) => (
               <li key={m.frameId}>
                 {m.frameId}{' '}
-                <button type="button" onClick={() => p.onMarksChange(p.marks.filter((x) => x.frameId !== m.frameId))} aria-label={`Remove mark on ${m.frameId}`}>
+                <button type="button" disabled={p.requiredMark?.frameId === m.frameId} onClick={() => p.onMarksChange(p.marks.filter((x) => x.frameId !== m.frameId))} aria-label={`Remove mark on ${m.frameId}`}>
                   Remove
                 </button>
               </li>
@@ -124,7 +131,9 @@ export function Composer(p: ComposerProps) {
         ) : null}
         {fe.marks ? <p role="alert">{fe.marks}</p> : null}
       </div>
+      {p.requiredMark && <p className="hint">The original reviewed frame mark is locked to this submission.</p>}
       {error ? <p role="alert">{error}</p> : null}
+      {error?.includes('Sign in again') && <button type="button" onClick={() => { persist(); p.onRequestSignIn(); }}>Sign in again</button>}
       <button type="submit" disabled={busy}>
         {busy ? 'Posting…' : p.session ? 'Post finding' : 'Sign in to post'}
       </button>

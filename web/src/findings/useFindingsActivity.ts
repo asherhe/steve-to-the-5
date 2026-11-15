@@ -24,6 +24,7 @@ export function useFindingsActivity(client: FindingsClient, enabled: boolean, vi
       client
         .listFindings({ ra, dec, radiusDeg, zoom }, ctl.signal)
         .then((r) => {
+          if (ctl.signal.aborted) return;
           const { markers, dropped } = toMarkers(r.items);
           setState({ status: 'ready', markers, dropped, error: null });
         })

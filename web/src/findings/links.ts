@@ -8,11 +8,13 @@ function clean(v: string | null | undefined): string | null {
 
 /**
  * Build a shareable link from the current page URL that carries only the
- * replay IDs. Other query parameters (e.g. auth return codes) are dropped.
+ * replay IDs and survey. Other query parameters (e.g. auth return codes) are dropped.
  */
-export function buildReplayUrl(currentHref: string, ids: { comparisonId?: string | null; findingId?: string | null }): string {
+export function buildReplayUrl(currentHref: string, ids: { comparisonId?: string | null; findingId?: string | null; survey?: 'spherex' | 'wise' }): string {
   const src = new URL(currentHref);
   const url = new URL(src.origin + src.pathname);
+  const survey = ids.survey ?? (src.searchParams.get('view') === 'wise' ? 'wise' : 'spherex');
+  if (survey === 'wise') url.searchParams.set('view', 'wise');
   const c = clean(ids.comparisonId);
   const f = clean(ids.findingId);
   if (c) url.searchParams.set(REPLAY_PARAMS.comparison, c);

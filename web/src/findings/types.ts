@@ -1,6 +1,13 @@
-// Contract types for the findings UI. Shapes match the Brief 4 backend
-// (services/findings/models.py and fixtures/responses.json). Replace with
-// re-exports of the coordinator's generated OpenAPI types once they exist.
+import type { components } from './findings.generated';
+import type { components as CatalogComponents } from '../inspector/catalog.generated';
+
+type Schema = components['schemas'];
+export type Survey = 'spherex' | 'wise';
+export type ReviewInput = Schema['ReviewInput'];
+export type CatalogReview = CatalogComponents['schemas']['CatalogReview'];
+export type CatalogCheck = CatalogComponents['schemas']['CatalogCheck'];
+export type CandidateReview = Omit<Schema['ReviewResponse'], 'catalogReview'> & { catalogReview: CatalogReview };
+export type PublicAuthConfig = Schema['PublicAuthConfig'];
 
 /** ICRS decimal degrees. */
 export type SkyPosition = { ra: number; dec: number };
@@ -19,27 +26,12 @@ export type FindingsViewport = { ra: number; dec: number; radiusDeg: number; zoo
 export type EvidenceMark = { frameId: string; ra: number; dec: number };
 
 export type FindingReply = { id: string; text: string; authorDisplayName: string; createdAtUtc: string };
-export type FindingDetail = {
-  id: string;
-  comparisonId: string;
-  ra: number;
-  dec: number;
-  title: string;
-  note: string;
-  marks: EvidenceMark[];
-  authorDisplayName: string;
-  createdAtUtc: string;
-  replies: FindingReply[];
+// Optional defaulted fields keep historical, unreviewed findings readable.
+export type FindingDetail = Omit<Schema['Finding'], 'survey' | 'candidateReview'> & {
+  survey?: Survey;
+  candidateReview?: CandidateReview | null;
 };
-
-export type CreateFindingRequest = {
-  comparisonId: string;
-  ra: number;
-  dec: number;
-  title: string;
-  note: string;
-  marks?: EvidenceMark[];
-};
+export type CreateFindingRequest = Omit<Schema['FindingInput'], 'survey' | 'marks'> & { survey?: Survey; marks?: EvidenceMark[] };
 export type CreateFindingResponse = { id: string };
 export type CreateReplyRequest = { text: string };
 
@@ -52,4 +44,5 @@ export type EvidenceRequest = {
   comparisonId: string;
   position: SkyPosition;
   marks: EvidenceMark[];
+  survey?: Survey;
 };

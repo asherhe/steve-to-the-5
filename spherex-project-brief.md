@@ -1,7 +1,7 @@
 # Planet X and SPHEREx — shared project brief
 
 This brief summarizes the SPHEREx viewer as it stands in this repository. It reflects the
-current design across every component with equal weight: the three Python services
+current design across every component with equal weight: the Python services (including WISE)
 (archive, catalogs, findings), the Supabase schema, and the four web modules (viewer,
 inspector, findings UI, leaderboard). The `docs/` folder holds the pitch, the challenge
 compliance assessment, and the exploratory engagement/game direction; read it alongside
@@ -9,16 +9,17 @@ this brief. Where this brief and the implementation disagree, the implementation
 per-owner READMEs are authoritative; surface material conflicts to the coordinator rather
 than silently changing a contract.
 
-## Masterplan checkpoint (2026-11-15)
+## Masterplan integration (2026-11-15)
 
-The current user has authorized the cold-object review/engagement workflow and explicitly
-included all six catalog review aids. This supersedes the deferral of that workflow only.
-The backend checkpoint provides persisted catalog-review snapshots and participation-point
-leaderboard routes; the production frontend is still the earlier placeholder and has not
-been integrated. Read `MASTERPLAN-HANDOFF.md` for the exact implemented scope, scientific
-corrections, setup, verification, and remaining work. No discovery, composition, physical
-temperature or catalog-exhaustiveness inference is authorized by these scores. WISE playback
-already exists and is preserved. Hosted migration, auth and deployment remain unverified.
+The cold-object review workflow includes all six catalog review aids, authenticated review
+and finding creation, public participation ranking, discussion, and survey-aware replay.
+The production frontend consumes these routes; synthetic data remains confined to development
+and verification. The latest main interface, Gaia/SIMBAD failover and saved-image invariants
+are preserved. Read `MASTERPLAN-HANDOFF.md` and `docs/verification/masterplan-completion.md`
+for local checks and remaining activation requirements. Supabase is not ready; the user chose
+local verification only. No hosted migration, real auth, deployment or publication is claimed.
+No discovery, composition, physical temperature or catalog-exhaustiveness inference follows
+from the participation score. WISE playback already exists and is preserved.
 
 ## What we are building
 
@@ -147,7 +148,7 @@ A FastAPI router mounted in the shared app, backed by Supabase (Postgres + Auth)
   back to "Sky observer") and evidence; emails stay private. Writes derive identity from the
   Supabase session; the server key stays server-side; the two tables and SQL functions deny
   direct browser access, including authenticated clients.
-- Schema: three ordered migrations under `supabase/migrations/` create the findings/reply
+- Schema: four ordered migrations under `supabase/migrations/` create the findings/reply
   tables and viewport SQL functions, with fixes for antipodal full-sky roundoff and cluster
   right-ascension wrapping around 0°. Moderation is a coordinator SQL `hidden_at` action.
 
@@ -162,15 +163,17 @@ inside the viewer's inspector/discussion slots.
 - "Show evidence" restores the exact frames and annotations; "Copy link" includes both the
   comparison and finding IDs. Titles, notes, names and replies render as plain text.
 
-### 6. Rarity leaderboard (engagement placeholder) — `web/src/leaderboard/**`
+### 6. Candidate review and participation leaderboard — `web/src/findings/**`, `web/src/leaderboard/**`
 
-An engagement-layer panel, currently placeholder data because no scoring system exists. An
-entry references immutable saved evidence by ID and is never evidence itself; a rarity score
-and tier are game signals, not measurements or discoveries. Boards are "Today" and
-"All time"; entries carry a rank, display name, score, tier, explainable reasons, a sky
-position and an optional comparison/finding reference, and the panel labels placeholder data
-plainly and frames entries as candidates worth a closer look. See
-`docs/engagement-social-integration.md` for the fuller, deferred game direction.
+The floating review pane accepts a point on a real saved dated image, asks for sign-in,
+and runs six server-side review aids. It displays bounded original records, metadata,
+provenance and explicit empty/partial/outage states. The composer retains the exact original
+frame mark. Posting refreshes the daily UTC/all-time board and opens the public discussion.
+The score is `review-effort-v1`, 0–50 participation points, with a displayed breakdown.
+The legacy wire field is `rarityScore`, with `tier:null`; it never represents scientific rarity.
+The production app no longer mounts invented leaderboard rows. Account controls use only the
+Supabase publishable configuration; FastAPI verifies sessions and owns all database writes.
+
 
 ## Shared conventions
 
@@ -187,11 +190,11 @@ findings pin and a selected image position share the same sky coordinates.
   SPHEREx images, one shared brightness scale, timestamps and wavelength labels, one matched
   monochrome range per comparison, with coverage and quality issues surfaced where they
   affect interpretation.
-- **Team MVP (built or placeholder).** Gaia inspector, findings backend and UI with
+- **Team MVP (implemented; live auth activation pending).** Gaia inspector, findings backend and UI with
   reproducible comparison links, an optional map activity layer, and the engagement
-  leaderboard as a labeled placeholder. No separate feed or invitation inbox.
+  review-effort leaderboard and per-entry discussion. No separate feed or invitation inbox.
 - **Deferred.** Verified false-colour presets, a spectrum panel, difference images, WISE
-  historical imagery, a curated NEOSSat example, and the scored rarity game. A validated
+  advanced historical analyses, a curated NEOSSat example, and any scientifically calibrated rarity system. WISE time-lapse and the participation review workflow are implemented. A validated
   molecular detection product would be required for any chemical map; physical temperature
   requires further inference. The spectral ruler already lets users explore the infrared
   reference layer across wavelengths as a teaching aid, but it is a reference display, not a
@@ -204,16 +207,14 @@ findings pin and a selected image position share the same sky coordinates.
   series is short (a few epochs per target, growing with each release), so motion/variability
   claims are deliberately avoided.
 
-## Engagement and education (exploratory, deferred)
+## Engagement and education
 
-The viewer intentionally includes light engagement and learning hooks today — the first-run
-tutorial, the inline term explainers, the spectral-ruler exploration, and the leaderboard
-placeholder — framed as teaching cues, never as scientific claims. The fuller game concept
-(rarity scoring, daily challenges, a permanent candidate leaderboard with per-entry
-discussion) is captured in `docs/engagement-social-integration.md` and
-`docs/challenge-compliance-assessment.md`. It remains exploratory: "rare" or "interesting"
-are engagement signals, labels seen by the public must not imply a discovery, and any new
-persisted field, route or schema is a coordinator-owned change.
+The implemented workflow focuses on nearby cold substellar-object candidates, with known
+stars as controls. Long-wavelength exploration is a teaching hint, not a detection criterion.
+Review points reward documented effort regardless of match count. The six cone searches do
+not identify a selected pixel automatically or prove novelty; catalog epochs, sensitivity and
+motion remain limitations. No chemical scores or catalog-miss multipliers are implemented.
+See `docs/engagement-social-integration.md` for the current workflow and deferred extensions.
 
 ## Architecture and integration
 

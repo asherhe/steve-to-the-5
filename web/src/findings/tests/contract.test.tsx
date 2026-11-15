@@ -41,6 +41,6 @@ describe('backend fixture contract', () => {
     expect(screen.getByText('Observer Two')).toBeTruthy();
     expect(screen.getByText('I see the shift too.')).toBeTruthy();
     screen.getByRole('button', { name: 'Show evidence' }).click();
-    expect(evidence).toHaveBeenCalledWith({ findingId: backend.thread.id, comparisonId: 'fixture-comparison', position: { ra: 359.8, dec: -0.25 }, marks: backend.thread.marks });
+    expect(evidence).toHaveBeenCalledWith({ findingId: backend.thread.id, comparisonId: 'fixture-comparison', position: { ra: 359.8, dec: -0.25 }, marks: backend.thread.marks, survey: 'spherex' });
   });
 });

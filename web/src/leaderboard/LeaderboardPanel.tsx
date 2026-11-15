@@ -1,14 +1,6 @@
 import { useEffect, useState } from "react";
-import type { LeaderboardBoard, LeaderboardDataSource, LeaderboardEntry, LeaderboardResult, RarityTier } from "./types";
+import type { LeaderboardBoard, LeaderboardDataSource, LeaderboardEntry, LeaderboardResult } from "./types";
 import "./leaderboard.css";
-
-const tierLabels: Record<RarityTier, string> = {
-  common: "Common",
-  uncommon: "Uncommon",
-  rare: "Rare",
-  very_rare: "Very rare",
-  extremely_rare: "Extremely rare",
-};
 
 const boardLabels: Record<LeaderboardBoard, string> = { daily: "Today", allTime: "All time" };
 
@@ -18,6 +10,8 @@ export interface LeaderboardPanelProps {
   open: boolean;
   onGoTo: (entry: LeaderboardEntry) => void;
   onShowEvidence: (entry: LeaderboardEntry) => void;
+  refresh?: number;
+  selectedFindingId?: string | null;
 }
 
 type State =
@@ -25,7 +19,7 @@ type State =
   | { kind: "error" }
   | { kind: "ready"; result: LeaderboardResult };
 
-export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence }: LeaderboardPanelProps) {
+export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence, refresh = 0, selectedFindingId }: LeaderboardPanelProps) {
   const [board, setBoard] = useState<LeaderboardBoard>("daily");
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -40,7 +34,9 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence }: L
       () => { if (!controller.signal.aborted) setState({ kind: "error" }); },
     );
     return () => controller.abort();
-  }, [dataSource, board, open, attempt]);
+  }, [dataSource, board, open, attempt, refresh]);
+
+  useEffect(() => { if (selectedFindingId) setSelectedId(selectedFindingId); }, [selectedFindingId]);
 
   return (
     <div className="leaderboard">
@@ -53,10 +49,10 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence }: L
       </div>
 
       {state.kind === "ready" && state.result.placeholder && (
-        <p className="leaderboard-notice">Placeholder data. Scoring isn’t built yet, so names, scores and tiers are invented.</p>
+        <p className="leaderboard-notice">Development fixture data. These entries are invented and do not appear on the public board.</p>
       )}
       <p className="leaderboard-caption">
-        Ranked by a game rarity signal. Entries are candidates worth a closer look, not discoveries.
+        Ranked by documented review effort, not rarity or discovery. Today uses UTC. Each entry links to saved images and a public discussion.
       </p>
 
       {state.kind === "loading" && <p role="status">Loading leaderboard…</p>}
@@ -79,10 +75,10 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence }: L
                 <span className="leaderboard-body">
                   <span className="leaderboard-line">
                     <span className="leaderboard-name">{entry.displayName}</span>
-                    <span className="leaderboard-score">{entry.rarityScore ?? "—"}</span>
+                    <span className="leaderboard-score">{entry.rarityScore === null ? "Unscored" : `${entry.rarityScore} points`}</span>
                   </span>
                   <span className="leaderboard-line leaderboard-meta">
-                    <span className="leaderboard-tier">{entry.tier ? `${tierLabels[entry.tier]} candidate` : "Not enough data to score"}</span>
+                    <span className="leaderboard-tier">{entry.title ?? "Candidate review"}</span>
                     <span className="leaderboard-coords">{entry.ra.toFixed(2)}°, {entry.dec >= 0 ? "+" : ""}{entry.dec.toFixed(2)}°</span>
                   </span>
                   {entry.reasons.length > 0 && (
@@ -96,7 +92,7 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence }: L
                 <button type="button" className="leaderboard-evidence" onClick={() => {
                   setSelectedId(entry.id);
                   onShowEvidence(entry);
-                }}>Show evidence</button>
+                }}>Evidence & discussion</button>
               )}
             </li>
           ))}

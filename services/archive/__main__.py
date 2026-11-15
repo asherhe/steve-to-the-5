@@ -150,10 +150,10 @@ def main():
     config = ProcessingConfig(maxCandidates=args.max_candidates, maxFrames=args.max_frames,
                               timeoutSeconds=args.timeout, attempts=args.attempts,
                               buildDeadlineSeconds=args.deadline)
-    examples = (
-        Path(__file__).resolve().parents[2] / "fixtures" / "archive" / "real" / "evidence"
-        if args.command in {"serve", "replay"} else None
-    )
+    fixtures = Path(__file__).resolve().parents[2] / "fixtures" / "archive"
+    examples = ([fixtures / name / "evidence" for name in
+                 ("real", "real-wise0855", "real-epsindib", "real-rdraconis")]
+                if args.command in {"serve", "replay"} else None)
     store = LocalStore(args.storage / "evidence", examples=examples)
     if args.synthetic and args.recorded:
         parser.error("Choose either synthetic or recorded inputs")

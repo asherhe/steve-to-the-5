@@ -17,14 +17,16 @@
     "generate:catalog-types": "openapi-typescript fixtures/catalogs/openapi.json -o web/src/inspector/catalog.generated.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "aladin-lite": "3.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "concurrently": "9.2.1",
+    "concurrently": "9.2.5",
     "openapi-typescript": "7.10.1",
     "typescript": "~5.9.3",
     "vite": "^7.0.0"

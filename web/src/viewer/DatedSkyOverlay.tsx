@@ -6,6 +6,7 @@ import { cutoutWcs } from "./cutoutWcs";
 
 type AladinModule = typeof import("aladin-lite").default;
 export interface DatedLayer {
+  survey?: "spherex" | "wise";
   comparison: Comparison; frame: ComparisonFrame; assets: Record<string, Asset>; attempt: number;
   selected: SkyPosition | null;
   marks: readonly (SkyPosition & { frameId: string })[];
@@ -32,7 +33,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
       if(dated.assets[frame.id]?.state!=="ready" || entries.has(frame.id))continue;
       const id=`dated-${dated.comparison.id}-${frame.id}-${dated.attempt}`;
       const image=aladin.image(frame.imageUrl,{
-        name:`Dated SPHEREx ${frame.observedAtUtc}`,imgFormat:"png",opacity:0,
+        name:`Dated ${dated.survey === "wise" ? "WISE" : "SPHEREx"} ${frame.observedAtUtc}`,imgFormat:"png",opacity:0,
         wcs:{...dated.comparison.grid.fitsHeader,NAXIS:2,NAXIS1:dated.comparison.grid.width,NAXIS2:dated.comparison.grid.height},
         successCallback:(_ra,_dec,_fov,added)=>{
           if(!entries.has(frame.id)){sky.removeImageLayer(id);return;}
@@ -94,7 +95,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
   return <>
     <canvas ref={canvas} className="dated-footprint"
       aria-label={predictedMark ? "Dated-image footprint, frame marks and predicted Gaia position" : "Dated-image footprint and frame marks"} />
-    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated SPHEREx · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
+    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated {dated.survey === "wise" ? "WISE" : "SPHEREx"} · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
     {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Compare details to inspect the saved image.</p>}
     {wcs && !ready[dated.frame.id] && dated.assets[dated.frame.id]?.state==="ready" && <p className="dated-overlay-status" role="status">Placing dated image on the sky…</p>}
   </>;

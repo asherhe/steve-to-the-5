@@ -3,6 +3,7 @@ import type { Comparison, SkyPosition } from "./comparison";
 /** Viewer slot boundary; the findings owner supplies the production component. */
 export interface SavedFinding {
   id: string;
+  survey?: "spherex" | "wise";
   comparisonId: string;
   title: string;
   note: string;
@@ -12,12 +13,19 @@ export interface EvidenceDiscussionProps {
   finding: SavedFinding;
   onShowEvidence: (finding: SavedFinding) => void;
   onCopyLink: (finding: SavedFinding) => void;
+  onClose?: () => void;
 }
 
 export class EvidenceReplayError extends Error {}
 
 export function evidenceLink(href: string, comparisonId: string, findingId?: string): string {
-  const url = new URL(href);
+  const current = new URL(href);
+  const url = new URL(current.origin + current.pathname);
+  // Keep only viewing context, never authentication codes/tokens or review drafts.
+  for (const key of ["view", "fixtures"]) {
+    const value = current.searchParams.get(key);
+    if (value) url.searchParams.set(key, value);
+  }
   url.searchParams.set("comparison", comparisonId);
   url.searchParams.delete("finding");
   if (findingId) url.searchParams.set("finding", findingId);

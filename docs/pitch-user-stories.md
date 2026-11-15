@@ -20,7 +20,7 @@ and checking observation conditions.
 
 Lead with story 1 (the core demo path, which is also the challenge's acceptance test). Use
 stories 2–5 to show depth: trust, collaboration, honesty about gaps, and the known-catalog
-inspector. Keep story 6 explicitly as "where this could go," not as a shipped feature.
+inspector. Story 6 describes the implemented review workflow. Demonstrate its simulated local checks honestly until real Supabase is configured.
 
 ---
 
@@ -120,7 +120,7 @@ status and the separately labeled saved example.
 
 **Wants:** Context, not guesswork.
 
-**Story:** Lena clicks a position and the inspector shows the nearby Gaia DR3 source: its
+**Story:** Lena clicks a position and the inspector offers nearby Gaia DR3 records without assuming they identify the image source: its
 position, reference epoch, proper motion, parallax, and photometry, each with units, and null
 where a measurement is unavailable. Because Gaia is referenced to 2016.0, if she projects the
 catalog position onto the SPHEREx observation date the marker is clearly labeled a prediction,
@@ -136,31 +136,30 @@ prediction marker.
 
 ---
 
-## 6. Where this could go: learning by exploring (exploratory, deferred)
+## 6. A newcomer reviews a cold-object candidate and invites discussion
 
-**Who:** A newcomer or a classroom, not a researcher making claims.
+**Who:** A newcomer or a classroom exploring possible nearby brown dwarfs.
 
-**Wants:** A reason to keep clicking and a way to learn how the infrared sky behaves.
+**Wants:** A guided way to ask a reproducible question and understand catalog limitations.
 
-**Story (aspirational):** A visitor switches freely between the dated spectral view and a
-time-lapse view of the same target, slides across infrared wavelengths and watches features
-brighten and dim, and follows hints that make one object after another worth exploring. With
-no artificial cooldown, they learn by trial and error how a patch of sky looks at different
-wavelengths.
+**Story:** The visitor explores long-wavelength reference imagery, loads dated images,
+blinks them, and compares WISE and optional DSS context. They select a point inside a
+saved image, sign in and run all six review aids. Each result shows its scope, source,
+records and limitations; unavailable catalogs stay unavailable. The visitor writes a
+question and posts with a mark on the original frame. The participation leaderboard opens
+its entry and discussion. An anonymous classmate replays the exact evidence, then signs in
+to reply.
 
-**Why it matters to the audience, and the caveat:** This frames the long-term vision as
-engagement and education, a way to build intuition, not a scientific result. Present it as a
-deferred, exploratory direction only. Per the brief, "rare" or "interesting" are teaching
-cues, never discovery claims, and the motion view stays deliberately minimal because the real
-time series is short (roughly two to three dated points per target). Do not promise this as
-shipped, and do not name it as a product.
+**Why it matters:** Participation points reward documented effort, regardless of catalog
+matches. They establish neither rarity nor discovery, chemical composition, temperature,
+distance or even visible target detection. Nearby rows can belong to unrelated objects.
 
-**Pitch beat:** One sentence of vision at the end: "and because it runs on real labeled data,
-the same viewer becomes a teaching tool." Then stop.
+**Demo beat:** Show the real image separately from the catalog snapshot, explain one failed
+or partial check, post a question, then open its WISE/SPHEREx-aware link in a fresh session.
+The current browser verification uses simulated services; real Supabase sign-in and posting
+remain an activation check, not a claimed deployed result.
 
-For a fuller exploration of how this engagement layer could integrate with the social
-findings platform (quests, verification credit, collections) and the user stories that go
-with it, see `docs/engagement-social-integration.md`. It is exploratory and deferred.
+See `docs/engagement-social-integration.md` for the implemented policy and boundaries.
 
 ---
 

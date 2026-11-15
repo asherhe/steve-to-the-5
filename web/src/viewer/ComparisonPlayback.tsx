@@ -52,6 +52,11 @@ export function ComparisonPlayback({
 
   return (
     <section aria-label="Comparison playback" className="playback">
+      {frames.length > 1 && <div className="controls comparison-quick-controls" aria-label="Image playback controls">
+        <button type="button" disabled={index === 0} onClick={() => playback.select(index - 1)}>Previous image</button>
+        <button type="button" disabled={!playback.canBlink && playback.mode !== "blink"} onClick={playback.blink}>{playback.mode === "blink" ? "Pause image blink" : "Blink image dates"}</button>
+        <button type="button" disabled={index === frames.length - 1} onClick={() => playback.select(index + 1)}>Next image</button>
+      </div>}
       <figure className="comparison-frame">
         <div className="cutout" style={{ aspectRatio: `${comparison.grid.width} / ${comparison.grid.height}` }}>
           {failed ? (
@@ -141,7 +146,7 @@ export function ComparisonPlayback({
           )}
         </dl>
       )}
-      {wcs ? <p className="hint">Click the image to inspect a sky position with Gaia.</p> :
+      {wcs ? <p className="hint">Click the image to inspect its sky position with Gaia or review it for discussion.</p> :
         <p className="hint">Point inspection is unavailable for this image grid.</p>}
       {Object.keys(frame.qualityFlags).length > 0 && (
         <details>

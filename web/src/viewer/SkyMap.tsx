@@ -15,6 +15,9 @@ import { findWiseSurvey, wiseMap, type SkyView } from "./wiseSurvey";
 import type { FieldLimits } from "./FieldSearch";
 import { compareReachDeg, fieldWidthFromView } from "./compareField";
 
+import type { FindingMarker } from "../findings/adapter";
+import type { FindingsViewport } from "../findings/types";
+
 type AladinModule = typeof import("aladin-lite").default;
 /** Map imagery. WISE is a false-colour reference layer, like DSS. */
 type Imagery = "spherex" | "dss" | "wise";
@@ -62,9 +65,14 @@ export function SkyMap({
   survey = "spherex",
   compareLimits,
   tiles,
+  onSurveyChange,
   pinnedField = null,
-  onStateChange, dock,
+  onStateChange, dock, onViewport, communityMarkers = [], onFindingMarker,
 }: {
+  onSurveyChange?: (survey: SkyView) => void;
+  onViewport?: (viewport: FindingsViewport) => void;
+  communityMarkers?: FindingMarker[];
+  onFindingMarker?: (marker: FindingMarker) => void;
   initialCenter: SkyPosition;
   focus: Field | null;
   onCompare: (field: Field) => void;
@@ -116,6 +124,13 @@ export function SkyMap({
   const [readout, setReadout] = useState<{ ra: number; dec: number; width: number; height: number } | null>(null);
   // Width of the map view in degrees, kept current so the compare control can react to zoom.
   const [viewWidthDeg, setViewWidthDeg] = useState<number | null>(null);
+
+  const viewportCallback = useRef(onViewport);
+  viewportCallback.current = onViewport;
+  useEffect(() => {
+    if (!readout) return;
+    viewportCallback.current?.({ ra: readout.ra, dec: readout.dec, radiusDeg: Math.min(180, Math.max(0.001, Math.hypot(readout.width, readout.height) / 2)), zoom: Math.max(0, Math.min(30, Math.round(Math.log2(360 / readout.width)))) });
+  }, [readout]);
 
   function syncReadout() {
     const sky = view.current;
@@ -268,7 +283,8 @@ export function SkyMap({
       spherexDetail.current = null;
       spherexOverview.current = null;
       sky.removeImageLayer(spherexDetailLayerId);
-      const tryMirror = (index: number) => sky.setOverlayImageLayer(Aladin.HiPS(dssSurveyUrls[index], {
+      const tryMirror = (index: number) => {
+        const layer = Aladin.HiPS(dssSurveyUrls[index], {
         name: "DSS2 colour (optical reference)",
         successCallback: () => {
           if (!current()) return;
@@ -280,7 +296,13 @@ export function SkyMap({
           if (current() && index + 1 < dssSurveyUrls.length) tryMirror(index + 1);
           else failed(error);
         },
-      }), referenceLayerId);
+      });
+        void layer.query.then(() => { if (current()) sky.setOverlayImageLayer(layer, referenceLayerId); }).catch(error => {
+          if (!current()) return;
+          if (index + 1 < dssSurveyUrls.length) tryMirror(index + 1);
+          else failed(error);
+        });
+      };
       tryMirror(0);
       return;
     }
@@ -290,7 +312,8 @@ export function SkyMap({
       sky.removeImageLayer(spherexDetailLayerId);
       const controller = new AbortController();
       // Load the first mirror that serves the survey's metadata, then fall through the rest on error.
-      const tryMirror = (i: number) => sky.setOverlayImageLayer(Aladin.HiPS(wiseMap.urls[i], {
+      const tryMirror = (i: number) => {
+        const layer = Aladin.HiPS(wiseMap.urls[i], {
         name: wiseMap.name,
         successCallback: () => {
           if (!current() || controller.signal.aborted) return;
@@ -303,7 +326,13 @@ export function SkyMap({
           if (current() && i + 1 < wiseMap.urls.length) tryMirror(i + 1);
           else failed(error);
         },
-      }), referenceLayerId);
+      });
+        void layer.query.then(() => { if (current()) sky.setOverlayImageLayer(layer, referenceLayerId); }).catch(error => {
+          if (!current()) return;
+          if (i + 1 < wiseMap.urls.length) tryMirror(i + 1);
+          else failed(error);
+        });
+      };
       void findWiseSurvey(controller.signal).then((url) => {
         if (controller.signal.aborted || !current()) return;
         const start = url ? (wiseMap.urls as readonly string[]).indexOf(url) : 0;
@@ -471,6 +500,13 @@ export function SkyMap({
       <div className="sky-map">
         <div ref={container} className="aladin-host" data-hidden={!datedReady && (!mapShown || unavailable) || undefined} />
         {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
+        <div className="community-map-markers" aria-label="Community finding markers">
+          {viewStatus === "ready" && communityMarkers.map(marker => {
+            const point = view.current?.world2pix(marker.ra, marker.dec);
+            if (!point || !Number.isFinite(point[0]) || !Number.isFinite(point[1]) || point[0] < 0 || point[1] < 0 || point[0] > innerWidth || point[1] > innerHeight) return null;
+            return <button key={marker.key} style={{ left: point[0], top: point[1] }} aria-label={marker.kind === "pin" ? `Open finding: ${marker.title}` : `Zoom to ${marker.count} findings`} title={marker.kind === "pin" ? marker.title : `${marker.count} findings`} onClick={event => { event.stopPropagation(); onFindingMarker?.(marker); }}>{marker.kind === "pin" ? "●" : marker.count}</button>;
+          })}
+        </div>
         {boxPercent !== null && (
           <div className="compare-field" style={{ width: `${boxPercent}%` }} aria-hidden="true">
             <span>{widthLabel} field</span>
@@ -496,7 +532,7 @@ export function SkyMap({
           <div className="segmented" role="group" aria-label="Map imagery">
             {(["spherex", "dss", "wise"] as const).map((option) => (
               <button key={option} type="button" aria-pressed={imagery === option} disabled={viewStatus !== "ready"}
-                onClick={() => setImagery(option)}>{imageryLabels[option]}</button>
+                onClick={() => { setImagery(option); if (option !== "dss") onSurveyChange?.(option); }}>{imageryLabels[option]}</button>
             ))}
           </div>
         </div>

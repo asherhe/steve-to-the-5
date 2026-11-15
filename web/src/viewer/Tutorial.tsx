@@ -13,111 +13,41 @@ interface Step {
 }
 
 const steps: Step[] = [
-  {
-    title: "Welcome to the SPHEREx viewer",
-    body: (
-      <>
-        <p>
-          SPHEREx is a NASA space telescope that maps the whole sky in infrared light. This tool
-          lets anyone look up a patch of sky and watch how it changed between the dates SPHEREx
-          observed it, with no files to download.
-        </p>
-        <p>
-          You do not need an astronomy background. This quick tour shows what each part does.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "1. Point at a patch of sky",
-    body: (
-      <>
-        <p>
-          Open <strong>Search</strong> (top right) to choose where to look. You can:
-        </p>
-        <ul>
-          <li>Pick a bundled target such as Barnard&rsquo;s Star with one tap, or</li>
-          <li>
-            type sky coordinates (right ascension and declination, like an address on the sky), or
-          </li>
-          <li>type an object&rsquo;s name and let the tool look up its coordinates.</li>
-        </ul>
-        <p>
-          You can also drag and zoom the map, then use <strong>Compare this field</strong> at the
-          bottom to look up whatever is on screen.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "2. Watch time move",
-    body: (
-      <>
-        <p>
-          The <strong>Comparison</strong> panel fetches the real dated images for that patch and
-          lines them up on the same grid and the same brightness scale. Press{" "}
-          <strong>Play</strong> and the images blink one after another.
-        </p>
-        <p>
-          Anything that moved or changed brightness between the dates appears to jump or flicker,
-          while the fixed background stays still. Each frame shows its real observation date and
-          the infrared wavelength you are viewing.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "3. Check what you clicked",
-    body: (
-      <>
-        <p>
-          Click any point on an image (or the map) to open the <strong>Gaia</strong> inspector. It
-          shows whether a known catalogued star sits there, along with its measured position,
-          motion, and brightness.
-        </p>
-        <p>
-          This is context to help you understand a point, not a verdict. When a catalog position is
-          projected onto a SPHEREx date, it is clearly labelled a <em>prediction</em>, kept
-          separate from the actual image.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "4. Share what you saw",
-    body: (
-      <>
-        <p>
-          Think you spotted something? Copy a <strong>comparison link</strong>. It reopens the exact
-          same frames, dates, and settings for anyone, so another person can check it. Signed-in
-          users can post a short note as a <em>finding</em>.
-        </p>
-        <p>
-          A finding is a reproducible observation or a question, never a claim of a discovery. The
-          point is to let others verify what you saw.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "The tool is honest about gaps",
-    body: (
-      <>
-        <p>
-          Sometimes there is only one image for a spot, no overlapping coverage, or the archive is
-          briefly unreachable. When that happens the viewer says so plainly instead of pretending to
-          compare. That honesty is the point.
-        </p>
-        <p>
-          Look for the <span className="info-tip-inline">?</span> help buttons next to unfamiliar
-          terms, and reopen this tour any time with the <strong>How this works</strong> button.
-        </p>
-      </>
-    ),
-  },
+  { title: "Explore nearby cold-object candidates", body: <>
+    <p>Explore real infrared images for possible nearby brown dwarfs and other cold substellar objects. Known stars are useful controls. Selecting a point does not tell us its nature, distance or whether it is new.</p>
+    <p>The map stays your workspace; floating windows let you explore time, inspect sources and discuss evidence.</p>
+  </> },
+  { title: "1. Choose a field", body: <>
+    <p>Use the search bar for a name or sky coordinates. Advanced search has field width and all five challenge targets: Barnard’s Star, Epsilon Indi B, WISE 0855, RW Aurigae and R Draconis.</p>
+    <p>Browsing the map does not fetch dated images. Press <strong>Compare this field</strong> when ready. A resolved name is not proof that the target is visible.</p>
+  </> },
+  { title: "2. Explore wavelengths and context", body: <>
+    <p>Try roughly 4–5 µm as a starting hint for cold-object exploration. The wavelength slider changes an all-sky reference mosaic combining many observations; it is not a dated spectrum.</p>
+    <p>Switch to <strong>WISE</strong> for longer infrared history and optionally DSS for optical context. A cold object may be optically faint. Neither DSS/WISE detection nor Gaia absence is required.</p>
+    <p>Display brightness cannot establish molecules, elements or physical temperature.</p>
+  </> },
+  { title: "3. Blink actual dates", body: <>
+    <p>After images load, use <strong>Time</strong> to scrub observations or <strong>Blink A ↔ B</strong>. The dated overlay covers only its outlined footprint. Surrounding reference imagery stays unchanged.</p>
+    <p><strong>Compare details</strong> opens an enlargable view with actual dates, shared brightness scale, wavelength and quality flags. A visual change needs further checking; artifacts can also flicker.</p>
+    <p>A saved real example is a labelled teaching field. Enlarging it cannot add detail to its original pixels.</p>
+  </> },
+  { title: "4. Review a point", body: <>
+    <p>Click inside a dated image, or focus its inspect button and press Enter to select the center. Gaia provides catalog measurements and labelled position predictions.</p>
+    <p>Choose <strong>Review this point</strong>. In the local demo, checks are skipped and posts are simulated in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
+    <p>These are independent cone searches, not identity verdicts. Different epochs, motion and sensitivity matter. No result does not mean a new object; an unavailable catalog stays unavailable.</p>
+  </> },
+  { title: "5. Share and discuss", body: <>
+    <p>Add a title and a question or observation. The reviewed point stays marked on its original frame. Posting puts the review on the <strong>Participation leaderboard</strong> with an evidence link and public discussion.</p>
+    <p>Points reward documented review effort, regardless of match count: 10 for saved real evidence, 10 for multiple dates and 5 per completed catalog search, up to 50. Partial or failed searches earn no catalog points. This is not rarity or a verified discovery.</p>
+    <p>Saved evidence reopens with the same frames, dates, wavelength, stretch and marks. Local demo replies stay in this browser.</p>
+  </> },
+  { title: "Gaps stay visible", body: <>
+    <p>Single epochs, missing coverage, incompatible images and archive outages have separate states. A failed catalog check never becomes “no object.” All five challenge targets have recorded outcomes; a lookup or a pair of images alone does not prove a visible target or observed change.</p>
+    <p>Reopen this tour with <strong>How this works</strong>. The map and saved-image replay remain usable when sign-in is unavailable.</p>
+  </> },
 ];
 
-const STORAGE_KEY = "spherex.tutorial.seen";
+const STORAGE_KEY = "spherex.tutorial.review-v1.seen";
 
 function wasSeen() {
   try {
@@ -148,27 +78,17 @@ export function useTutorial() {
 
 export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [step, setStep] = useState(0);
-  const dialog = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setStep(0);
-      closeButton.current?.focus();
-    }
-  }, [open]);
-
-  useEffect(() => {
     if (!open) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        onClose();
-      }
-    }
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, [open, onClose]);
+    const element = dialog.current;
+    element?.showModal();
+    setStep(0);
+    closeButton.current?.focus();
+    return () => element?.close();
+  }, [open]);
 
   if (!open) return null;
 
@@ -177,11 +97,10 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const last = step === steps.length - 1;
 
   return (
-    <div className="tutorial-backdrop" onClick={(event) => {
+    <dialog ref={dialog} className="tutorial-backdrop" aria-labelledby="tutorial-title" onCancel={event => { event.preventDefault(); onClose(); }} onClick={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <div className="tutorial-dialog" role="dialog" aria-modal="true"
-        aria-labelledby="tutorial-title" ref={dialog}>
+      <div className="tutorial-dialog">
         <div className="panel-heading">
           <h2 id="tutorial-title">{current.title}</h2>
           <button type="button" ref={closeButton} onClick={onClose}
@@ -203,6 +122,6 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
