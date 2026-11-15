@@ -1,23 +1,25 @@
 # SPHEREx viewer
 
-From the repository root, use Node.js 20.19+ or 22.12+ and set up the two Python
-environments once.
+From the repository root, use Node.js 20.19+ or 22.12+ and Python 3.12+ with
+`venv` and `ensurepip` available. On Debian or Ubuntu, the system Python may
+need the `python3-venv` package. On Windows PowerShell, use `npm.cmd` if script
+execution policy blocks `npm`.
 
-```powershell
-npm.cmd ci
-python -m venv services/catalogs/.venv
-.\services\catalogs\.venv\Scripts\python.exe -m pip install -r services/catalogs/requirements.txt
-python -m venv services/archive/.venv
-.\services\archive\.venv\Scripts\python.exe -m pip install -r services/archive/requirements.lock
-npm.cmd run dev
+```sh
+npm ci
+npm run dev
 ```
 
 `npm run dev` starts the viewer on port 5173, Gaia on 8010, and the SPHEREx archive
-on 8000. Ctrl+C stops the stack. On macOS or Linux, use `npm` in place of `npm.cmd`
-and `services/<service>/.venv/bin/python` for each service's Python.
-Use `npm run dev:viewer`, `npm run dev:gaia`, or `npm run dev:spherex` to start an
-individual process. Stop any earlier React-only server before starting the stack,
-or set `VIEWER_PORT` to use another viewer port.
+on 8000. Each backend creates its own `services/<service>/.venv` in the current
+checkout and installs missing dependencies before starting. The same setup runs
+with `npm run dev:gaia`, `npm run dev:spherex`, and the optional
+`npm run dev:findings`. Set `SPHEREX_DEV_PYTHON` to a Python executable to choose
+which interpreter creates new environments.
+
+Use `npm run dev:viewer` to start only the frontend. Stop any earlier viewer
+before starting the stack, or set `VIEWER_PORT` to use another viewer port.
+Ctrl+C stops the stack.
 
 Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. The bottom-left map panel shows the ICRS map center (RA/Dec, decimal degrees on hover) and the field of view as width × height.
 
@@ -29,7 +31,7 @@ The ☰ **More map options** menu holds **All-sky view** / **Globe view** (360°
 
 The sky fills the viewport. Type an object name, a challenge target, or coordinates (`269.4521, 4.6934`, `17:57:48.5 +04:41:36`) in the top-left search box and press Enter to center the map and compare a 6 arcmin field. Names go to the catalog resolver. **Advanced search** opens the full form with separate RA/Dec, field width, and preset buttons. Loading images opens the compact **Time** window and a dated image overlay on the sky. The earliest observation starts paused. Use the snapping timeline, previous/next buttons, or **Blink A ↔ B** to change dates. Choose A and B from their date selectors; the timeline preserves actual gaps between observations. **Compare details** opens the larger cutout, metadata and sharing pane when needed. **Inspect** opens the source inspector. These panes can remain open together. Drag a pane by its heading, or focus the heading and use arrow keys. Each pane can collapse; use its close button or Escape to close it. **Reset layout** restores default positions. Closing Time pauses playback and preserves the active date; reopening it does not resume automatically.
 
-Click a dated image to open Gaia at the selected sky coordinate. Keyboard users can focus the image and press Enter to inspect its center. The selection stays at the same sky position across frames. A Gaia prediction marked from the inspector appears only on the frame used for that prediction. These marks are local to the current viewer session.
+Click a dated image to open Gaia at the selected sky coordinate. Keyboard users can focus the image and press Enter to inspect its center. The selection stays at the same sky position across frames. A Gaia source marked from the inspector shows its proper-motion prediction at each displayed frame's observation time. These marks are local to the current viewer session.
 
 Pan and zoom, then select **Compare this field** once the map width is within the archive's 1–30 arcmin range. You can also submit RA/Dec in decimal degrees or sexagesimal form in the search box or **Advanced search**, or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
@@ -47,7 +49,9 @@ Vite proxies `/api/resolve` and `/api/catalogs` to the [catalog service](../../.
 
 Check `http://127.0.0.1:8010/api/health` for the catalog service and `/api/catalogs/nearby?ra=269.4521&dec=4.6933&radiusArcsec=30` on the viewer origin for the proxy. Both should return JSON. When serving the built viewer on another host, route `/api/catalogs/*` and `/api/resolve` to the catalog service before applying the frontend's HTML fallback.
 
-Choose **Inspect map center** on the initial Barnard’s Star view or click a sky position to query Gaia. The inspector lists nearby results and fetches the details for the chosen source. **Mark position** places its Gaia catalog position on the reference sky. The catalog service starts in fixture mode.
+Choose **Inspect map center** or click a sky position to query Gaia. On the SPHEREx mosaic, the inspector checks a wider catalog cone and keeps sources whose predicted positions are close to the clicked sky position. Near Barnard's Star, it also fetches the exact Gaia source ID because the catalog cone can omit fast-moving stars. **Mark approximate mosaic position** uses the DR1 survey midpoint as a guide and keeps Gaia's catalog position visible in the inspector. The Barnard's Star preset is centered on this same prediction. Dated frames use their own timestamps. The mosaic combines observations from different dates. [IRSA DR1 release notes](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/)
+
+The npm launcher enables live Gaia by default. Set `CATALOGS_LIVE=0` to run the standalone catalog fixtures. The real viewer requires live catalog data for source markers.
 
 ## Coordinator handoff
 
@@ -209,7 +213,7 @@ cache is not the sole retained copy of this pair.
 ### Repeat the live checks
 
 Use the existing archive command on port 8000, and start Gaia in **live** mode on a
-separate port rather than silently relying on its default fixture mode:
+separate port with live mode enabled:
 
 ```sh
 cd services/catalogs

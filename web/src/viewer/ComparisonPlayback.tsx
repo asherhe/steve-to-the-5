@@ -15,7 +15,7 @@ export function ComparisonPlayback({
   comparison: Comparison;
   playback: Playback;
   selectedPosition: SkyPosition | null;
-  frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
+  frameMark: SkyPosition | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
   onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
 }) {
@@ -71,8 +71,8 @@ export function ComparisonPlayback({
               {wcs && savedMarks.filter(mark => mark.frameId === frame.id).map((mark, i) =>
                 <span key={i}>{marker(wcs.toImage(mark), "Saved finding mark", "cutout-selection")}</span>)}
               {wcs && selectedPosition && marker(wcs.toImage(selectedPosition), "Selected sky position", "cutout-selection")}
-              {wcs && frameMark?.frameId === frame.id && marker(wcs.toImage(frameMark),
-                frameMark.predicted ? "Predicted Gaia position" : "Gaia catalog position", "cutout-gaia-mark")}
+              {wcs && frameMark && marker(wcs.toImage(frameMark),
+                "Predicted Gaia position", "cutout-gaia-mark")}
             </>
           )}
         </div>

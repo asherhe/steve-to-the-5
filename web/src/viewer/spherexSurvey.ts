@@ -2,6 +2,11 @@ export const spherexSurveyUrl = "https://irsa.ipac.caltech.edu/data/hips/SPHEREx
 const surveyUrl = spherexSurveyUrl;
 export const spherexMosaicDoi = "https://doi.org/10.26131/IRSA679";
 export const spherexMosaicSlice = 1;
+// IRSA DR1 combines Surveys 1 and 2. The release midpoint is a guide for
+// proper motion on the mosaic. Individual pixels have no common exposure date.
+export const spherexMosaicGuideTimeUtc = new Date((
+  Date.parse("2025-05-01T00:00:00Z") + Date.parse("2026-05-16T00:00:00Z")
+) / 2).toISOString();
 /** Known label for the default slice, used only if the cube metadata omits its wavelength list. */
 const defaultSliceWavelengthUm = 0.771;
 const channelsPerBand = 17;

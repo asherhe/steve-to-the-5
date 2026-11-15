@@ -80,15 +80,21 @@ export interface PredictedPosition {
   predicted: true;
 }
 
+export type CatalogAstrometry = Pick<NearbySource,
+  "sourceId" | "ra" | "dec" | "refEpoch" | "pmRaCosDecMasYr" | "pmDecMasYr"
+>;
+
 /** Payload emitted by the inspector's mark action. The frameId ties the mark to the frame
  *  in the active comparison; ra/dec are the sky coordinates to mark (predicted position
- *  when a frame is selected, otherwise the observed catalog position). */
+ *  when a frame is selected, otherwise the observed catalog position). Catalog astrometry
+ *  lets the viewer recompute the prediction for another frame. */
 export interface MarkAction {
   frameId: string | null;
   ra: number;
   dec: number;
   sourceId: string;
   predicted: boolean;
+  astrometry: CatalogAstrometry;
 }
 
 /** The inspector's view state, independent of how data is fetched. */

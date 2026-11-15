@@ -4,7 +4,9 @@ import { CatalogApiError, type CatalogClient } from "./api";
 import { AmbiguousView } from "./states/AmbiguousView";
 import { IdleView, LoadingView, UnavailableView, UnmatchedView } from "./states/Messages";
 import { SourceDetailView } from "./states/SourceDetailView";
+import { angularSeparationArcsec, predictAtObservation } from "./propagate";
 import type {
+  GaiaDetail,
   InspectorState,
   MarkAction,
   NearbySource,
@@ -19,6 +21,12 @@ export interface SourceInspectorProps {
   client: CatalogClient;
   /** Optional metadata of the active comparison frame, used for predicted positions. */
   selectedFrame?: SelectedFrameMeta | null;
+  /** Representative time for the undated SPHEREx mosaic. */
+  mosaicGuideTimeUtc?: string;
+  /** Known high-proper-motion source near the selected mosaic position. */
+  mosaicGuideSourceId?: string;
+  /** Require measured catalog data when the inspector is used alongside real imagery. */
+  requireLiveCatalog?: boolean;
   /** Search radius in arcseconds. */
   radiusArcsec?: number;
   /** Emitted when the user marks a position. A findings pin and a selected image position
@@ -35,6 +43,9 @@ export function SourceInspector({
   skyPosition,
   client,
   selectedFrame,
+  mosaicGuideTimeUtc,
+  mosaicGuideSourceId,
+  requireLiveCatalog = false,
   radiusArcsec = 30,
   onMark,
   initialState,
@@ -43,26 +54,57 @@ export function SourceInspector({
   // Which source is chosen in the ambiguous list.
   const [chosen, setChosen] = useState<NearbySource | null>(null);
   const requestId = useRef(0);
+  const guideDetail = useRef<GaiaDetail | null>(null);
 
   // When driven by an explicit state (tests/harness), do not fetch.
   const controlled = initialState !== undefined;
 
   useEffect(() => {
     if (controlled) return;
+    const id = ++requestId.current;
+    guideDetail.current = null;
     if (!skyPosition) {
       setState({ kind: "idle" });
       setChosen(null);
       return;
     }
-    const id = ++requestId.current;
     setState({ kind: "loading" });
     setChosen(null);
 
-    client
-      .nearby(skyPosition.ra, skyPosition.dec, radiusArcsec)
-      .then((resp) => {
+    // Barnard's Star moves about 103 arcsec from Gaia's epoch to the DR1 midpoint.
+    // Fetch a wider catalog cone for the mosaic, then apply the original click radius.
+    const catalogRadius = mosaicGuideTimeUtc ? Math.min(radiusArcsec + 120, 300) : radiusArcsec;
+    const guideRequest = mosaicGuideSourceId
+      ? client.detail(mosaicGuideSourceId).catch(() => null)
+      : Promise.resolve(null);
+    Promise.all([client.nearby(skyPosition.ra, skyPosition.dec, catalogRadius), guideRequest])
+      .then(([resp, guide]) => {
         if (id !== requestId.current) return; // stale
-        const sources = resp.sources;
+        if (requireLiveCatalog && resp.catalogMode !== "live") {
+          setState({
+            kind: "unavailable",
+            error: {
+              code: "live_catalog_required",
+              message: resp.catalogMode === "fixture"
+                ? "The catalog service is using synthetic test data. Start Gaia with CATALOGS_LIVE=1 to inspect real imagery."
+                : "The catalog service did not report its data mode. Restart the Gaia service from this checkout.",
+            },
+          });
+          return;
+        }
+        guideDetail.current = guide;
+        // The reference-epoch cone can hit its row limit before reaching a fast mover.
+        const candidates = guide
+          ? [...resp.sources.filter(source => source.sourceId !== guide.sourceId), { ...guide, separationArcsec: 0 }]
+          : resp.sources;
+        const sources = mosaicGuideTimeUtc
+          ? candidates.flatMap(source => {
+              const prediction = predictAtObservation(source, mosaicGuideTimeUtc);
+              if (!prediction) return [];
+              const separationArcsec = angularSeparationArcsec(skyPosition, prediction);
+              return separationArcsec <= radiusArcsec ? [{ ...source, separationArcsec }] : [];
+            }).sort((a, b) => a.separationArcsec - b.separationArcsec)
+          : candidates;
         if (sources.length === 0) {
           setState({ kind: "unmatched", sources: [] });
         } else if (sources.length === 1) {
@@ -82,9 +124,13 @@ export function SourceInspector({
         });
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skyPosition?.ra, skyPosition?.dec, radiusArcsec, controlled]);
+  }, [skyPosition?.ra, skyPosition?.dec, radiusArcsec, controlled, requireLiveCatalog, mosaicGuideTimeUtc, mosaicGuideSourceId]);
 
   function loadDetail(source: NearbySource, id: number) {
+    if (guideDetail.current?.sourceId === source.sourceId) {
+      setState({ kind: "matched", source, detail: guideDetail.current });
+      return;
+    }
     setState({ kind: "matched", source, detail: null });
     client
       .detail(source.sourceId)
@@ -119,7 +165,7 @@ export function SourceInspector({
       case "unavailable":
         return <UnavailableView error={state.error} />;
       case "unmatched":
-        return <UnmatchedView />;
+        return <UnmatchedView mosaic={!!mosaicGuideTimeUtc} />;
       case "ambiguous":
         return (
           <>
@@ -133,6 +179,7 @@ export function SourceInspector({
                 source={chosen}
                 detail={null}
                 selectedFrame={selectedFrame}
+                mosaicGuideTimeUtc={mosaicGuideTimeUtc}
                 onMark={onMark}
               />
             )}
@@ -144,6 +191,7 @@ export function SourceInspector({
             source={state.source}
             detail={state.detail}
             selectedFrame={selectedFrame}
+            mosaicGuideTimeUtc={mosaicGuideTimeUtc}
             onMark={onMark}
           />
         );

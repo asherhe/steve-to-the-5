@@ -3,6 +3,6 @@ export { SourceInspector } from "./SourceInspector";
 export type { SourceInspectorProps } from "./SourceInspector";
 export { createCatalogClient, CatalogApiError } from "./api";
 export type { CatalogClient, CatalogClientOptions } from "./api";
-export { propagate, isoToDecimalYear } from "./propagate";
+export { angularSeparationArcsec, propagate, isoToDecimalYear, predictAtObservation } from "./propagate";
 export * from "./types";
 import "./SourceInspector.css";

@@ -1,33 +1,21 @@
 import { fmtDecDms, fmtDeg, fmtRaHms, fmtWithUnit } from "../format";
-import { isoToDecimalYear, propagate } from "../propagate";
+import { predictAtObservation } from "../propagate";
 import type { GaiaDetail, MarkAction, NearbySource, SelectedFrameMeta } from "../types";
 
 interface Props {
   source: NearbySource;
   detail: GaiaDetail | null;
   selectedFrame?: SelectedFrameMeta | null;
+  mosaicGuideTimeUtc?: string;
   onMark: (mark: MarkAction) => void;
 }
 
-/** Full presentation of one catalog source plus the mark action.
- *
- *  When a frame is selected, the observed catalog position (epoch 2016.0) is propagated to
- *  the frame's observation date and shown as a PREDICTED position, labelled as such and kept
- *  distinct from the observed position. The mark emitted uses the predicted coordinates in
- *  that case, otherwise the observed coordinates. */
-export function SourceDetailView({ source, detail, selectedFrame, onMark }: Props) {
+/** Shows the catalog position and, when available, the prediction used for the mark. */
+export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTimeUtc, onMark }: Props) {
   const d = detail;
 
-  const predicted = selectedFrame
-    ? propagate(
-        source.ra,
-        source.dec,
-        source.refEpoch,
-        isoToDecimalYear(selectedFrame.observedAtUtc),
-        source.pmRaCosDecMasYr,
-        source.pmDecMasYr
-      )
-    : null;
+  const predictionTime = selectedFrame?.observedAtUtc ?? mosaicGuideTimeUtc;
+  const predicted = predictionTime ? predictAtObservation(source, predictionTime) : null;
 
   const markRa = predicted ? predicted.ra : source.ra;
   const markDec = predicted ? predicted.dec : source.dec;
@@ -39,6 +27,7 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
       dec: markDec,
       sourceId: source.sourceId,
       predicted: predicted !== null,
+      astrometry: source,
     });
   }
 
@@ -105,9 +94,11 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
             <span className="si-badge si-badge--predicted">predicted</span>
           </h4>
           <p className="si-group__note">
-            Catalog position propagated from epoch {predicted.fromEpoch.toFixed(1)} to the
-            frame epoch {predicted.toEpoch.toFixed(2)} by proper motion. A prediction, not an
-            observation; perspective terms omitted.
+            {selectedFrame
+              ? <>Catalog position propagated from epoch {predicted.fromEpoch.toFixed(1)} to
+                  the frame epoch {predicted.toEpoch.toFixed(2)} by proper motion.</>
+              : <>Approximate position at the DR1 survey midpoint ({mosaicGuideTimeUtc?.slice(0, 10)}).
+                  The mosaic combines many exposure dates.</>}
           </p>
           <dl className="si-fields">
             <Field label="RA" value={`${fmtRaHms(predicted.ra)}  (${fmtDeg(predicted.ra)}°)`} />
@@ -130,9 +121,13 @@ export function SourceDetailView({ source, detail, selectedFrame, onMark }: Prop
         </a>
       )}
 
-      <button type="button" className="si-mark-button" onClick={handleMark}>
-        {predicted ? "Mark predicted position on frame" : "Mark position"}
-      </button>
+      {predictionTime && !predicted ? (
+        <p>Prediction unavailable for this observation time.</p>
+      ) : (
+        <button type="button" className="si-mark-button" onClick={handleMark}>
+          {mosaicGuideTimeUtc ? "Mark approximate mosaic position" : predicted ? "Mark predicted position" : "Mark position"}
+        </button>
+      )}
     </div>
   );
 }

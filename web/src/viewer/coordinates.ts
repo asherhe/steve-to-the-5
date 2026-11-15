@@ -5,6 +5,8 @@ const separated = /^([+-]?\d+)(?::|\s+)(\d+)(?::|\s+)(\d+(?:\.\d+)?)$/;
 const raUnits = /^([+]?\d+)h\s*(\d+)m\s*(\d+(?:\.\d+)?)s$/i;
 const decUnits = /^([+-]?\d+)[°d]\s*(\d+)['′m]\s*(\d+(?:\.\d+)?)["″s]$/i;
 
+export const barnardGaiaSourceId = "4472832130942575872";
+
 export function parseAngle(input: string, axis: "ra" | "dec"): number | null {
   const value = input.trim().replace("−", "-");
   let degrees: number;
@@ -27,8 +29,8 @@ export function parseAngle(input: string, axis: "ra" | "dec"): number | null {
 }
 
 const targetCoordinates = [
-  // SIMBAD ICRS J2000.0 coordinates for Barnard's Star.
-  ["Barnard’s Star", "17:57:48.49847", "+04:41:36.11388"],
+  // Gaia DR3 4472832130942575872, propagated to the DR1 survey midpoint (2025-11-07).
+  ["Barnard’s Star", "269.44630202", "4.76777074"],
   // SIMPLE archive, Epsilon Indi B system.
   ["Epsilon Indi B", "331.0656", "-56.7901"],
   // Coordinates supplied in the challenge brief.

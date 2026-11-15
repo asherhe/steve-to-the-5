@@ -3,9 +3,10 @@
   "presets": [
     {
       "name": "Barnard's Star",
-      "aliases": ["barnard", "barnards star", "gj 699", "hip 87937"],
-      "ra": 269.45207695833336,
-      "dec": 4.693364966666667
+      "aliases": ["barnard", "barnards star", "Barnard’s Star", "gj 699", "hip 87937"],
+      "_coordinateProvenance": "Gaia DR3 4472832130942575872, propagated by proper motion to the DR1 survey midpoint (2025-11-07 UTC).",
+      "ra": 269.44630202,
+      "dec": 4.76777074
     },
     {
       "name": "Epsilon Indi B",
