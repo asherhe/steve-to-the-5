@@ -3,7 +3,13 @@ declare module "aladin-lite" {
     setFrequency(frequency: { value: number; unit: "Hz" }): void;
   }
 
+  export interface AladinImage {
+    setOpacity(opacity: number): void;
+  }
   export interface AladinView {
+    world2pix(ra: number, dec: number): [number, number] | undefined;
+    setOverlayImageLayer(image: AladinImage, id: string): void;
+    removeImageLayer(id: string): void;
     getRaDec(): [ra: number, dec: number];
     getFoV(): [width: number, height: number];
     gotoRaDec(ra: number, dec: number): void;
@@ -25,6 +31,11 @@ declare module "aladin-lite" {
 
   const Aladin: {
     init: Promise<unknown>;
+    image(url: string, options: {
+      name: string; imgFormat: "png"; opacity: number; wcs: Record<string, unknown>;
+      successCallback: (ra: number, dec: number, fov: number, image: AladinImage) => void;
+      errorCallback?: (error: unknown) => void;
+    }): AladinImage;
     HiPS(urlOrId: string, options: {
       name: string;
       successCallback: (survey: AladinImageSurvey) => void;

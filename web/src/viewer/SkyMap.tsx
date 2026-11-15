@@ -1,3 +1,6 @@
+import { DatedSkyOverlay, type DatedLayer } from "./DatedSkyOverlay";
+import { FloatingPane } from "./FloatingPane";
+import { cutoutWcs } from "./cutoutWcs";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
@@ -23,6 +26,7 @@ export function SkyMap({
   onAdvancedSearch,
   catalogMark,
   notice,
+  dated, onInspectDated, layoutReset = 0,
 }: {
   initialCenter: SkyPosition;
   focus: Field | null;
@@ -31,6 +35,9 @@ export function SkyMap({
   onAdvancedSearch: () => void;
   catalogMark: SkyPosition | null;
   notice: string;
+  dated?: DatedLayer | null;
+  onInspectDated?: (position: SkyPosition) => void;
+  layoutReset?: number;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const aladin = useRef<AladinModule | null>(null);
@@ -192,7 +199,8 @@ export function SkyMap({
     if (!focus || viewStatus !== "ready" || !view.current) return;
     view.current.setProjection("SIN");
     view.current.gotoRaDec(focus.ra, focus.dec);
-    view.current.setFoV(focus.fovArcmin / 60);
+    const box = container.current?.getBoundingClientRect();
+    view.current.setFoV(focus.fovArcmin / 60 * Math.max(1.4, box ? box.width / box.height * 1.4 : 1.4));
     setAllSky(false);
     syncReadout();
   }, [focus, viewStatus]);
@@ -201,10 +209,14 @@ export function SkyMap({
     if (viewStatus !== "ready" || !view.current) return;
     const sky = view.current;
     sky.on("click", ({ ra, dec, isDragging }) => {
-      if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) onInspect({ ra, dec });
+      if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) {
+        const point=dated && cutoutWcs(dated.comparison.grid)?.toImage({ra,dec});
+        if(point && point.x>=-0.5 && point.y>=-0.5 && point.x<dated!.comparison.grid.width-0.5 && point.y<dated!.comparison.grid.height-0.5 && dated!.assets[dated!.frame.id]?.state==="ready")onInspectDated?.({ra,dec});
+        else onInspect({ra,dec});
+      }
     });
     return () => sky.on("click", () => {});
-  }, [onInspect, viewStatus]);
+  }, [onInspect, onInspectDated, dated, viewStatus]);
 
   useEffect(() => {
     markPosition.current?.(catalogMark);
@@ -220,7 +232,8 @@ export function SkyMap({
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [menuOpen]);
 
-  const mapUsable = viewStatus === "ready" && mapShown && layerStatus !== "unavailable";
+  const datedReady = !!dated && dated.assets[dated.frame.id]?.state === "ready";
+  const mapUsable = viewStatus === "ready" && (datedReady || (mapShown && layerStatus !== "unavailable"));
   const unavailable = viewStatus === "failed" || layerStatus === "unavailable";
   const wavelengths = cube && cube !== "unavailable" ? cube.wavelengthsUm : [];
   const wavelength = cube && cube !== "unavailable" ? spherexSliceWavelength(cube, slice) : null;
@@ -271,9 +284,11 @@ export function SkyMap({
   return (
     <section className="sky-section" aria-label="Reference sky map">
       <div className="sky-map">
-        <div ref={container} className="aladin-host" data-hidden={!mapShown || unavailable || undefined} />
+        <div ref={container} className="aladin-host" data-hidden={!datedReady && (!mapShown || unavailable) || undefined} />
+        {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
         {statusText && <p className="map-status" role="status">{statusText}</p>}
       </div>
+      <FloatingPane id="map-tools" title="Map" anchor="map" reset={layoutReset} defaultCollapsed={innerWidth<672}>
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         <p className="sky-readout">
@@ -345,6 +360,7 @@ export function SkyMap({
           </small>
         ))}
       </div>
+      </FloatingPane>
     </section>
   );
 }
