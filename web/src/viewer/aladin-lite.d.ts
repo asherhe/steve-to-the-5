@@ -1,5 +1,5 @@
 declare module "aladin-lite" {
-  interface AladinImageSurvey {
+  export interface AladinImageSurvey {
     setSliceNumber(slice: number): void;
   }
 

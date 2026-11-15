@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
 import { CatalogApiError, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
 import { LeaderboardPanel, type LeaderboardDataSource, type LeaderboardEntry } from "../leaderboard";
@@ -7,6 +7,8 @@ import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { SkyMap } from "./SkyMap";
 import { archiveFieldLimits, ArchiveRequestError } from "./archive";
 import { ComparisonPlayback } from "./ComparisonPlayback";
+import { SpectralRuler, bandColors } from "./SpectralRuler";
+import { bandForWavelength, spherexMosaicSlice } from "./spherexSurvey";
 import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
 import "./styles.css";
 
@@ -17,6 +19,33 @@ const scenarios: Record<ComparisonResult["status"], string> = {
   no_comparable_pair: "No comparable pair",
   upstream_unavailable: "Archive unavailable",
 };
+
+/** Short labels for the header badge. Kept distinct from the status messages in the comparison panel. */
+const badges: Record<ComparisonResult["status"], string> = {
+  ready: "Matched pair",
+  single_epoch: "Single epoch",
+  no_coverage: "No SPHEREx coverage",
+  no_comparable_pair: "No matched pair",
+  upstream_unavailable: "Archive offline",
+};
+
+/** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
+function useHeightVariable(workspace: RefObject<HTMLElement | null>, selector: string, variable: string) {
+  useEffect(() => {
+    const host = workspace.current;
+    const element = host?.querySelector(selector);
+    if (!host || !element) return;
+    const observer = new ResizeObserver(() => {
+      host.style.setProperty(variable, `${element.getBoundingClientRect().height}px`);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [workspace, selector, variable]);
+}
+
+function formatAngle(value: number, signed = false) {
+  return `${signed && value >= 0 ? "+" : ""}${value.toFixed(6)}°`;
+}
 
 const initialCenter = targetPresets[0];
 const initialField = { ...initialCenter, fovArcmin: 6 };
@@ -76,6 +105,12 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const [comparisonMark, setComparisonMark] = useState<{ comparisonId: string; mark: MarkAction } | null>(null);
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
   const [copyStatus, setCopyStatus] = useState("");
+  const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
+  const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [frameOnScreen, setFrameOnScreen] = useState<ComparisonFrame | null>(null);
+  const workspace = useRef<HTMLElement>(null);
+  useHeightVariable(workspace, ".instrument-bar", "--header-height");
+  useHeightVariable(workspace, ".sky-dock", "--dock-height");
   useEffect(() => {
     function restore() {
       const params = new URLSearchParams(location.search);
@@ -265,39 +300,79 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   }
   const finding = preview.kind === "saved" ? preview.finding : undefined;
 
+  const source = synthetic || kind === "synthetic_fixture" ? "synthetic" :
+    kind === "saved_real_example" ? "saved real" : "live archive";
+  const badge =
+    preview.kind === "search" ? (comparison ? `${badges[preview.result.status]} · ${source}` : badges[preview.result.status]) :
+    preview.kind === "saved" ? `${preview.comparison.frames.length > 1 ? "Matched pair" : "Single epoch"} · ${source}` :
+    preview.kind === "loading" ? "Loading" :
+    preview.kind === "idle" ? "No field selected" :
+    preview.kind === "name_not_found" || preview.kind === "missing" ? "Not found" : "Unavailable";
+  const tone = comparison ? "ready" : preview.kind === "idle" || preview.kind === "loading" ? "idle" : "problem";
+  const readoutField = comparison?.field ?? (preview.kind === "search" ? preview.field : focus);
+  const bands = comparison ? [...new Set(comparison.wavelengthRangeUm.map(bandForWavelength))] : [];
+  const frameShown = comparison && frameOnScreen && comparison.frames.includes(frameOnScreen) ? frameOnScreen : null;
+
   return (
-    <main className="sky-workspace" onKeyDown={(event) => {
+    <main className="sky-workspace" ref={workspace} onKeyDown={(event) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       if (panel) closePanel(panel);
       else if (leaderboardOpen) closeLeaderboard();
     }}>
       <SkyMap initialCenter={initialCenter} focus={focus} onCompare={compareViewport}
-        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice} />
-      {leaderboard && (
-        <>
-          <nav className="panel-buttons panel-buttons-left" aria-label="Engagement panels">
+        onInspect={inspect} catalogMark={catalogMark} notice={mapNotice}
+        slice={mapSlice} onStateChange={setMapState}
+        dock={<SpectralRuler mapSlice={mapSlice} onSelectSlice={setMapSlice} disabled={mapState !== "ready"}
+          frameWavelengthUm={frameShown?.wavelengthUm ?? null}
+          frameLabel={frameShown && comparison ? `Frame ${comparison.frames.indexOf(frameShown) + 1} · ${frameShown.wavelengthUm.toFixed(4)} µm` : null} />} />
+      <header className="instrument-bar">
+        <div className="brand">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+          </svg>
+          <span>SPHEREx / Field viewer</span>
+        </div>
+        {leaderboard && (
+          <nav className="panel-buttons bar-start" aria-label="Engagement panels">
             <button type="button" ref={leaderboardButton} aria-expanded={leaderboardOpen}
               aria-controls="leaderboard-panel" onClick={toggleLeaderboard}>Leaderboard</button>
           </nav>
-          <section id="leaderboard-panel" aria-labelledby="leaderboard-heading"
-            className="floating-panel panel-left leaderboard-panel" hidden={!leaderboardOpen}>
-            <div className="panel-heading">
-              <h2 id="leaderboard-heading">Rarity leaderboard</h2>
-              <button type="button" onClick={closeLeaderboard}>Close</button>
-            </div>
-            <LeaderboardPanel dataSource={leaderboard} open={leaderboardOpen}
-              onGoTo={goToEntry} onShowEvidence={showEntryEvidence} />
-          </section>
-        </>
+        )}
+        <dl className="readouts" aria-label="Current field">
+          <div><dt>RA</dt><dd>{readoutField ? formatAngle(readoutField.ra) : "—"}</dd></div>
+          <div><dt>Dec</dt><dd>{readoutField ? formatAngle(readoutField.dec, true) : "—"}</dd></div>
+          <div><dt>Width</dt><dd>{readoutField ? `${readoutField.fovArcmin.toFixed(2)} arcmin` : "—"}</dd></div>
+          <div><dt>Frames</dt><dd>
+            {comparison ? <>
+              {bands.map((band) => band && <span key={band} className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />)}
+              {bands.some(Boolean) && `B${bands.filter(Boolean).join("–")} · `}
+              {comparison.wavelengthRangeUm.map((value) => value.toFixed(4)).join("–")} µm
+            </> : "—"}
+          </dd></div>
+        </dl>
+        <div className="bar-actions">
+          <span className="status-badge" data-tone={tone}><span className="status-dot" aria-hidden="true" />{badge}</span>
+          <nav className="panel-buttons" aria-label="Viewer panels">
+            {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
+              <button key={id} type="button" ref={(button) => {
+                if (button) panelButtons.current[id] = button;
+              }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
+                onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
+            ))}
+          </nav>
+        </div>
+      </header>
+      {leaderboard && (
+        <section id="leaderboard-panel" aria-labelledby="leaderboard-heading"
+          className="floating-panel panel-left leaderboard-panel" hidden={!leaderboardOpen}>
+          <div className="panel-heading">
+            <h2 id="leaderboard-heading">Rarity leaderboard</h2>
+            <button type="button" onClick={closeLeaderboard}>Close</button>
+          </div>
+          <LeaderboardPanel dataSource={leaderboard} open={leaderboardOpen}
+            onGoTo={goToEntry} onShowEvidence={showEntryEvidence} />
+        </section>
       )}
-      <nav className="panel-buttons" aria-label="Viewer panels">
-          {([["search", "Search"], ["comparison", "Comparison"], ["gaia", "Gaia"]] as const).map(([id, label]) => (
-            <button key={id} type="button" ref={(button) => {
-              if (button) panelButtons.current[id] = button;
-            }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
-              onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
-          ))}
-      </nav>
       <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
         <div className="panel-heading">
           <h2 id="gaia-heading">Gaia source inspector</h2>
@@ -371,7 +446,8 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
               kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
             <ComparisonPlayback key={comparison.id} comparison={comparison} visible={panel === "comparison"}
               selectedPosition={selection?.position ?? null} frameMark={frameMark} savedMarks={finding?.marks}
-              onInspect={(position, frame) => inspectCutout(comparison.id, position, frame)} />
+              onInspect={(position, frame) => inspectCutout(comparison.id, position, frame)}
+              onFrameChange={setFrameOnScreen} />
             {finding && Discussion && <Discussion finding={finding} onShowEvidence={showEvidence}
               onCopyLink={(value) => void copyLink(value.comparisonId, value.id)} />}
             {finding && <p><a href={comparisonLink(comparison.id, finding.id)}>Saved evidence link</a></p>}
