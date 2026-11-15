@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalogs/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Review */
+        get: operations["review_api_catalogs_review_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -76,6 +93,36 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CatalogCheck */
+        CatalogCheck: {
+            /** Catalog */
+            catalog: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "candidates" | "no_candidates" | "partial" | "unavailable" | "skipped";
+            /** Scope */
+            scope: string;
+            /** Sourceurl */
+            sourceUrl: string;
+            /** Servedby */
+            servedBy?: string | null;
+            /** Retrievedatutc */
+            retrievedAtUtc?: string | null;
+            /** Responsesha256 */
+            responseSha256?: string | null;
+            /** Columns */
+            columns?: {
+                [key: string]: string | null;
+            }[];
+            /** Rows */
+            rows?: {
+                [key: string]: unknown;
+            }[];
+            /** Limitations */
+            limitations?: string[];
+        };
         /** CatalogReference */
         CatalogReference: {
             /** Catalog */
@@ -84,6 +131,26 @@ export interface components {
             dataRelease?: string | null;
             /** Id */
             id: string;
+        };
+        /** CatalogReview */
+        CatalogReview: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "live" | "offline";
+            /** Ra */
+            ra: number;
+            /** Dec */
+            dec: number;
+            /** Radiusarcsec */
+            radiusArcsec: number;
+            /** Observedatutc */
+            observedAtUtc: string;
+            /** Checks */
+            checks: components["schemas"]["CatalogCheck"][];
+            /** Limitations */
+            limitations: string[];
         };
         /** ErrorBody */
         ErrorBody: {
@@ -390,6 +457,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GaiaDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_api_catalogs_review_get: {
+        parameters: {
+            query: {
+                ra: number;
+                dec: number;
+                radiusArcsec?: number;
+                observedAtUtc: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogReview"];
                 };
             };
             /** @description Validation Error */

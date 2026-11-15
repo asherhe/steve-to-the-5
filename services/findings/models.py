@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
@@ -24,6 +24,11 @@ class ErrorResponse(BaseModel):
     message: str
 
 
+class PublicAuthConfig(BaseModel):
+    url: str
+    publishableKey: str
+
+
 class Coordinates(BaseModel):
     ra: RA
     dec: DEC
@@ -37,6 +42,8 @@ class Mark(Coordinates):
 class FindingInput(Coordinates):
     model_config = ConfigDict(extra="forbid")
     comparisonId: EvidenceId
+    survey: Literal["spherex", "wise"] = "spherex"
+    reviewId: UUID | None = None
     title: Title
     note: DiscussionText
     marks: Annotated[list[Mark], Field(max_length=20)] = Field(default_factory=list)
@@ -79,3 +86,45 @@ class Finding(Pin):
     authorDisplayName: str
     createdAtUtc: str
     replies: list[Reply]
+    survey: Literal["spherex", "wise"] = "spherex"
+    candidateReview: dict | None = None
+
+
+class ReviewInput(Coordinates):
+    model_config = ConfigDict(extra="forbid")
+    comparisonId: EvidenceId
+    frameId: EvidenceId
+    survey: Literal["spherex", "wise"] = "spherex"
+    radiusArcsec: float = Field(default=120, ge=5, le=300, allow_inf_nan=False)
+
+
+class ReviewResponse(ReviewInput):
+    id: UUID
+    observedAtUtc: str
+    reviewedAtUtc: str
+    scoreVersion: str
+    score: int
+    reasons: list[str]
+    catalogReview: dict
+    limitations: list[str]
+
+
+class LeaderboardEntry(Coordinates):
+    id: UUID
+    findingId: UUID
+    comparisonId: str
+    survey: Literal["spherex", "wise"]
+    rank: int
+    displayName: str
+    title: str
+    rarityScore: int
+    tier: None = None
+    reasons: list[str]
+    fovArcmin: float
+    enteredAtUtc: str
+
+
+class LeaderboardResult(BaseModel):
+    board: Literal["daily", "allTime"]
+    placeholder: bool = False
+    entries: list[LeaderboardEntry]

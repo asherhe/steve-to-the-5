@@ -168,3 +168,28 @@ Checkpoint 1 also returns `incomplete_name` (400) for known partial curated quer
 It enriches R Dra and the Epsilon Indi **Ba** Gaia source by exact DR3 ID. RW Aur
 component joins remain unresolved. See the dated reports and live trust-bundle review
 command in `docs/common-names.md`; external lookup remains disabled by default.
+
+
+## Cold-object review checkpoint ? 2026-11-15
+
+`GET /api/catalogs/review?ra=...&dec=...&radiusArcsec=120&observedAtUtc=2026-01-01T00:00:00Z`
+provides six independent review aids, not a cross-identification or discovery verdict.
+Radius is 5?300 arcsec; a timezone-bearing observation time is required. Offline mode
+returns `skipped` for every check. The live route reuses the Gaia and SIMBAD reliability
+layer and adds CatWISE2020, pinned UltracoolSheet 2.1.0, SkyBoT geocentric predictions,
+and VizieR's AllWISE table only. It never searches every VizieR catalog.
+
+There are two review slots/process, 50 displayed rows/check, and explicit partial,
+unavailable and empty states. GET downloads have an 8 MB decoded-body cap and 25 s
+wall-clock deadline; TAP uses the existing configured failover deadlines. Epoch mismatch,
+proper motion, finite search scope and incomplete catalogs prevent novelty inference.
+SkyBoT returns an ERROR info field for its explicit empty-cone message; only that exact
+message family is accepted as empty, while service-error documents remain unavailable.
+
+UltracoolSheet data: https://zenodo.org/records/15802304 (v2.1.0, July 3, 2025), compiled
+by Will Best, Trent Dupuy, Michael Liu, Aniket Sanghi, Rob Siverd and Zhoujian Zhang.
+The complete matching rows retain original-paper reference codes; users must cite those
+papers and the compilation when using the data. The snapshot is not a latest-release claim.
+
+See `MASTERPLAN-HANDOFF.md` for the unfinished frontend and `docs/verification/` for
+actual smoke results. CatWISE and VizieR timed out; successful live results remain unverified.

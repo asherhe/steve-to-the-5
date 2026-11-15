@@ -13,13 +13,14 @@ async function main() {
     for (const role of ["anon", "authenticated"]) {
       await db.exec(`set role ${role}`);
       await assert.rejects(db.query("select * from public.spherex_findings"), /permission denied/);
-      for (const table of ["spherex_findings", "spherex_finding_replies"]) {
+      for (const table of ["spherex_findings", "spherex_finding_replies", "spherex_candidate_reviews"]) {
         await assert.rejects(db.query(`select * from public.${table}`), /permission denied/);
         await assert.rejects(db.query(`insert into public.${table} (id) values (gen_random_uuid())`), /permission denied/);
         await assert.rejects(db.query(`update public.${table} set author_id = $1`, [ownerId]), /permission denied/);
       }
       await assert.rejects(db.query("select public.spherex_findings_viewport(0, 0, 2, 10)"), /permission denied/);
       await assert.rejects(db.query("select public.spherex_finding_thread($1)", [findingId]), /permission denied/);
+      await assert.rejects(db.query("select public.spherex_review_leaderboard('allTime')"), /permission denied/);
       await assert.rejects(
         db.query("select public.spherex_finding_reply($1, $2, 'Reader', 'Bypass')", [findingId, readerId]),
         /permission denied/
@@ -72,6 +73,40 @@ async function main() {
     assert.equal(await reply(), null);
     assert.equal((await viewport(10)).length, 1);
     assert.ok((await viewport(10)).every((pin) => pin.id !== findingId));
+
+    // Reviews are immutable, anonymous reads are filtered through the public API,
+    // duplicates cannot award another entry, and hidden findings leave the board.
+    const reviewId = "66666666-6666-4666-8666-666666666666";
+    const rankedId = "77777777-7777-4777-8777-777777777777";
+    const report = {scoreVersion: "review-effort-v1", score: 50, reasons: ["+10: saved evidence"], catalogReview: {checks: []}};
+    await db.query(`insert into public.spherex_candidate_reviews
+      (id, author_id, comparison_id, survey, ra, dec, candidate_key, fov_arcmin, score, report)
+      values ($1,$2,'saved-wise','wise',1,2,$3,6,50,$4::jsonb)`,
+      [reviewId, ownerId, "a".repeat(64), JSON.stringify(report)]);
+    await assert.rejects(db.query("update public.spherex_candidate_reviews set score=10 where id=$1", [reviewId]), /permission denied/);
+    await db.query(`insert into public.spherex_findings
+      (id, comparison_id, survey, ra, dec, title, note, author_id, author_display_name, review_id, candidate_key)
+      values ($1,'saved-wise','wise',1,2,'Cold-object review','Please check',$2,'Observer',$3,$4)`,
+      [rankedId, ownerId, reviewId, "a".repeat(64)]);
+    const board = (period) => value("select public.spherex_review_leaderboard($1) as result", [period]);
+    assert.equal((await board("daily"))[0].findingId, rankedId);
+    assert.equal((await board("allTime"))[0].rarityScore, 50);
+    assert.equal((await board("allTime"))[0].survey, "wise");
+    assert.equal((await board("allTime"))[0].rank, 1);
+    const rankedThread = await value("select public.spherex_finding_thread($1) as result", [rankedId]);
+    assert.deepEqual(rankedThread.candidateReview, report);
+    assert.equal(rankedThread.survey, "wise");
+    assert.ok(!JSON.stringify(rankedThread).includes(ownerId));
+    await assert.rejects(db.query(`insert into public.spherex_findings
+      (id, comparison_id, ra, dec, title, note, author_id, author_display_name, candidate_key)
+      values (gen_random_uuid(),'saved-wise',1,2,'Duplicate','Duplicate',$1,'Observer',$2)`,
+      [ownerId, "a".repeat(64)]), /unique constraint/);
+    await db.query("update public.spherex_findings set created_at=now()-interval '2 days' where id=$1", [rankedId]);
+    assert.deepEqual(await board("daily"), []);
+    assert.equal((await board("allTime")).length, 1);
+    await db.query("update public.spherex_findings set hidden_at=now() where id=$1", [rankedId]);
+    assert.deepEqual(await board("allTime"), []);
+    assert.equal(await value("select public.spherex_finding_thread($1) as result", [rankedId]), null);
     const before = await value("select count(*)::int as result from public.spherex_finding_replies");
     assert.equal(await value("select public.spherex_finding_reply(gen_random_uuid(), $1, 'Reader', 'Missing') as result", [readerId]), null);
     assert.equal(await value("select count(*)::int as result from public.spherex_finding_replies"), before);

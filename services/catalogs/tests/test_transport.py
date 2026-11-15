@@ -147,6 +147,8 @@ def policy(request=0.4, total=2.5, connect=0.3, concurrent=4):
 # ---- Defect 1: timing policy ---------------------------------------------------------------
 
 def test_slow_healthy_fallback_gets_the_remaining_time_and_is_not_cooled(archive):
+    # Exclude Astropy's one-time import cost from the transport deadline measurement.
+    tap.parse_votable(NEARBY_OK)
     primary = archive.endpoint("esa", mode="stall")
     fallback = archive.endpoint("aip", body=NEARBY_OK, delay=0.7)  # slower than the 0.4 s non-final limit
     failover = policy()

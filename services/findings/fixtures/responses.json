@@ -56,7 +56,9 @@
         "text": "I see the shift too.",
         "createdAtUtc": "2026-11-14T19:05:00Z"
       }
-    ]
+    ],
+    "survey": "spherex",
+    "candidateReview": null
   },
   "unauthorized": {
     "code": "unauthorized",

@@ -87,3 +87,29 @@ Then open `?comparison=<saved ID>&finding=<printed ID>` in a second browser sess
 Local verification uses synthetic evidence and simulated Supabase Auth/PostgREST HTTP responses. All 21 Python tests passed with PGlite installed, including a cross-layer create/read/reply/replay/hide flow executing the actual migrations and SQL functions. The separate migration check passed access denials, coordinate/text limits, 100-item caps, newest-200 reply ordering, RA wrap, polar/antipodal coverage and moderation. `pip check` passed. The tested Starlette version emits a TestClient/httpx deprecation warning; the HTTP tests still pass.
 
 The database-backed Python test explicitly skips if Node/PGlite is missing; a skipped test is not a full verification pass. PGlite is an isolated PostgreSQL-compatible database with stub Supabase roles, not a hosted Supabase test. Real Supabase sessions, PostgREST, concurrent hide/reply transactions, real archive evidence, browser replay and deployed behavior have not been verified in this checkout. No live environment values are configured. Five-target archive coverage and scientific comparability belong to Brief 1 and the coordinator, not this findings backend.
+
+
+## Masterplan backend checkpoint ? 2026-11-15
+
+See `MASTERPLAN-HANDOFF.md` at the repository root. The fourth migration adds immutable
+candidate-review snapshots and participation-point rankings. Apply it after the three
+existing migrations; no hosted migration was executed in this checkpoint.
+
+- `POST /api/findings/reviews`: authenticated `{comparisonId, survey?, frameId, ra, dec,
+  radiusArcsec?}`. The saved WCS, frame date and real-data provenance are validated;
+  catalog results and the server-calculated score are persisted before an ID is returned.
+- `POST /api/findings`: accepts optional `reviewId` and `survey` (default `spherex`).
+  The reviewed point must be marked on the original reviewed frame. A review can only
+  be submitted by its owner for the same image and coordinates.
+- `GET /api/findings/leaderboard?board=daily|allTime`: public, at most 100 visible
+  entries, with UTC daily boundaries and stable score/date/ID ordering. `rarityScore`
+  is a legacy wire name for participation points, not a scientific rarity measurement.
+- Threads additionally return `survey` and nullable `candidateReview`.
+- `GET /api/findings/auth/config` returns only the public URL/publishable key.
+
+The catalog service must run with `CATALOGS_LIVE=1`; offline responses cannot earn points.
+Set `SPHEREX_CATALOG_BASE_URL` and `WISE_COMPARISON_BASE_URL` as needed (defaults are
+localhost ports 8010 and 8020). Neither browser integration nor hosted auth is complete.
+Regenerate the shared schema using `scripts/export-findings-contract.py`, then
+`npm run generate:findings-types`. `scripts/verify-masterplan-checkpoint.py` runs all
+checkpoint checks and fails if the isolated database dependency is absent.

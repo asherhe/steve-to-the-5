@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "kind": "offline_contract_fixture"
+  },
+  "mode": "offline",
+  "ra": 304.693508808,
+  "dec": 42.4436872991,
+  "radiusArcsec": 120.0,
+  "observedAtUtc": "2025-10-30T17:30:35.064000Z",
+  "checks": [
+    {
+      "catalog": "Gaia DR3",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    },
+    {
+      "catalog": "SIMBAD",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    },
+    {
+      "catalog": "CatWISE2020",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    },
+    {
+      "catalog": "UltracoolSheet",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    },
+    {
+      "catalog": "SkyBoT",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    },
+    {
+      "catalog": "VizieR",
+      "status": "skipped",
+      "scope": "Live review disabled",
+      "sourceUrl": "",
+      "servedBy": null,
+      "retrievedAtUtc": null,
+      "responseSha256": null,
+      "columns": [],
+      "rows": [],
+      "limitations": [
+        "Offline mode; no live catalog check was performed."
+      ]
+    }
+  ],
+  "limitations": [
+    "These are cone-search review aids, not automated cross-identifications or a complete novelty search.",
+    "Unmatched does not mean new. Different epochs, sensitivity, crowding, motion and incomplete catalogs can explain a miss.",
+    "DSS and Gaia detections are not required for a cold-object candidate. WISE catalog presence is not an image detection."
+  ]
+}

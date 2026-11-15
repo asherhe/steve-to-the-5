@@ -1,0 +1,1147 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FastAPI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/findings/auth/config": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Auth Config",
+        "operationId": "auth_config_api_findings_auth_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicAuthConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/findings/leaderboard": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Leaderboard",
+        "operationId": "leaderboard_api_findings_leaderboard_get",
+        "parameters": [
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "daily",
+                "allTime"
+              ],
+              "type": "string",
+              "default": "daily",
+              "title": "Board"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaderboardResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/findings/reviews": {
+      "post": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Review",
+        "operationId": "review_api_findings_reviews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/findings": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Viewport",
+        "operationId": "viewport_api_findings_get",
+        "parameters": [
+          {
+            "name": "ra",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 360,
+              "title": "Ra"
+            }
+          },
+          {
+            "name": "dec",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 90,
+              "minimum": -90,
+              "title": "Dec"
+            }
+          },
+          {
+            "name": "radiusDeg",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "maximum": 180,
+              "exclusiveMinimum": 0,
+              "title": "Radiusdeg"
+            }
+          },
+          {
+            "name": "zoom",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 0,
+              "title": "Zoom"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Viewport"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Create Finding",
+        "operationId": "create_finding_api_findings_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedFinding"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/findings/{finding_id}": {
+      "get": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Get Finding",
+        "operationId": "get_finding_api_findings__finding_id__get",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Finding"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/findings/{finding_id}/replies": {
+      "post": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Create Reply",
+        "operationId": "create_reply_api_findings__finding_id__replies_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reply"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Cluster": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "zoomTo": {
+            "type": "integer",
+            "title": "Zoomto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "count",
+          "zoomTo"
+        ],
+        "title": "Cluster"
+      },
+      "CreatedFinding": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "CreatedFinding"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Finding": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/Mark"
+            },
+            "type": "array",
+            "title": "Marks"
+          },
+          "authorDisplayName": {
+            "type": "string",
+            "title": "Authordisplayname"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "title": "Createdatutc"
+          },
+          "replies": {
+            "items": {
+              "$ref": "#/components/schemas/Reply"
+            },
+            "type": "array",
+            "title": "Replies"
+          },
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey",
+            "default": "spherex"
+          },
+          "candidateReview": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidatereview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "id",
+          "title",
+          "comparisonId",
+          "note",
+          "marks",
+          "authorDisplayName",
+          "createdAtUtc",
+          "replies"
+        ],
+        "title": "Finding"
+      },
+      "FindingInput": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          },
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey",
+            "default": "spherex"
+          },
+          "reviewId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Note"
+          },
+          "marks": {
+            "items": {
+              "$ref": "#/components/schemas/Mark"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Marks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "comparisonId",
+          "title",
+          "note"
+        ],
+        "title": "FindingInput"
+      },
+      "LeaderboardEntry": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "findingId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Findingid"
+          },
+          "comparisonId": {
+            "type": "string",
+            "title": "Comparisonid"
+          },
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "rarityScore": {
+            "type": "integer",
+            "title": "Rarityscore"
+          },
+          "tier": {
+            "type": "null",
+            "title": "Tier"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "fovArcmin": {
+            "type": "number",
+            "title": "Fovarcmin"
+          },
+          "enteredAtUtc": {
+            "type": "string",
+            "title": "Enteredatutc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "id",
+          "findingId",
+          "comparisonId",
+          "survey",
+          "rank",
+          "displayName",
+          "title",
+          "rarityScore",
+          "reasons",
+          "fovArcmin",
+          "enteredAtUtc"
+        ],
+        "title": "LeaderboardEntry"
+      },
+      "LeaderboardResult": {
+        "properties": {
+          "board": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "allTime"
+            ],
+            "title": "Board"
+          },
+          "placeholder": {
+            "type": "boolean",
+            "title": "Placeholder",
+            "default": false
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "board",
+          "entries"
+        ],
+        "title": "LeaderboardResult"
+      },
+      "Mark": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "frameId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Frameid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "frameId"
+        ],
+        "title": "Mark"
+      },
+      "Pin": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "id",
+          "title"
+        ],
+        "title": "Pin"
+      },
+      "PublicAuthConfig": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "publishableKey": {
+            "type": "string",
+            "title": "Publishablekey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "publishableKey"
+        ],
+        "title": "PublicAuthConfig"
+      },
+      "Reply": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "authorDisplayName": {
+            "type": "string",
+            "title": "Authordisplayname"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "title": "Createdatutc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "authorDisplayName",
+          "text",
+          "createdAtUtc"
+        ],
+        "title": "Reply"
+      },
+      "ReplyInput": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ReplyInput"
+      },
+      "ReviewInput": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          },
+          "frameId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Frameid"
+          },
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey",
+            "default": "spherex"
+          },
+          "radiusArcsec": {
+            "type": "number",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Radiusarcsec",
+            "default": 120
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "comparisonId",
+          "frameId"
+        ],
+        "title": "ReviewInput"
+      },
+      "ReviewResponse": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          },
+          "frameId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Frameid"
+          },
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey",
+            "default": "spherex"
+          },
+          "radiusArcsec": {
+            "type": "number",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Radiusarcsec",
+            "default": 120
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "observedAtUtc": {
+            "type": "string",
+            "title": "Observedatutc"
+          },
+          "reviewedAtUtc": {
+            "type": "string",
+            "title": "Reviewedatutc"
+          },
+          "scoreVersion": {
+            "type": "string",
+            "title": "Scoreversion"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "catalogReview": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Catalogreview"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "comparisonId",
+          "frameId",
+          "id",
+          "observedAtUtc",
+          "reviewedAtUtc",
+          "scoreVersion",
+          "score",
+          "reasons",
+          "catalogReview",
+          "limitations"
+        ],
+        "title": "ReviewResponse"
+      },
+      "Viewport": {
+        "properties": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Pin"
+                },
+                {
+                  "$ref": "#/components/schemas/Cluster"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "Viewport"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

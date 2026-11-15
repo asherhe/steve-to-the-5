@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "generate:findings-types": "openapi-typescript services/findings/fixtures/openapi.json -o web/src/findings/findings.generated.ts",
     "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"npm:dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",

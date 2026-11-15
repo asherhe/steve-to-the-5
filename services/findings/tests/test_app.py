@@ -49,6 +49,13 @@ class StandaloneAppTest(unittest.TestCase):
             self.assertEqual([r.url.path for r in archive], ["/api/comparisons/fixture-comparison"])
         self.assertTrue(self.http.is_closed)
 
+    def test_browser_auth_configuration_contains_only_public_credentials(self):
+        with TestClient(self.app) as client:
+            response = client.get("/api/findings/auth/config")
+            self.assertEqual(response.json(), {"url": "https://supabase.example", "publishableKey": "public-key"})
+            self.assertNotIn("server-key", response.text)
+            self.assertEqual(self.requests, [])
+
     def test_missing_unavailable_and_malformed_archive(self):
         with TestClient(self.app) as client:
             for response, status, code in (

@@ -1,0 +1,66 @@
+{
+  "checkedAtUtc": "2026-11-15T07:54:17.722232+00:00",
+  "kind": "live_catalog_smoke_not_image_detection",
+  "target": "WISE 0855 challenge reference position",
+  "epochNote": "Chosen query time for adapter smoke test; not attached to an observed image",
+  "checks": [
+    {
+      "catalog": "Gaia DR3",
+      "status": "partial",
+      "rowCount": 50,
+      "scope": "Gaia DR3, reference epoch 2016.0; positions in degrees, motions mas/yr, parallax mas, G magnitude",
+      "servedBy": "AIP Gaia mirror (Potsdam)",
+      "retrievedAtUtc": "2026-11-15T07:54:04Z"
+    },
+    {
+      "catalog": "SIMBAD",
+      "status": "candidates",
+      "rowCount": 6,
+      "scope": "SIMBAD basic object records in the selected cone",
+      "servedBy": "SIMBAD mirror (CfA Harvard)",
+      "retrievedAtUtc": "2026-11-15T07:53:58.738649Z"
+    },
+    {
+      "catalog": "CatWISE2020",
+      "status": "unavailable",
+      "rowCount": 0,
+      "scope": "Search did not complete",
+      "servedBy": null,
+      "retrievedAtUtc": null
+    },
+    {
+      "catalog": "UltracoolSheet",
+      "status": "candidates",
+      "rowCount": 1,
+      "scope": "UltracoolSheet 2.1.0 Main table, positions propagated to J2000 by the compilation",
+      "servedBy": "Zenodo release 15802304",
+      "retrievedAtUtc": "2026-11-15T07:54:03.382338Z"
+    },
+    {
+      "catalog": "SkyBoT",
+      "status": "unavailable",
+      "rowCount": 0,
+      "scope": "Search did not complete",
+      "servedBy": null,
+      "retrievedAtUtc": null
+    },
+    {
+      "catalog": "VizieR",
+      "status": "unavailable",
+      "rowCount": 0,
+      "scope": "Search did not complete",
+      "servedBy": null,
+      "retrievedAtUtc": null
+    }
+  ],
+  "followUp": {
+    "checkedAtUtc": "2026-11-15T07:56:46.679492+00:00",
+    "SkyBoT": {
+      "status": "no_candidates",
+      "rowCount": 0,
+      "note": "Explicit empty-cone response recognized; regression-tested separately from service errors."
+    },
+    "CatWISE2020": "Second probe also timed out within 20 seconds. Successful response not verified.",
+    "VizieR": "Second probe also timed out. Successful response not verified."
+  }
+}

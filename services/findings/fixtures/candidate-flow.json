@@ -1,0 +1,171 @@
+{
+  "_meta": {
+    "kind": "synthetic_catalog_and_ranking_fixture",
+    "note": "Saved real example geometry with invented catalog responses; never proof of live review."
+  },
+  "request": {
+    "ra": 304.693508808,
+    "dec": 42.4436872991,
+    "comparisonId": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+    "frameId": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
+    "survey": "spherex",
+    "radiusArcsec": 120.0
+  },
+  "review": {
+    "ra": 304.693508808,
+    "dec": 42.4436872991,
+    "comparisonId": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+    "frameId": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
+    "survey": "spherex",
+    "radiusArcsec": 120.0,
+    "id": "66666666-6666-4666-8666-666666666666",
+    "observedAtUtc": "2025-10-30T17:30:35.064000Z",
+    "reviewedAtUtc": "2026-11-15T00:00:00Z",
+    "scoreVersion": "review-effort-v1",
+    "score": 50,
+    "reasons": [
+      "+10: saved real dated image with a marked sky position",
+      "+10: saved comparison contains at least two observation dates",
+      "+5: completed Gaia DR3 cone search (regardless of match count)",
+      "+5: completed SIMBAD cone search (regardless of match count)",
+      "+5: completed CatWISE2020 cone search (regardless of match count)",
+      "+5: completed UltracoolSheet cone search (regardless of match count)",
+      "+5: completed SkyBoT cone search (regardless of match count)",
+      "+5: completed VizieR cone search (regardless of match count)"
+    ],
+    "catalogReview": {
+      "mode": "live",
+      "ra": 304.693508808,
+      "dec": 42.4436872991,
+      "radiusArcsec": 120.0,
+      "observedAtUtc": "2025-10-30T17:30:35.064000Z",
+      "checks": [
+        {
+          "catalog": "Gaia DR3",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "SIMBAD",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "CatWISE2020",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "UltracoolSheet",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "SkyBoT",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "VizieR",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        }
+      ],
+      "limitations": [
+        "These are cone-search review aids, not automated cross-identifications or a complete novelty search.",
+        "Unmatched does not mean new. Different epochs, sensitivity, crowding, motion and incomplete catalogs can explain a miss.",
+        "DSS and Gaia detections are not required for a cold-object candidate. WISE catalog presence is not an image detection."
+      ]
+    },
+    "limitations": [
+      "Points reward documented review effort, not rarity, scientific significance or a discovery.",
+      "No element, molecule, physical temperature or novelty is inferred from image pixels.",
+      "No DSS, WISE or Gaia detection is required. An unavailable or partial catalog earns no points."
+    ]
+  },
+  "leaderboard": {
+    "board": "allTime",
+    "placeholder": false,
+    "entries": [
+      {
+        "id": "77777777-7777-4777-8777-777777777777",
+        "findingId": "77777777-7777-4777-8777-777777777777",
+        "comparisonId": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+        "survey": "spherex",
+        "rank": 1,
+        "displayName": "Fixture observer",
+        "title": "Synthetic review example",
+        "rarityScore": 50,
+        "tier": null,
+        "reasons": [
+          "+10: saved real dated image with a marked sky position",
+          "+10: saved comparison contains at least two observation dates",
+          "+5: completed Gaia DR3 cone search (regardless of match count)",
+          "+5: completed SIMBAD cone search (regardless of match count)",
+          "+5: completed CatWISE2020 cone search (regardless of match count)",
+          "+5: completed UltracoolSheet cone search (regardless of match count)",
+          "+5: completed SkyBoT cone search (regardless of match count)",
+          "+5: completed VizieR cone search (regardless of match count)"
+        ],
+        "ra": 304.693508808,
+        "dec": 42.4436872991,
+        "fovArcmin": 1.0,
+        "enteredAtUtc": "2026-11-15T00:00:00Z"
+      }
+    ]
+  }
+}

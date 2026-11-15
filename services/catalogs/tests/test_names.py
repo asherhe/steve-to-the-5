@@ -20,7 +20,7 @@ def no_network(monkeypatch):
     monkeypatch.setattr(requests.sessions.Session, "request", fail)
 
 ROOT = Path(__file__).resolve().parents[3]
-VECTORS = json.loads((ROOT / "fixtures/catalogs/name-vectors.json").read_text())
+VECTORS = json.loads((ROOT / "fixtures/catalogs/name-vectors.json").read_text(encoding="utf-8"))
 
 @pytest.mark.parametrize("vector", VECTORS)
 def test_shared_name_vectors(vector):
@@ -47,7 +47,7 @@ def test_only_one_common_name_and_verified_gaia_join():
 
 
 def test_alias_collision_is_rejected(tmp_path):
-    entries = json.loads((get_settings().fixtures_dir / "presets.json").read_text())
+    entries = json.loads((get_settings().fixtures_dir / "presets.json").read_text(encoding="utf-8"))
     entries["presets"][1]["aliases"].append("GJ 699")
     (tmp_path / "presets.json").write_text(json.dumps(entries))
     with pytest.raises(ValueError, match="collision"):
@@ -56,9 +56,9 @@ def test_alias_collision_is_rejected(tmp_path):
 
 def test_snapshot_contract_and_representative_responses():
     from app.main import create_app
-    assert json.loads((ROOT / "fixtures/catalogs/openapi.json").read_text()) == create_app().openapi()
+    assert json.loads((ROOT / "fixtures/catalogs/openapi.json").read_text(encoding="utf-8")) == create_app().openapi()
     expected = [ResolveResult.model_validate({k: e[k] for k in ("name", "ra", "dec", "identity", "positionProvenance")}).model_dump(by_alias=True) for e in load_presets(str(get_settings().fixtures_dir))]
-    assert json.loads((ROOT / "fixtures/catalogs/resolved-targets.json").read_text()) == expected
+    assert json.loads((ROOT / "fixtures/catalogs/resolved-targets.json").read_text(encoding="utf-8")) == expected
 
 
 def _csv(rows):
@@ -202,7 +202,7 @@ def test_direct_partial_query_requires_selection(client, monkeypatch, query, ext
 
 
 def test_partial_error_matches_shared_fixture(client):
-    fixture = json.loads((ROOT / "fixtures/catalogs/errors/incomplete-name.json").read_text())
+    fixture = json.loads((ROOT / "fixtures/catalogs/errors/incomplete-name.json").read_text(encoding="utf-8"))
     response = client.get("/api/resolve", params={"name":"barnard"})
     assert response.status_code == fixture["httpStatus"]
     assert response.json() == fixture["body"]
@@ -225,8 +225,8 @@ def test_new_source_enrichment_has_verified_component_scope():
 
 
 def test_component_enrichment_fixture_and_duplicate_binding_rejection(tmp_path):
-    data = json.loads((get_settings().fixtures_dir / "presets.json").read_text())
-    expected = json.loads((ROOT / "fixtures/catalogs/source-identities.json").read_text())
+    data = json.loads((get_settings().fixtures_dir / "presets.json").read_text(encoding="utf-8"))
+    expected = json.loads((ROOT / "fixtures/catalogs/source-identities.json").read_text(encoding="utf-8"))
     from app.models import ObjectIdentity
     assert expected == [ObjectIdentity.model_validate(value).model_dump(by_alias=True) for value in data["sourceIdentities"]]
     data["sourceIdentities"][0]["catalogIds"] = [{"catalog":"Gaia","dataRelease":"DR3","id":"4472832130942575872"}]

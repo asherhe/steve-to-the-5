@@ -9,6 +9,17 @@ this brief. Where this brief and the implementation disagree, the implementation
 per-owner READMEs are authoritative; surface material conflicts to the coordinator rather
 than silently changing a contract.
 
+## Masterplan checkpoint (2026-11-15)
+
+The current user has authorized the cold-object review/engagement workflow and explicitly
+included all six catalog review aids. This supersedes the deferral of that workflow only.
+The backend checkpoint provides persisted catalog-review snapshots and participation-point
+leaderboard routes; the production frontend is still the earlier placeholder and has not
+been integrated. Read `MASTERPLAN-HANDOFF.md` for the exact implemented scope, scientific
+corrections, setup, verification, and remaining work. No discovery, composition, physical
+temperature or catalog-exhaustiveness inference is authorized by these scores. WISE playback
+already exists and is preserved. Hosted migration, auth and deployment remain unverified.
+
 ## What we are building
 
 NASA Space Apps 2026 asks for a public web tool where anyone enters right ascension and

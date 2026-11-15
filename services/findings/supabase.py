@@ -67,6 +67,8 @@ class Supabase:
             response = await self.client.request(
                 method, f"{self.url}/rest/v1/{endpoint}", headers=self.server_headers, **kwargs
             )
+            if response.status_code == 409:
+                raise ApiError(409, "duplicate_candidate", "You already shared this reviewed image position. Open its existing leaderboard entry to discuss it.")
             response.raise_for_status()
             return response.json() if response.content else None
         except (httpx.HTTPError, ValueError) as error:

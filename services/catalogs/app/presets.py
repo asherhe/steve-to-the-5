@@ -30,12 +30,12 @@ def validate_name(name: str) -> None:
 
 @lru_cache(maxsize=4)
 def naming_version(directory: str) -> str:
-    return json.loads((Path(directory) / "presets.json").read_text())["version"]
+    return json.loads((Path(directory) / "presets.json").read_text(encoding="utf-8"))["version"]
 
 
 @lru_cache(maxsize=4)
 def load_presets(directory: str) -> list[dict]:
-    entries = json.loads((Path(directory) / "presets.json").read_text())["presets"]
+    entries = json.loads((Path(directory) / "presets.json").read_text(encoding="utf-8"))["presets"]
     seen = {}
     for entry in entries:
         ObjectIdentity.model_validate(entry["identity"])
@@ -68,7 +68,7 @@ def partial_preset_names(name: str, settings: Settings) -> list[str]:
 @lru_cache(maxsize=4)
 def load_gaia_identities(directory: str) -> dict[str, dict]:
     """Component-level enrichment is not a new target preset or search alias."""
-    data = json.loads((Path(directory) / "presets.json").read_text())
+    data = json.loads((Path(directory) / "presets.json").read_text(encoding="utf-8"))
     identities = [entry["identity"] for entry in load_presets(directory)] + data.get("sourceIdentities", [])
     index = {}
     for identity in identities:

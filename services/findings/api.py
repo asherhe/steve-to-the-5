@@ -1,5 +1,6 @@
 from collections.abc import Awaitable, Callable
-from typing import Annotated
+from typing import Annotated, Literal
+import asyncio
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -8,7 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .models import CreatedFinding, ErrorResponse, Finding, FindingInput, Reply, ReplyInput, Viewport
+from .models import CreatedFinding, ErrorResponse, Finding, FindingInput, Reply, ReplyInput, Viewport, ReviewInput, ReviewResponse, LeaderboardResult, PublicAuthConfig
+from .review import prepare_review
 from .supabase import ApiError, Supabase
 
 ComparisonLoader = Callable[[str], Awaitable[dict | None]]
@@ -42,7 +44,7 @@ class FindingsRoute(APIRoute):
         return handle
 
 
-def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -> APIRouter:
+def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
         responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
@@ -52,6 +54,47 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
         if credentials is None:
             raise ApiError(401, "unauthorized", "Sign in to post or reply.")
         return await supabase.user(credentials.credentials)
+
+    async def evidence(identifier, survey):
+        loader = load_wise_comparison if survey == "wise" else load_saved_comparison
+        if loader is None:
+            raise ApiError(503, "comparison_unavailable", "This survey's saved evidence service is not configured.")
+        comparison = await loader(identifier)
+        if comparison is None:
+            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
+        if not isinstance(comparison, dict) or comparison.get("id") != identifier:
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        return comparison
+
+    review_slots = asyncio.Semaphore(2)
+
+    @router.get("/auth/config", response_model=PublicAuthConfig)
+    async def auth_config():
+        return {"url": supabase.url, "publishableKey": supabase.publishable_key}
+
+    @router.get("/leaderboard", response_model=LeaderboardResult)
+    async def leaderboard(board: Literal["daily", "allTime"] = "daily"):
+        rows = await supabase.rpc("spherex_review_leaderboard", {"p_board": board})
+        return {"board": board, "placeholder": False, "entries": rows}
+
+    @router.post("/reviews", status_code=201, response_model=ReviewResponse,
+                 responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}})
+    async def review(data: ReviewInput, author=Depends(signed_in)):
+        if load_catalog_review is None:
+            raise ApiError(503, "catalogs_unavailable", "Catalog review is not configured.")
+        if review_slots.locked():
+            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
+        async with review_slots:
+            comparison = await evidence(data.comparisonId, data.survey)
+            response, candidate_key = await prepare_review(data, comparison, load_catalog_review)
+            await supabase.request("POST", "spherex_candidate_reviews", json={
+                "id": str(response.id), "author_id": author.id,
+                "comparison_id": data.comparisonId, "survey": data.survey,
+                "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key,
+                "fov_arcmin": comparison["field"]["fovArcmin"],
+                "score": response.score, "report": response.model_dump(mode="json"),
+            })
+            return response
 
     @router.get("", response_model=Viewport)
     async def viewport(
@@ -75,11 +118,7 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
 
     @router.post("", status_code=201, response_model=CreatedFinding, responses={401: {"model": ErrorResponse}})
     async def create_finding(finding: FindingInput, author=Depends(signed_in)):
-        comparison = await load_saved_comparison(finding.comparisonId)
-        if comparison is None:
-            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
-        if not isinstance(comparison, dict) or comparison.get("id") != finding.comparisonId:
-            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        comparison = await evidence(finding.comparisonId, finding.survey)
         frames = comparison.get("frames")
         if not isinstance(frames, list) or not frames or any(
             not isinstance(frame, dict) or not isinstance(frame.get("id"), str) or not frame["id"]
@@ -91,6 +130,21 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
             raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
         if any(mark.frameId not in frame_ids for mark in finding.marks):
             raise ApiError(422, "invalid_frame", "Each mark must belong to the saved comparison.")
+
+        candidate_key = None
+        if finding.reviewId:
+            reviews = await supabase.request("GET", "spherex_candidate_reviews", params={
+                "id": f"eq.{finding.reviewId}", "author_id": f"eq.{author.id}", "select": "*", "limit": 1})
+            if not reviews:
+                raise ApiError(422, "invalid_review", "Choose your own completed candidate review.")
+            reviewed = reviews[0]
+            if (reviewed["comparison_id"], reviewed["survey"], reviewed["ra"], reviewed["dec"]) != (
+                    finding.comparisonId, finding.survey, finding.ra, finding.dec):
+                raise ApiError(422, "invalid_review", "The review belongs to a different image or position. Run it again.")
+            report = reviewed["report"]
+            if not any(mark.frameId == report["frameId"] and mark.ra == finding.ra and mark.dec == finding.dec for mark in finding.marks):
+                raise ApiError(422, "invalid_review", "Keep the reviewed position marked on its original frame.")
+            candidate_key = reviewed["candidate_key"]
 
         finding_id = uuid4()
         await supabase.request(
@@ -106,6 +160,9 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader) -
                 "marks": [mark.model_dump() for mark in finding.marks],
                 "author_id": author.id,
                 "author_display_name": author.display_name,
+                "survey": finding.survey,
+                "review_id": str(finding.reviewId) if finding.reviewId else None,
+                "candidate_key": candidate_key,
             },
         )
         return {"id": finding_id}

@@ -43,6 +43,8 @@ coverage.xml
 junit.xml
 junit-*.xml
 *.log
+.local-test-temp/
+pytest-cache-files-*/
 
 # Superseded response examples: recoverable from Git, retained locally
 /fixtures/archive/history/responses-v1/

@@ -11,6 +11,18 @@ Malformed requests, missing records and unauthorized writes use an error body
 `{code, message}`. The coordinator owns the shared OpenAPI/generated types, root
 dependencies, app entry points, deployment and merges; route any contract change through it.
 
+## Masterplan backend checkpoint (2026-11-15)
+
+User-authorized additive work on `master-plan`, based on `origin/main` at `5c36016`:
+`GET /api/catalogs/review`, `POST /api/findings/reviews`,
+`GET /api/findings/leaderboard`, and `GET /api/findings/auth/config` are implemented.
+Finding writes add optional `reviewId` and `survey`; threads add `candidateReview` and
+`survey`. See generated schemas in `fixtures/catalogs/openapi.json` and
+`services/findings/fixtures/openapi.json`, the fourth findings migration, and
+`MASTERPLAN-HANDOFF.md`. The coordinator performed the shared edits in this session.
+The new score measures documented review effort; it is not rarity or detection evidence.
+Frontend integration is pending. Do not claim this backend checkpoint completes the app.
+
 ## Shared interface (as implemented)
 
 | Operations | Request and response |
