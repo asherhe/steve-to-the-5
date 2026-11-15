@@ -81,6 +81,15 @@ class EndpointDown(Exception):
     """The endpoint could not answer: connection failure, timeout or server error."""
 
 
+class EndpointThrottled(EndpointDown):
+    """The endpoint is healthy but refused with HTTP 429 (too many requests), even after
+    waiting as asked. It gets a short cooldown, not the one used for a dead server."""
+
+
+# A rate limit usually clears within a minute; a dead server is skipped for the full cooldown.
+THROTTLE_COOLDOWN_S = 30.0
+
+
 class AllEndpointsDown(Exception):
     """Every endpoint failed or the overall deadline ran out. Carries per-endpoint reasons."""
 
@@ -125,10 +134,11 @@ class Failover:
         with self._lock:
             self._down_until.clear()
 
-    def _mark(self, endpoint: Endpoint, down: bool) -> None:
+    def _mark(self, endpoint: Endpoint, down: bool, throttled: bool = False) -> None:
         with self._lock:
             if down:
-                self._down_until[endpoint.url] = time.monotonic() + self.cooldown_s
+                cooldown = min(self.cooldown_s, THROTTLE_COOLDOWN_S) if throttled else self.cooldown_s
+                self._down_until[endpoint.url] = time.monotonic() + cooldown
             else:
                 self._down_until.pop(endpoint.url, None)
 
@@ -177,7 +187,7 @@ class Failover:
             try:
                 result = call(endpoint, deadline)
             except EndpointDown as exc:
-                self._mark(endpoint, down=True)
+                self._mark(endpoint, down=True, throttled=isinstance(exc, EndpointThrottled))
                 failures.append((endpoint.name, str(exc) or "unavailable"))
                 continue
             finally:

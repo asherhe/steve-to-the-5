@@ -143,6 +143,9 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
                   <strong>{c.catalog}</strong>
                   <span className="point-check__chip">{statusText[c.status]}{c.rows?.length ? ` · ${c.rows.length}` : ""}</span>
                   {nearest && <span className="point-check__nearest">nearest {nearest.name} at {nearest.arcsec.toFixed(1)}″</span>}
+                  {c.status === "unavailable" && /^Not checked:\s*/.test(c.scope) && (
+                    <span className="point-check__reason">{c.scope.replace(/^Not checked:\s*/, "")}</span>
+                  )}
                 </li>
               );
             })}

@@ -155,7 +155,8 @@ class SpectralTests(unittest.TestCase):
         for count in (2, 3):
             with self.subTest(unavailable=count), evidence_directory() as directory:
                 catalog = report()
-                for check in catalog['checks'][:count]:
+                # Gaia DR3 is optional (see test_point_reviews); count outages among required catalogs.
+                for check in catalog['checks'][1:count + 1]:
                     check.update(status='unavailable')
                 async def catalogs(*_): return catalog
                 async def cutouts(*_): return [water_source()]

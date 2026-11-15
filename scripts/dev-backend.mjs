@@ -31,8 +31,10 @@ const services = {
     minPythonMinor: 12,
     args: ["-m", "services.wise", "serve", "--port", "8020"],
   },
-  // Needs SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVER_KEY and
-  // SPHEREX_COMPARISON_BASE_URL in the environment; see services/findings/README.md.
+  // With SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVER_KEY and
+  // SPHEREX_COMPARISON_BASE_URL set, runs the live service. Without SUPABASE_URL it runs the
+  // local demo (FINDINGS_LOCAL_DEMO=1): point scoring only, no sign-in, nothing stored.
+  // See services/findings/README.md.
   findings: {
     directory: findings,
     cwd: root,
@@ -139,7 +141,9 @@ try {
   // Fixture mode (CATALOGS_LIVE=0) stays fully offline: the service ignores the flag there.
   const env = name === "gaia"
     ? { ...process.env, CATALOGS_LIVE: gaiaMode, CATALOGS_EXTERNAL_RESOLVE: process.env.CATALOGS_EXTERNAL_RESOLVE ?? (liveGaia ? "1" : "0") }
-    : process.env;
+    : name === "findings" && !process.env.SUPABASE_URL?.trim()
+      ? { ...process.env, FINDINGS_LOCAL_DEMO: process.env.FINDINGS_LOCAL_DEMO ?? "1" }
+      : process.env;
   process.exitCode = await run(python, service.args, service.cwd, env);
 } catch (error) {
   if (!stopSignal) console.error(error.message);

@@ -1,7 +1,8 @@
 """Server-calculated points for a marked sky point (point-check-v4).
 
 - 10 points: a known object. Any of the six catalogs lists a source in the cone.
-- 20 points: no returned catalog matches, at most two catalogs unavailable, and the point is bright
+- 20 points: no returned catalog matches, at most two of the other catalogs unavailable, and the
+  point is bright
   (brightness.BRIGHT_SNR) in at least MIN_BRIGHT_SURVEYS of SPHEREx, WISE, DSS and NEOSSat,
   measured here on cutouts this service fetches itself (cutouts.py).
 - 0 points otherwise; the point can still be posted for discussion.
@@ -9,6 +10,10 @@
 The API requires a real saved WISE blink. Known and unlisted sources can add 10
 for a usable SPHEREx aperture signal, 5 each for tentative water/methane/hydrogen
 patterns, and 5 for possible WISE variability. Bonuses require retained evidence.
+
+Gaia DR3 is not required for 20 points: a Gaia check that could not complete neither blocks
+them nor counts toward the two unavailable catalogs. A Gaia source in the cone still makes the
+point a known object.
 
 Without an observation time (a point on the undated mosaic) SkyBoT cannot run. Its expected
 skip is excluded from the incomplete-check gate. Brightness across surveys does not
@@ -32,6 +37,8 @@ from .models import CatalogIdentity, PointReviewInput, PointReviewResponse, Sour
 from .review import CATALOG_NAMES, REAL_EVIDENCE, evidence_position, valid_frames
 from .supabase import ApiError
 
+# Catalogs whose check may fail without blocking points. A match in them still counts.
+OPTIONAL_CATALOGS = frozenset({"Gaia DR3"})
 SCORE_VERSION = "point-check-v4"
 MIN_BRIGHT_SURVEYS = 2
 DUPLICATE_RADIUS_ARCSEC = 15.0
@@ -150,9 +157,13 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
 
     radius = f"{data.radiusArcsec:g}″"
     listed = [c["catalog"] for c in checks if c.get("status") in ("candidates", "partial") and c.get("rows")]
+    # Gaia matches still count above; an incomplete Gaia check is not required for points.
+    required = [c for c in checks if c["catalog"] not in OPTIONAL_CATALOGS]
+    optional_unchecked = [c["catalog"] for c in checks if c["catalog"] in OPTIONAL_CATALOGS
+                          and c.get("status") != "no_candidates" and c["catalog"] not in listed]
     # SkyBoT is skipped only when there is no observation time; see the module docstring.
-    unavailable = [c["catalog"] for c in checks if c.get("status") == "unavailable"]
-    unchecked = [c["catalog"] for c in checks if c.get("status") != "no_candidates"
+    unavailable = [c["catalog"] for c in required if c.get("status") == "unavailable"]
+    unchecked = [c["catalog"] for c in required if c.get("status") != "no_candidates"
                  and c.get("status") != "unavailable"
                  and not (c["catalog"] == "SkyBoT" and c.get("status") == "skipped" and observed is None)]
     if len(unavailable) > 2:
@@ -188,6 +199,8 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
             reasons.append("SkyBoT (known asteroids) needs an observation time and was not run; "
                            "brightness across surveys does not verify identity or rule out chance alignments.")
 
+    if optional_unchecked and not listed:
+        reasons.append(f"{', '.join(optional_unchecked)} could not be checked. It is not required for points.")
     breakdown = [ScorePart(key="base", points=score, reason=reasons[0])]
     if classification == "incomplete":
         spectrum = SpectralReview(status="not_eligible", message="Complete the applicable catalog checks before spectral scoring.")

@@ -74,6 +74,14 @@ Gaia; set `CATALOGS_EXTERNAL_RESOLVE=0` to opt out. Fixture mode never contacts 
 - **Capacity.** Each archive accepts 4 concurrent requests and has no queue. A full archive
   is skipped at once and is not put in cooldown. If every archive is full the response is
   `upstream_unavailable` with a "busy, try again" message.
+- **Rate limits.** An HTTP 429 ("too many requests") is not treated as a dead server. The
+  request waits as the archive asks (Retry-After, at most 10 s, 2 s by default) and retries
+  once if the attempt's deadline allows; a repeated 429 gives a 30-second cooldown instead of
+  the full one.
+- **Unavailable reasons.** In the six-catalog review, a check that could not complete has
+  `status: unavailable` and a `scope` of `Not checked: <reason>`, for example "the archive is
+  limiting how many requests it accepts" or "did not respond in time". It is never reported as
+  an empty result. The raw failure is kept in its limitations.
 - **Cooldown.** A failed archive is skipped for 3 minutes while another is usable. If every
   archive is cooling they are all tried anyway. `retry=true` on a request (the inspector's
   **Try again** button) probes cooling archives in their normal order.

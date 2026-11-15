@@ -17,7 +17,7 @@ class DemoScoringTests(unittest.TestCase):
     def test_factory_needs_no_supabase_and_exposes_no_public_writes(self):
         with patch.dict(os.environ, {}, clear=True), TestClient(create_demo_app()) as client:
             paths = client.get('/openapi.json').json()['paths']
-            self.assertEqual(set(paths), {'/api/findings/points/review',
+            self.assertEqual(set(paths), {'/api/findings/demo/points/review',
                 '/api/findings/spectral/{evidence_id}', '/api/findings/spectral/{evidence_id}/assets/{sha}.fits'})
             self.assertEqual(client.post('/api/findings', json={}).status_code, 404)
 
@@ -35,10 +35,10 @@ class DemoScoringTests(unittest.TestCase):
                 spectral_store=SpectralStore(directory), local_demo=True))
             with TestClient(app) as client:
                 body = {'ra': RA, 'dec': DEC}
-                self.assertEqual(client.post('/api/findings/points/review', json=body).json()['code'], 'wise_blink_required')
+                self.assertEqual(client.post('/api/findings/demo/points/review', json=body).json()['code'], 'wise_blink_required')
                 body['wiseComparisonId'] = comparison['id']
-                response = client.post('/api/findings/points/review', json=body)
-                self.assertEqual(response.status_code, 201, response.text)
+                response = client.post('/api/findings/demo/points/review', json=body)
+                self.assertEqual(response.status_code, 200, response.text)
                 review = response.json()
                 self.assertEqual(review['score'], 30)
                 self.assertEqual(review['scoreVersion'], 'point-check-v4')
@@ -47,7 +47,7 @@ class DemoScoringTests(unittest.TestCase):
                 self.assertEqual(client.get(review['spectral']['manifestUrl']).status_code, 200)
                 self.assertEqual(client.get(review['spectral']['samples'][0]['assetUrl']).status_code, 200)
                 comparison['provenance']['evidenceKind'] = 'synthetic_fixture'
-                self.assertEqual(client.post('/api/findings/points/review', json=body).status_code, 422)
+                self.assertEqual(client.post('/api/findings/demo/points/review', json=body).status_code, 422)
 
     def test_public_mode_still_requires_authentication(self):
         app = FastAPI()

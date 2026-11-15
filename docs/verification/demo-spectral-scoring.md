@@ -22,10 +22,10 @@ production OpenAPI was regenerated and had no changes.
 Executed checks:
 
 - Production typecheck/build passed; existing Aladin bundle-size warning remains.
-- Findings backend: 68 tests and 42 subtests passed, including measured synthetic
+- Findings backend after integrating `origin/main` at `039127b`: 76 tests and 45 subtests passed, including measured synthetic
   positive bonuses, WISE prerequisite, retained FITS/manifest reads, demo route
   isolation, production authentication and database integration.
-- Frontend: 103 tests passed, excluding the previously documented unfinished
+- Frontend after integration: 114 tests passed, excluding the previously documented unfinished
   `CheckChain.test.tsx`. New checks cover demo prerequisites, bonus display,
   local ranking persistence, duplicate blocking and explicit upstream errors.
 - Chrome: `DEMO_SCORING=1 node scripts/verify-spectral-browser.mjs` passed with
@@ -44,3 +44,10 @@ Executed checks:
 - JavaScript syntax and `git diff --check` passed.
 
 No hosted migration, Supabase write or deployed-origin check was performed.
+
+The merge preserves the incoming Gaia-optional scoring policy, catalog service
+rate-limit diagnostics and non-bundled frame fallback checks. Both local demo
+entry points use one shared router/scoring function. The browser calls
+`/api/findings/demo/points/review`; selected-WISE scoring errors are surfaced
+without substituting a catalog-only report. The merged browser check and build
+passed again. Viewer tests: 73 passed; affected catalog tests: 27 passed.

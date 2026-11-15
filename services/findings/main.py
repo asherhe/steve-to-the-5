@@ -6,26 +6,40 @@ import httpx
 from fastapi import FastAPI
 
 from . import cutouts
-from .api import create_router
+from .api import create_local_demo_router, create_router
 from .supabase import ApiError, Supabase
 from .spectral_store import SpectralStore
 
 
+def saved_comparison(body):
+    """The SPHEREx and WISE services return a saved comparison as {status, comparison,
+    diagnostics}; evidence checks need the comparison itself."""
+    if isinstance(body, dict) and "id" not in body and isinstance(body.get("comparison"), dict):
+        return body["comparison"]
+    return body
+
+
+def local_demo() -> bool:
+    """FINDINGS_LOCAL_DEMO=1 runs point scoring only: no Supabase, no sign-in, nothing stored."""
+    return os.environ.get("FINDINGS_LOCAL_DEMO", "").strip() == "1"
+
+
 def create_demo_app() -> FastAPI:
-    """Explicit local-only measurement service; bind to loopback, never a public write API."""
-    return create_app(local_demo=True)
+    """Explicit loopback demo factory, independent of Supabase configuration."""
+    return create_app(local_demo_mode=True)
 
 
-def create_app(*, local_demo=False) -> FastAPI:
-    required = ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
+def create_app(*, local_demo_mode=None) -> FastAPI:
+    demo = local_demo() if local_demo_mode is None else local_demo_mode
+    required = () if demo else ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
     missing = [name for name in required if not os.environ.get(name, "").strip()]
-    if missing and not local_demo:
+    if missing:
         raise RuntimeError("Missing server configuration: " + ", ".join(missing))
-    comparison_base = os.environ.get("SPHEREX_COMPARISON_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+    comparison_base = os.environ.get("SPHEREX_COMPARISON_BASE_URL", "http://127.0.0.1:8000").strip().rstrip("/")
     wise_base = os.environ.get("WISE_COMPARISON_BASE_URL", "http://127.0.0.1:8020").rstrip("/")
     catalog_base = os.environ.get("SPHEREX_CATALOG_BASE_URL", "http://127.0.0.1:8010").rstrip("/")
     client = httpx.AsyncClient(timeout=10.0, follow_redirects=False)
-    supabase = None if local_demo else Supabase(
+    supabase = None if demo else Supabase(
         client,
         os.environ["SUPABASE_URL"],
         os.environ["SUPABASE_PUBLISHABLE_KEY"],
@@ -46,10 +60,7 @@ def create_app(*, local_demo=False) -> FastAPI:
             if response.status_code == 404:
                 return None
             response.raise_for_status()
-            payload = response.json()
-            # Saved survey HTTP routes return ComparisonResponse, whereas the
-            # scoring/evidence layer consumes its immutable comparison manifest.
-            return payload.get("comparison") if isinstance(payload, dict) and "comparison" in payload else payload
+            return saved_comparison(response.json())
         except (httpx.HTTPError, ValueError) as error:
             raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.") from error
 
@@ -97,10 +108,15 @@ def create_app(*, local_demo=False) -> FastAPI:
         # Same client; cutout requests set their own timeouts and follow archive redirects.
         return await cutouts.fetch_all(client, ra, dec)
 
+    spectral_store = SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))
     app = FastAPI(lifespan=lifespan)
+    if demo:
+        app.include_router(create_local_demo_router(load_saved_comparison, load_wise_comparison=load_wise_comparison,
+            load_catalog_review=load_catalog_review, load_cutouts=load_cutouts, load_asset=load_asset,
+            spectral_store=spectral_store))
+        return app
     app.include_router(create_router(supabase, load_saved_comparison,
         load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
-        load_cutouts=load_cutouts, local_demo=local_demo,
-        spectral_store=SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))))
+        load_cutouts=load_cutouts, spectral_store=spectral_store))
 
     return app

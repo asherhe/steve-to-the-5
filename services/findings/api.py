@@ -46,6 +46,14 @@ class FindingsRoute(APIRoute):
         return handle
 
 
+LOCAL_DEMO_NOTE = ("LOCAL DEMO: real survey measurements; posts and rankings are saved only in this browser.")
+
+
+def create_local_demo_router(load_saved_comparison: ComparisonLoader, **loaders) -> APIRouter:
+    """Compatibility entry point for the explicit local measurement-only factory."""
+    return create_router(None, load_saved_comparison, local_demo=True, **loaders)
+
+
 def create_router(supabase: Supabase | None, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
                   load_asset=None, load_cutouts=None, spectral_store=None, local_demo=False) -> APIRouter:
     router = APIRouter(
@@ -98,10 +106,10 @@ def create_router(supabase: Supabase | None, load_saved_comparison: ComparisonLo
             return await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
 
     if local_demo:
-        @router.post("/points/review", status_code=201, response_model=PointReviewResponse)
+        @router.post("/demo/points/review", response_model=PointReviewResponse)
         async def demo_point_review(data: PointReviewInput):
             response, _, _ = await measure_point(data)
-            response.limitations.insert(0, "LOCAL DEMO: real survey measurements; posts and rankings are saved only in this browser.")
+            response.limitations.insert(0, LOCAL_DEMO_NOTE)
             return response
 
         # The demo factory has measurements and immutable evidence only: no auth,

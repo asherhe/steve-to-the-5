@@ -1,11 +1,18 @@
-/** Browser-local posts and rankings, using the local measurement service for real v4 scores. */
+/** Explicitly simulated local workflow: posts, replies and the leaderboard live only in this
+ *  browser. Points come from the local findings service when it runs in demo mode
+ *  (FINDINGS_LOCAL_DEMO=1, started by `npm run dev`): same rules as the live service, including
+ *  the brightness measurement, so 20 points are possible. Without it, the public catalog check
+ *  still runs, but brightness is not measured and the simulation cannot award 20 points. */
 import { createCatalogClient } from '../inspector/api';
 import fixture from '../../../services/findings/fixtures/candidate-flow.json';
 import examples from './retained-examples.json';
 import type { ReviewClient } from './api';
-import type { CandidateReview, FindingDetail, FindingReply, PointReview, SavedReview } from './types';
-import { FindingsApiError, createFindingsClient } from './api';
+import type { CandidateReview, FindingDetail, FindingReply, FrameRef, PointReview, PointReviewInput, SavedReview } from './types';
+import { FindingsApiError } from './api';
+import { catalogSources, catalogAvailability } from '../viewer/catalogCheckSummary';
 import { angularSeparationArcsec } from '../inspector/propagate';
+import { createArchiveDataSource, createWiseDataSource } from '../viewer/archive';
+import { parsePointReview, sameFrame } from './reviewContract';
 import type { LeaderboardResult } from '../leaderboard/types';
 import type { AuthGateway, AuthSession } from './auth';
 
@@ -24,7 +31,6 @@ export const mockAuth: AuthGateway = {
 };
 const reviews = new Map<string, SavedReview>();
 const catalog = createCatalogClient();
-const measurements = createFindingsClient();
 
 function duplicateOf(review: PointReview, existing = read()): PointReview['duplicate'] {
   for (const f of existing) {
@@ -35,19 +41,100 @@ function duplicateOf(review: PointReview, existing = read()): PointReview['dupli
   }
   return null;
 }
+// Saved comparisons the viewer can load, by survey (the WISE band only affects new searches).
+// `fetch` is looked up on each call, not captured when this module loads.
+const request: typeof fetch = (input, init) => fetch(input, init);
+const savedComparisons = { spherex: createArchiveDataSource(request), wise: createWiseDataSource(1, request) };
+const realEvidence = new Set(['real_archive', 'saved_real_example']);
+
+/** Observation time of a marked frame, as the findings service would establish it: from the
+ *  bundled examples, or else from the saved SPHEREx or WISE comparison the frame belongs to. */
+async function frameObservedAt(ref: FrameRef, signal?: AbortSignal): Promise<string> {
+  const bundled = examples.find(item => item.id === ref.comparisonId)?.frames.find(item => item.id === ref.frameId);
+  if (bundled) return bundled.observedAtUtc;
+  let saved;
+  try { saved = await savedComparisons[ref.survey].loadSaved(ref.comparisonId, signal); }
+  catch {
+    aborted(signal);
+    throw new FindingsApiError(503, 'comparison_unavailable',
+      `The ${ref.survey === 'wise' ? 'WISE time-lapse' : 'SPHEREx archive'} service could not load this frame's comparison. Try again, or mark the point on the reference map.`);
+  }
+  aborted(signal);
+  if (!saved) throw new FindingsApiError(422, 'invalid_frame', 'This frame\'s saved comparison was not found. Mark the point on the reference map instead.');
+  if (!realEvidence.has(String(saved.provenance?.evidenceKind)))
+    throw new FindingsApiError(422, 'not_real_evidence', 'Points need real observations; synthetic data cannot earn points.');
+  const frame = saved.frames.find(item => item.id === ref.frameId);
+  if (!frame) throw new FindingsApiError(422, 'invalid_frame', 'Choose a frame from the saved comparison.');
+  return frame.observedAtUtc;
+}
+
+/** Scores a point with the local findings service in demo mode. Returns null when that service
+ *  is not reachable (or is the live service, which has no demo route), so the browser can fall
+ *  back. A structured error from the service, such as a synthetic frame, is passed on. */
+async function scoreWithLocalService(req: PointReviewInput, signal?: AbortSignal): Promise<PointReview | null> {
+  let response: Response;
+  try {
+    response = await fetch('/api/findings/demo/points/review', {
+      method: 'POST', body: JSON.stringify(req), signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+  } catch {
+    aborted(signal);
+    if (req.wiseComparisonId) throw new FindingsApiError(0, 'network_error', 'Could not reach the demo scoring service. Start npm run dev:scoring or npm run dev.');
+    return null;
+  }
+  const body: unknown = await response.json().catch(() => null);
+  if (response.ok) {
+    let review: PointReview;
+    try { review = parsePointReview(body); }
+    catch (error) { throw new FindingsApiError(502, 'invalid_response', error instanceof Error ? error.message : 'The local scoring service returned an invalid point review.'); }
+    if (review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== req.radiusArcsec || !sameFrame(review.frame, req.frame) || (review.scoreVersion === 'point-check-v4' && review.wiseComparisonId !== req.wiseComparisonId))
+      throw new FindingsApiError(502, 'invalid_response', 'The local scoring service returned a different point.');
+    return review;
+  }
+  const error = body && typeof body === 'object' ? body as { code?: unknown; message?: unknown } : null;
+  if (response.status !== 404 && typeof error?.code === 'string' && typeof error.message === 'string')
+    throw new FindingsApiError(response.status, error.code, error.message);
+  if (req.wiseComparisonId) throw new FindingsApiError(response.status, 'scoring_unavailable', 'The demo scoring service is unavailable. Start npm run dev:scoring or npm run dev.');
+  return null;
+}
+
 export const mockFindings: ReviewClient = {
   authConfig: async () => { throw new Error('Local demo has no sign-in service.'); },
   async pointReview(req, signal) {
     aborted(signal);
-    let result: PointReview;
-    try { result = await measurements.pointReview(req, signal); }
+    const radiusArcsec = req.radiusArcsec ?? 30;
+    const scored = await scoreWithLocalService({ ...req, radiusArcsec }, signal);
+    aborted(signal);
+    if (scored) {
+      scored.duplicate = duplicateOf(scored);
+      reviews.set(scored.id, scored);
+      return scored;
+    }
+    const observedAtUtc = req.frame ? await frameObservedAt(req.frame, signal) : null;
+    let catalogReview: PointReview['catalogReview'];
+    try { catalogReview = await catalog.review({ ...req, radiusArcsec, observedAtUtc }, signal); }
     catch (error) {
       aborted(signal);
-      if (error instanceof FindingsApiError && (error.status === 0 || error.status >= 500))
-        throw new FindingsApiError(error.status, error.code, `${error.message} The demo scoring service starts with npm run dev; standalone viewers also need npm run dev:scoring.`);
-      throw error;
+      const template = structuredClone(fixture.review.catalogReview) as unknown as PointReview['catalogReview'];
+      catalogReview = { ...template, mode: 'offline', ra: req.ra, dec: req.dec, observedAtUtc, radiusArcsec,
+        checks: template.checks.map(c => ({ ...c, status: 'unavailable', rows: [] })),
+        limitations: ['The catalog service could not be reached. No real checks completed.'] };
     }
     aborted(signal);
+    const availability = catalogAvailability(catalogReview);
+    const listed = catalogReview.mode === 'live' && availability.listed.length > 0;
+    const incomplete = catalogReview.mode !== 'live' || availability.unchecked.length > 0;
+    const priority = ['Gaia DR3', 'SIMBAD', 'CatWISE2020', 'VizieR', 'UltracoolSheet', 'SkyBoT'];
+    const source = listed ? catalogSources(catalogReview, req, observedAtUtc)
+      .filter(s => catalogReview.checks.some(c => c.catalog === s.catalog && ['candidates', 'partial'].includes(c.status)))
+      .sort((a, b) => priority.indexOf(a.catalog) - priority.indexOf(b.catalog) || a.separationArcsec - b.separationArcsec)[0] : null;
+    const result: PointReview = { ...req, radiusArcsec, id: crypto.randomUUID(), observedAtUtc, reviewedAtUtc: new Date().toISOString(),
+      scoreVersion: 'point-check-v3', score: listed ? 10 : 0, classification: listed ? 'known' : incomplete ? 'incomplete' : 'uncatalogued',
+      reasons: [listed ? '+10: a live catalog lists a source in this cone. No brightness check is needed.'
+        : '+0 (LOCAL SIMULATION): the local scoring service is not running, so brightness was not measured and 20 points are not possible. Start it with `npm run dev:findings`, or restart `npm run dev`.'],
+      identity: source ? { catalog: source.catalog, name: source.name, ra: source.ra, dec: source.dec, separationArcsec: source.separationArcsec } : null,
+      catalogReview, brightness: [], duplicate: null, limitations: ['LOCAL SIMULATION: posts and points exist only in this browser; brightness was not measured.'] };
     result.duplicate = duplicateOf(result);
     reviews.set(result.id, result);
     return result;

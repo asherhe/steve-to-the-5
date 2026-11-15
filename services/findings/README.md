@@ -164,13 +164,18 @@ scores, identities, image bytes or brightness measurements.
 | Result | Points |
 |---|---|
 | Any catalog returns a source row (`candidates` or `partial`) | 10 (`known`), immediately; no image download or brightness step |
-| No returned matches, at most two catalogs unavailable, no other incomplete searches, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
+| No returned matches, at most two of the other catalogs unavailable (Gaia DR3 not required), no other incomplete searches, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
 | Fewer than two bright surveys or incomplete catalog checks | 0 (`uncatalogued` / `incomplete`), still postable |
 
 Undated reference points skip SkyBoT explicitly; that expected skip does not prevent the
 20-point rule. Up to two `unavailable` catalogs are tolerated when no catalog returns a match; their failures remain visible. More than two unavailable catalogs, unexpected skips, and empty `partial` searches stay incomplete. A catalog source in a
 cone is not automatically the source in a selected pixel. Likewise brightness across surveys
 does not establish identity, novelty, motion or scientific significance.
+
+Gaia DR3 is optional for the 20-point rule. A Gaia check that could not complete (ESA down,
+or the AIP mirror rate-limiting) neither blocks the points nor counts toward the two
+tolerated outages; the review says Gaia could not be checked. A Gaia source in the cone still
+classifies the point as a known object (10). This rule is part of `point-check-v4`.
 
 `cutouts.py` fetches bounded FITS directly: SPHEREx DR1 SIA/IBE, AllWISE W2 IBE, STScI DSS2 red,
 and calibrated NEOSSat COR/CORD through CADC. Capped SPHEREx metadata can supply a bounded image sample, labeled as incomplete in each
@@ -231,3 +236,23 @@ Missing motion components, UltracoolSheet and VizieR AllWISE retain published co
 this is a bounded review aid, not a complete epoch-correct cross-identification.
 Historical saved reports remain unchanged; the updated tolerance is recorded in new report
 reasons under the existing point-check-v3 participation score contract.
+
+## Local demo scoring (no Supabase)
+
+`FINDINGS_LOCAL_DEMO=1` starts this service without Supabase and exposes `POST /api/findings/demo/points/review` plus the two read-only spectral
+manifest/FITS routes. It runs the same point review as the live
+`/points/review`: the six-catalog check, survey cutouts and brightness, SPHEREx spectra and the
+required WISE blink. So the local demo can award every score, including 20 points and the
+bonuses. It needs no sign-in, writes nothing to a database and does no leaderboard duplicate
+check; the browser keeps the demo's posts. Spectral evidence is still saved under
+`SPHEREX_POINT_EVIDENCE_DIR`, as the scoring rules require. `SPHEREX_COMPARISON_BASE_URL`
+defaults to `http://127.0.0.1:8000` in this mode.
+
+`npm run dev` starts the explicit demo scoring factory by default;
+`VITE_LIVE_FINDINGS=1` selects the configured authenticated production factory.
+`npm run dev:findings` retains `FINDINGS_LOCAL_DEMO=1` auto-selection when Supabase
+is absent. Legacy catalog-only calls without a WISE selection can fall back to a
+catalog-only simulation and says why.
+
+The demo route is unauthenticated and fetches survey images on request. It is for local
+development only: never set `FINDINGS_LOCAL_DEMO` on a deployed server.

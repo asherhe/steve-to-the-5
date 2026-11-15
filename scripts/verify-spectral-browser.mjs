@@ -45,7 +45,7 @@ await page.route('**/*', async route => {
   if(url.pathname==='/api/wise/comparisons') { blinkRequests++; return route.fulfill({json:wise}); }
   if(url.pathname===`/api/wise/comparisons/${wise.comparison.id}`) return route.fulfill({json:wise});
   if(url.pathname.endsWith('.png')) return route.fulfill({contentType:'image/png',body:blank});
-  if(url.pathname==='/api/findings/points/review') {
+  if(url.pathname===(demo?'/api/findings/demo/points/review':'/api/findings/points/review')) {
     const body=req.postDataJSON(); assert.equal(body.wiseComparisonId,wise.comparison.id);
     assert.equal(!!req.headers().authorization, !demo);
     scoreRequests++; return route.fulfill({status:201,json:report});

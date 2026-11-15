@@ -26,7 +26,7 @@ it('shows measured demo bonuses and saves the same score to the local ranking, b
   await screen.findByRole('heading', { name: /^30 points/ });
   expect(screen.getByText(/Possibly contains water/)).toBeInTheDocument();
   expect(fetch).toHaveBeenCalledOnce();
-  expect(fetch.mock.calls[0][0]).toBe('/api/findings/points/review');
+  expect(fetch.mock.calls[0][0]).toBe('/api/findings/demo/points/review');
   const review = await mockFindings.pointReview(fixture.request);
   const input = { ra: review.ra, dec: review.dec, title: 'Demo spectrum', note: 'Follow up', reviewId: review.id };
   await mockFindings.createFinding(input);
@@ -37,5 +37,5 @@ it('shows measured demo bonuses and saves the same score to the local ranking, b
 
 it('reports a demo measurement outage without substituting a base-only or fixture score', async () => {
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ code: 'unavailable', message: 'Archive unavailable.' }, { status: 503 })));
-  await expect(mockFindings.pointReview(fixture.request)).rejects.toThrow(/Archive unavailable.*npm run dev:scoring/);
+  await expect(mockFindings.pointReview(fixture.request)).rejects.toThrow(/Archive unavailable/);
 });
