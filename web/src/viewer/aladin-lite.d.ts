@@ -56,6 +56,7 @@ declare module "aladin-lite" {
         showFullscreenControl: boolean;
         showSettingsControl: boolean;
         showCooLocation: boolean;
+        showFrame: boolean;
         showFov: boolean;
         showSimbadPointerControl: boolean;
       },

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import type { Comparison, ComparisonFrame, ComparisonResult, Field, SkyPosition, ViewerDataSource } from "./comparison";
 import { CatalogApiError, type SourceInspectorProps, type MarkAction, type SelectedFrameMeta } from "../inspector";
+import { LeaderboardPanel, type LeaderboardDataSource, type LeaderboardEntry } from "../leaderboard";
 import { targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { SkyMap } from "./SkyMap";
@@ -35,6 +36,8 @@ export interface ViewerProps {
   Discussion?: ComponentType<EvidenceDiscussionProps>;
   loadFinding?: (id: string, signal?: AbortSignal) => Promise<SavedFinding | null>;
   Controls?: ComponentType<ViewerControlsProps>;
+  /** Optional engagement layer; the leaderboard button is hidden without it. */
+  leaderboard?: LeaderboardDataSource;
   savedExampleId: string;
   synthetic?: boolean;
 }
@@ -52,7 +55,9 @@ type Preview =
   | { kind: "search"; result: ComparisonResult; field: Field }
   | { kind: "saved"; comparison: Comparison; finding?: SavedFinding };
 
-export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Controls, savedExampleId, synthetic = false }: ViewerProps) {
+const narrowScreen = "(max-width: 42rem)";
+
+export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Controls, leaderboard, savedExampleId, synthetic = false }: ViewerProps) {
   const [request, setRequest] = useState<Request | null>(() => {
     const id = new URLSearchParams(location.search).get("comparison");
     const findingId = new URLSearchParams(location.search).get("finding") ?? undefined;
@@ -65,6 +70,9 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   function openPanel(panel: Panel) { setPanels(old => ({...old,[panel]:true})); }
   const timeButton = useRef<HTMLButtonElement>(null);
   const panelButtons = useRef<Partial<Record<Panel, HTMLElement>>>({});
+  // The leaderboard is its own window so it can stay open beside the other panes.
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const leaderboardButton = useRef<HTMLButtonElement>(null);
   const [mapNotice, setMapNotice] = useState("");
   const [inspecting, setInspecting] = useState<SkyPosition | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
@@ -91,6 +99,24 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   function closePanel(current: Panel) {
     setPanels(old=>({...old,[current]:false}));
     panelButtons.current[current]?.focus();
+  }
+
+  function closeLeaderboard() {
+    setLeaderboardOpen(false);
+    leaderboardButton.current?.focus();
+  }
+
+  function goToEntry(entry: LeaderboardEntry) {
+    setMapNotice("");
+    setFocus({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin });
+  }
+
+  function showEntryEvidence(entry: LeaderboardEntry) {
+    if (!entry.comparisonId) return;
+    if (window.matchMedia(narrowScreen).matches) setLeaderboardOpen(false);
+    setRequest({ kind: "saved", id: entry.comparisonId, findingId: entry.findingId ?? undefined });
+    setTimeOpen(true);
+    openPanel("comparison");
   }
 
   function inspect(position: SkyPosition) {
@@ -263,9 +289,16 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         <nav className="panel-buttons" aria-label="Viewer panels">
           <button ref={timeButton} type="button" aria-expanded={timeOpen} aria-controls="time-window" onClick={()=>setTimeOpen(!timeOpen)}>Time</button>
           <button type="button" ref={button=>{if(button)panelButtons.current.gaia=button;}} aria-expanded={panels.gaia} aria-controls="gaia-panel" onClick={()=>setPanels(old=>({...old,gaia:!old.gaia}))}>Inspect</button>
+          {leaderboard && <button type="button" ref={leaderboardButton} aria-expanded={leaderboardOpen} aria-controls="leaderboard-panel"
+            onClick={()=>setLeaderboardOpen(!leaderboardOpen)}>Leaderboard</button>}
           <button type="button" aria-label="Reset layout" title="Reset window positions" onClick={()=>setLayoutReset(v=>v+1)}>↺</button>
         </nav>
       </header>
+      {leaderboard && (
+        <FloatingPane id="leaderboard-panel" title="Rarity leaderboard" anchor="left" open={leaderboardOpen} reset={layoutReset} onClose={closeLeaderboard}>
+          <LeaderboardPanel dataSource={leaderboard} open={leaderboardOpen} onGoTo={goToEntry} onShowEvidence={showEntryEvidence} />
+        </FloatingPane>
+      )}
       <FloatingPane id="gaia-panel" title="Source inspector" open={panels.gaia} onClose={()=>closePanel("gaia")} reset={layoutReset}>
         {inspectingCutout && <p>Selected SPHEREx frame <time dateTime={inspectingCutout.frame.observedAtUtc}>
           {inspectingCutout.frame.observedAtUtc}
