@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.errors import register_error_handlers
 from app.routes import detail, nearby, resolve
-from app import review
+from app import review, neossat
 
 
 def create_app() -> FastAPI:
@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(nearby.router)
     app.include_router(detail.router)
     app.include_router(review.router)
+    app.include_router(neossat.router)
 
     @app.get("/api/health")
     def health() -> dict:

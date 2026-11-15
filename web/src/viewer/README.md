@@ -406,3 +406,36 @@ PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node web/src/viewer/masterplan.b
 The browser script intercepts auth/catalog/findings, replays retained real image bytes and
 saves screenshots under `.local-test-temp/masterplan-browser/`. It never writes to a real
 account or service. This proves local UI integration, not hosted Supabase authentication.
+
+
+## NEOSSat reference panel
+
+The **NEOSSat** button beside the viewer panel controls opens a draggable optical-reference
+panel. The first opening with a selected position makes one request; subsequent opens,
+map navigation, point selection, wavelength changes and playback retain that snapshot.
+Only **Refresh** repeats the query for the current selected point. Search coordinates,
+resolved targets, map clicks and dated-image clicks supply the selection. Without a
+selection, Refresh is disabled. Closing/reopening and resetting layout retain the images.
+
+The panel uses `GET /api/catalogs/neossat?ra&dec` on the existing catalog service/proxy.
+Start that service in live mode (`npm run dev:gaia`, or `CATALOGS_LIVE=1`); offline mode
+returns an explicit unavailable response. CADC metadata is queried server-side because
+its TAP endpoint does not expose browser CORS headers. No new runtime dependencies or
+service port are needed. Deployed installations need the same updated catalog service.
+
+Results are full-frame CADC previews whose recorded footprint contains the point, with
+actual observation start times converted from MJD to UTC. The panel shows up to 12 distinct
+observations, newest first, preferring CORD/COR/CLEAN over RAW among retrieved products.
+Discovery scans at most 61 preview records and reports when either bound limits the result.
+These previews have their own orientation/stretch/processing; they are not aligned or
+calibrated against SPHEREx/WISE and do not become saved comparison evidence. Preview
+availability is narrower than all archive coverage. Failed refreshes retain previous images
+and loaded coordinates. The archive and per-image full previews are linked in the panel.
+
+Verification (synthetic fixtures and intercepted browser requests):
+
+```sh
+services/catalogs/.venv/bin/python -m pytest services/catalogs/tests/test_neossat.py
+node --experimental-strip-types --test web/src/viewer/neossat.test.mjs
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node web/src/viewer/neossat.browser.mjs
+```

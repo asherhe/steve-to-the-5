@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalogs/neossat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Neossat */
+        get: operations["neossat_api_catalogs_neossat_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -243,6 +260,40 @@ export interface components {
             gMag?: number | null;
             /** Separationarcsec */
             separationArcsec: number;
+        };
+        /** NeossatImage */
+        NeossatImage: {
+            /** Observationid */
+            observationId: string;
+            /** Product */
+            product: string;
+            /** Observedatutc */
+            observedAtUtc: string;
+            /** Imageurl */
+            imageUrl: string;
+        };
+        /** NeossatPosition */
+        NeossatPosition: {
+            /** Ra */
+            ra: number;
+            /** Dec */
+            dec: number;
+        };
+        /** NeossatResponse */
+        NeossatResponse: {
+            position: components["schemas"]["NeossatPosition"];
+            /** Images */
+            images: components["schemas"]["NeossatImage"][];
+            /** Truncated */
+            truncated: boolean;
+            /** Retrievedatutc */
+            retrievedAtUtc: string;
+            /**
+             * Source
+             * @default CADC NEOSSat
+             * @constant
+             */
+            source: "CADC NEOSSat";
         };
         /** ObjectIdentity */
         ObjectIdentity: {
@@ -501,6 +552,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    neossat_api_catalogs_neossat_get: {
+        parameters: {
+            query: {
+                ra: number;
+                dec: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NeossatResponse"];
+                };
+            };
+            /** @description Invalid coordinates */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Archive unavailable or live access disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

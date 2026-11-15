@@ -193,3 +193,28 @@ papers and the compilation when using the data. The snapshot is not a latest-rel
 
 See `MASTERPLAN-HANDOFF.md` for the unfinished frontend and `docs/verification/` for
 actual smoke results. CatWISE and VizieR timed out; successful live results remain unverified.
+
+
+## NEOSSat image references
+
+`GET /api/catalogs/neossat?ra&dec` is a manually requested image-reference lookup, separate
+from Gaia catalog matching and from saved comparison processing. It requires live mode
+(`CATALOGS_LIVE=1`); offline mode returns 503, never synthetic NEOSSat coverage. Validates
+finite ICRS degrees with RA in [0,360), Dec in [-90,90]. It queries public CADC CAOM2
+image footprints containing the selected point, joins published preview artifacts, and
+returns `{position, images, truncated, retrievedAtUtc, source}`. Each image records
+`observationId`, `product`, `observedAtUtc` (observation start, not retrieval time) and
+`imageUrl`. The generated catalog OpenAPI/types and `fixtures/catalogs/neossat.json`
+cover this additive contract; that example is synthetic and its PNG is not real data.
+
+Limits: 22 s total deadline, 20 s HTTP timeout, 256 kB metadata, at most 61 records and
+12 distinct observations, newest first. Among returned products for one observation,
+CORD is preferred over COR, CLEAN and RAW. `truncated` reports a capped scan or display.
+Response is `Cache-Control: no-store`; there is no background polling. Preview images
+are loaded directly from fixed public CADC URLs. There is no server-side FITS processing,
+reprojection or evidence persistence. Empty previews are distinct from archive failure
+(503 `upstream_unavailable`) and do not imply no archive observations. The viewer preserves
+previous successful results on failure and labels full-frame previews as optical references.
+
+Sources: [CADC NEOSSat products](https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/neossat/),
+[CAOM2 TAP service](https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/argus/).

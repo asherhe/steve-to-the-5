@@ -39,6 +39,7 @@ import { SkyMap } from "./SkyMap";
 import { SearchBox } from "./SearchBox";
 import { archiveFieldLimits, wiseFieldLimits, type WiseBand } from "./archive";
 import { FloatingPane } from "./FloatingPane";
+import { NeossatPanel, useNeossat } from "./NeossatPanel";
 import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
 import { ComparisonPlayback } from "./ComparisonPlayback";
@@ -183,14 +184,22 @@ export function Viewer({
   const [wiseBand, setWiseBand] = useState<WiseBand>(2);
   const wiseSource = useMemo(() => wiseDataSource?.(wiseBand) ?? null, [wiseDataSource, wiseBand]);
   const [focus, setFocus] = useState<Field | null>(null);
+  const [crossReferencePosition, setCrossReferencePosition] = useState<SkyPosition | null>(null);
+  const [neossatOpen, setNeossatOpen] = useState(false);
+  const neossatButton = useRef<HTMLButtonElement>(null);
+  const neossat = useNeossat();
+  function focusField(field: Field) {
+    setFocus(field);
+    setCrossReferencePosition({ ra: field.ra, dec: field.dec });
+  }
   // Each view keeps its own request and result, so switching back shows what was there.
   const loaders = {
     spherex: useComparisonLoader({
-      source: dataSource, survey: "spherex", resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      source: dataSource, survey: "spherex", resolveName: dataSource.resolveName, loadFinding, onFocus: focusField,
       initial: skyView === "spherex" ? requestFromUrl() : null,
     }),
     wise: useComparisonLoader({
-      source: wiseSource, survey: "wise", resolveName: dataSource.resolveName, loadFinding, onFocus: setFocus,
+      source: wiseSource, survey: "wise", resolveName: dataSource.resolveName, loadFinding, onFocus: focusField,
       initial: skyView === "wise" ? requestFromUrl() : null,
     }),
   };
@@ -348,7 +357,7 @@ export function Viewer({
 
   function goToEntry(entry: LeaderboardEntry) {
     setMapNotice("");
-    setFocus({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin });
+    focusField({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin });
   }
 
   function openFinding(comparisonId: string, findingId: string | undefined, view: SkyView) {
@@ -371,6 +380,7 @@ export function Viewer({
   }
 
   function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
+    setCrossReferencePosition(position);
     setInspecting({ position, onSpherexMosaic });
     setInspectFrame(false);
     openPanel("gaia");
@@ -381,6 +391,7 @@ export function Viewer({
     frame: ComparisonFrame,
   ) {
     playback.pause();
+    setCrossReferencePosition(position);
     setFrameSelection({
       comparisonId,
       survey: skyView,
@@ -399,7 +410,7 @@ export function Viewer({
   function search(field: Field) {
     setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
-    setFocus(field);
+    focusField(field);
     setRequest({ kind: "field", field });
     setTimeOpen(true);
   }
@@ -407,6 +418,7 @@ export function Viewer({
   function resolve(name: string, fovArcmin: number) {
     setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
+    setCrossReferencePosition(null);
     setRequest({ kind: "name", name, fovArcmin });
     setTimeOpen(true);
   }
@@ -419,6 +431,7 @@ export function Viewer({
       return;
     }
     setMapNotice("");
+    setCrossReferencePosition({ ra: view.ra, dec: view.dec });
     setRequest({ kind: "field", field: { ra: view.ra, dec: view.dec, fovArcmin } });
     setTimeOpen(true);
     openPanel("comparison");
@@ -503,6 +516,7 @@ export function Viewer({
     if (selected && point && point.x >= -0.5 && point.x < comparison.grid.width - 0.5 && point.y >= -0.5 && point.y < comparison.grid.height - 0.5) {
       playback.select(playback.frames.findIndex(f => f.id === selected.id));
       setFrameSelection({ comparisonId: comparison.id, survey: skyView, position: { ra, dec }, frame: { frameId: selected.id, observedAtUtc: selected.observedAtUtc, wavelengthUm: selected.wavelengthUm } });
+      setCrossReferencePosition({ ra, dec });
       setInspectFrame(true); setReviewOpen(true);
     }
     restoredReview.current = restoreKey;
@@ -811,6 +825,11 @@ export function Viewer({
                 {label}
               </button>
             ))}
+            <button type="button" ref={neossatButton} aria-expanded={neossatOpen} aria-controls="neossat-panel"
+              onClick={() => {
+                if (!neossatOpen) neossat.open(crossReferencePosition);
+                setNeossatOpen(!neossatOpen);
+              }}>NEOSSat</button>
             {Review && <button type="button" aria-expanded={reviewOpen} aria-controls="review-panel" onClick={() => { playback.pause(); setReviewOpen(!reviewOpen); }}>Review candidate</button>}
             {Activity && <button type="button" aria-expanded={communityOpen} aria-controls="community-panel" onClick={() => setCommunityOpen(!communityOpen)}>Community</button>}
             {Account && <Account mode="button" />}
@@ -852,6 +871,10 @@ export function Viewer({
           {leaderboardOpen && finding && Discussion && discussionOpen && <Discussion finding={finding} onShowEvidence={showEvidence} onCopyLink={value => void copyLink(value.comparisonId, value.id)} onClose={() => setDiscussionOpen(false)} />}
         </FloatingPane>
       )}
+      <FloatingPane id="neossat-panel" title="NEOSSat" open={neossatOpen} size="wide" reset={layoutReset}
+        onClose={() => { setNeossatOpen(false); neossatButton.current?.focus(); }}>
+        <NeossatPanel position={crossReferencePosition} snapshot={neossat} />
+      </FloatingPane>
       {Account && <Account mode="pane" />}
       {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} /></FloatingPane>}
       {Review && <FloatingPane id="review-panel" title="Candidate review" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>

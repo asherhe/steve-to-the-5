@@ -1,0 +1,12 @@
+{
+  "position": { "ra": 10, "dec": 20 },
+  "images": [{
+    "observationId": "synthetic-neossat-1",
+    "product": "cord",
+    "observedAtUtc": "2019-12-03T01:24:48.160Z",
+    "imageUrl": "https://ws.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/data/pub/NEOSSAT/synthetic-neossat-1_cord_prev.png"
+  }],
+  "truncated": false,
+  "retrievedAtUtc": "2026-11-15T14:00:00Z",
+  "source": "CADC NEOSSat"
+}
