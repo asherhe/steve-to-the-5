@@ -11,16 +11,21 @@ from .supabase import ApiError, Supabase
 from .spectral_store import SpectralStore
 
 
-def create_app() -> FastAPI:
+def create_demo_app() -> FastAPI:
+    """Explicit local-only measurement service; bind to loopback, never a public write API."""
+    return create_app(local_demo=True)
+
+
+def create_app(*, local_demo=False) -> FastAPI:
     required = ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
     missing = [name for name in required if not os.environ.get(name, "").strip()]
-    if missing:
+    if missing and not local_demo:
         raise RuntimeError("Missing server configuration: " + ", ".join(missing))
-    comparison_base = os.environ["SPHEREX_COMPARISON_BASE_URL"].rstrip("/")
+    comparison_base = os.environ.get("SPHEREX_COMPARISON_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
     wise_base = os.environ.get("WISE_COMPARISON_BASE_URL", "http://127.0.0.1:8020").rstrip("/")
     catalog_base = os.environ.get("SPHEREX_CATALOG_BASE_URL", "http://127.0.0.1:8010").rstrip("/")
     client = httpx.AsyncClient(timeout=10.0, follow_redirects=False)
-    supabase = Supabase(
+    supabase = None if local_demo else Supabase(
         client,
         os.environ["SUPABASE_URL"],
         os.environ["SUPABASE_PUBLISHABLE_KEY"],
@@ -41,7 +46,10 @@ def create_app() -> FastAPI:
             if response.status_code == 404:
                 return None
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
+            # Saved survey HTTP routes return ComparisonResponse, whereas the
+            # scoring/evidence layer consumes its immutable comparison manifest.
+            return payload.get("comparison") if isinstance(payload, dict) and "comparison" in payload else payload
         except (httpx.HTTPError, ValueError) as error:
             raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.") from error
 
@@ -92,6 +100,7 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.include_router(create_router(supabase, load_saved_comparison,
         load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
-        load_cutouts=load_cutouts, spectral_store=SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))))
+        load_cutouts=load_cutouts, local_demo=local_demo,
+        spectral_store=SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))))
 
     return app

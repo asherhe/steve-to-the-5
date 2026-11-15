@@ -33,13 +33,13 @@ export function PointSubmissionPane(p: Props) {
       <p>Each substance needs both of its specified spectral regions to pass. These are provisional pattern matches requiring follow-up, not confirmed composition.</p>
       <p>One entry per object: the same catalog source or a point within 15″ of an existing entry is blocked. Points are for discussion, not a discovery.</p>
     </details>
-    {p.simulation && <p className="example-notice">Local simulation: catalog checks are live when available; brightness is not measured. Posts and duplicate checks exist only in this browser and are separate from the public leaderboard.</p>}
-    {!p.simulation && <div className="example-notice" role="status">
+    {p.simulation && <p className="example-notice">Local demo: SPHEREx spectra and WISE brightness are measured from real survey data. Posts and rankings are saved only in this browser. No sign-in is needed.</p>}
+    <div className="example-notice" role="status">
       {p.wiseComparisonId ? <p>WISE blink ready. Its saved first and last visits will be measured.</p> : <>
         <p>{p.wiseLoading ? 'Loading the WISE blink… Scoring unlocks when two real dated visits cover this point.' : p.wiseMessage || 'A real WISE blink with two dated visits is required before scoring.'}</p>
         {p.onGetWiseBlink && <button type="button" disabled={p.wiseLoading} onClick={p.onGetWiseBlink}>Get WISE blink</button>}
       </>}
-    </div>}
+    </div>
     <Selection key={`${selection}:${p.session?.userId ?? 'anonymous'}`} {...p} position={p.position} selectionKey={selection} />
   </section>;
 }
@@ -69,7 +69,7 @@ function Selection(p: Props & { position: SkyPosition; selectionKey: string }) {
   function signIn() { p.onPrepareSignIn(); p.onRequestSignIn(); }
   async function run() {
     if (phase !== 'idle') return;
-    if (!p.simulation && !p.wiseComparisonId) return;
+    if (!p.wiseComparisonId) return;
     if (!p.session) { signIn(); return; }
     const ctl = new AbortController(); controller.current = ctl;
     setPhase('reviewing'); setError(''); setExpired(false); setConflict(false); setReport(null);
@@ -108,8 +108,8 @@ function Selection(p: Props & { position: SkyPosition; selectionKey: string }) {
     {phase === 'reviewing' ? <>
       <p role="status">{p.simulation ? 'Running simulated submission with catalog checks…' : 'Checking catalogs, measuring SPHEREx wavelengths and the saved WISE blink… This can take up to three minutes.'}</p>
       <button type="button" onClick={() => { controller.current?.abort(); setPhase('idle'); }}>Cancel review</button>
-    </> : <button type="button" className="primary" disabled={phase === 'posting' || (!p.simulation && !p.wiseComparisonId)} onClick={() => void run()}>
-      {!p.session ? 'Sign in to submit' : p.simulation ? 'Run simulated catalog checks' : report ? 'Score again' : 'Check and score this point'}
+    </> : <button type="button" className="primary" disabled={phase === 'posting' || !p.wiseComparisonId} onClick={() => void run()}>
+      {!p.session ? 'Sign in to submit' : report ? 'Score again' : 'Check and score this point'}
     </button>}
     {error && <p role="alert">{error}</p>}
     {expired && <button type="button" onClick={signIn}>Sign in again</button>}

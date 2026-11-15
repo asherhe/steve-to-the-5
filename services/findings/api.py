@@ -46,8 +46,8 @@ class FindingsRoute(APIRoute):
         return handle
 
 
-def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
-                  load_asset=None, load_cutouts=None, spectral_store=None) -> APIRouter:
+def create_router(supabase: Supabase | None, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
+                  load_asset=None, load_cutouts=None, spectral_store=None, local_demo=False) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
         responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
@@ -84,6 +84,29 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
             raise ApiError(503, "evidence_unavailable", "Spectral evidence storage is not configured.")
         payload = await asyncio.to_thread(spectral_store.asset, evidence_id, sha)
         return Response(payload, media_type="application/fits", headers={"ETag": f'"{sha}"', "Cache-Control": "public, max-age=31536000, immutable"})
+
+    async def measure_point(data):
+        if load_catalog_review is None or load_cutouts is None:
+            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
+        if review_slots.locked():
+            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
+        async with review_slots:
+            if not data.wiseComparisonId:
+                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
+            wise_comparison = await evidence(data.wiseComparisonId, "wise")
+            validate_blink(wise_comparison, data)
+            return await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
+
+    if local_demo:
+        @router.post("/points/review", status_code=201, response_model=PointReviewResponse)
+        async def demo_point_review(data: PointReviewInput):
+            response, _, _ = await measure_point(data)
+            response.limitations.insert(0, "LOCAL DEMO: real survey measurements; posts and rankings are saved only in this browser.")
+            return response
+
+        # The demo factory has measurements and immutable evidence only: no auth,
+        # database writes, public leaderboard or discussion routes.
+        return router
 
     @router.get("/auth/config", response_model=PublicAuthConfig)
     async def auth_config():
@@ -128,25 +151,16 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
                  responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}})
     async def point_review(data: PointReviewInput, author=Depends(signed_in)):
         """Scores a marked point; the server runs the catalog chain and fetches survey cutouts."""
-        if load_catalog_review is None or load_cutouts is None:
-            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
-        if review_slots.locked():
-            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
-        async with review_slots:
-            if not data.wiseComparisonId:
-                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
-            wise_comparison = await evidence(data.wiseComparisonId, "wise")
-            validate_blink(wise_comparison, data)
-            response, candidate_key, key = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
-            response.duplicate = await existing_entry(data.ra, data.dec, key)
-            await supabase.request("POST", "spherex_candidate_reviews", json={
-                "id": str(response.id), "author_id": author.id,
-                "comparison_id": data.frame.comparisonId if data.frame else None,
-                "survey": data.frame.survey if data.frame else "spherex",
-                "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key, "object_key": key,
-                "fov_arcmin": None, "score": response.score, "report": response.model_dump(mode="json"),
-            })
-            return response
+        response, candidate_key, key = await measure_point(data)
+        response.duplicate = await existing_entry(data.ra, data.dec, key)
+        await supabase.request("POST", "spherex_candidate_reviews", json={
+            "id": str(response.id), "author_id": author.id,
+            "comparison_id": data.frame.comparisonId if data.frame else None,
+            "survey": data.frame.survey if data.frame else "spherex",
+            "ra": data.ra, "dec": data.dec, "candidate_key": candidate_key, "object_key": key,
+            "fov_arcmin": None, "score": response.score, "report": response.model_dump(mode="json"),
+        })
+        return response
 
     @router.get("", response_model=Viewport)
     async def viewport(

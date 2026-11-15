@@ -1,13 +1,10 @@
-/** Explicitly simulated local workflow; never sent to the findings service. The public
- *  catalog check runs for real so known objects score as they would; brightness is only
- *  measured by the findings service, so the simulation never awards the 20-point rule. */
+/** Browser-local posts and rankings, using the local measurement service for real v4 scores. */
 import { createCatalogClient } from '../inspector/api';
 import fixture from '../../../services/findings/fixtures/candidate-flow.json';
 import examples from './retained-examples.json';
 import type { ReviewClient } from './api';
 import type { CandidateReview, FindingDetail, FindingReply, PointReview, SavedReview } from './types';
-import { FindingsApiError } from './api';
-import { catalogSources, catalogAvailability } from '../viewer/catalogCheckSummary';
+import { FindingsApiError, createFindingsClient } from './api';
 import { angularSeparationArcsec } from '../inspector/propagate';
 import type { LeaderboardResult } from '../leaderboard/types';
 import type { AuthGateway, AuthSession } from './auth';
@@ -27,6 +24,7 @@ export const mockAuth: AuthGateway = {
 };
 const reviews = new Map<string, SavedReview>();
 const catalog = createCatalogClient();
+const measurements = createFindingsClient();
 
 function duplicateOf(review: PointReview, existing = read()): PointReview['duplicate'] {
   for (const f of existing) {
@@ -41,34 +39,15 @@ export const mockFindings: ReviewClient = {
   authConfig: async () => { throw new Error('Local demo has no sign-in service.'); },
   async pointReview(req, signal) {
     aborted(signal);
-    const radiusArcsec = req.radiusArcsec ?? 30;
-    const saved = req.frame && examples.find(item => item.id === req.frame!.comparisonId);
-    const frame = saved && saved.frames.find(item => item.id === req.frame!.frameId);
-    if (req.frame && !frame) throw new FindingsApiError(422, 'invalid_frame', 'This demo frame is unavailable. Mark a point on the reference map instead.');
-    const observedAtUtc = frame ? frame.observedAtUtc : null;
-    let catalogReview: PointReview['catalogReview'];
-    try { catalogReview = await catalog.review({ ...req, radiusArcsec, observedAtUtc }, signal); }
+    let result: PointReview;
+    try { result = await measurements.pointReview(req, signal); }
     catch (error) {
       aborted(signal);
-      const template = structuredClone(fixture.review.catalogReview) as unknown as PointReview['catalogReview'];
-      catalogReview = { ...template, mode: 'offline', ra: req.ra, dec: req.dec, observedAtUtc, radiusArcsec,
-        checks: template.checks.map(c => ({ ...c, status: 'unavailable', rows: [] })),
-        limitations: ['The catalog service could not be reached. No real checks completed.'] };
+      if (error instanceof FindingsApiError && (error.status === 0 || error.status >= 500))
+        throw new FindingsApiError(error.status, error.code, `${error.message} The demo scoring service starts with npm run dev; standalone viewers also need npm run dev:scoring.`);
+      throw error;
     }
     aborted(signal);
-    const availability = catalogAvailability(catalogReview);
-    const listed = catalogReview.mode === 'live' && availability.listed.length > 0;
-    const incomplete = catalogReview.mode !== 'live' || availability.unchecked.length > 0;
-    const priority = ['Gaia DR3', 'SIMBAD', 'CatWISE2020', 'VizieR', 'UltracoolSheet', 'SkyBoT'];
-    const source = listed ? catalogSources(catalogReview, req, observedAtUtc)
-      .filter(s => catalogReview.checks.some(c => c.catalog === s.catalog && ['candidates', 'partial'].includes(c.status)))
-      .sort((a, b) => priority.indexOf(a.catalog) - priority.indexOf(b.catalog) || a.separationArcsec - b.separationArcsec)[0] : null;
-    const result: PointReview = { ...req, radiusArcsec, id: crypto.randomUUID(), observedAtUtc, reviewedAtUtc: new Date().toISOString(),
-      scoreVersion: 'point-check-v3', score: listed ? 10 : 0, classification: listed ? 'known' : incomplete ? 'incomplete' : 'uncatalogued',
-      reasons: [listed ? '+10: a live catalog lists a source in this cone. No brightness check is needed.'
-        : '+0 (LOCAL SIMULATION): brightness was not measured; the 20-point rule can only be scored by the findings service.'],
-      identity: source ? { catalog: source.catalog, name: source.name, ra: source.ra, dec: source.dec, separationArcsec: source.separationArcsec } : null,
-      catalogReview, brightness: [], duplicate: null, limitations: ['LOCAL SIMULATION: posts and points exist only in this browser; brightness was not measured.'] };
     result.duplicate = duplicateOf(result);
     reviews.set(result.id, result);
     return result;
@@ -113,7 +92,7 @@ export const mockFindings: ReviewClient = {
     if (!review) throw new Error('Run the local simulated review first.');
     if (review.ra !== req.ra || review.dec !== req.dec) throw new FindingsApiError(422, 'invalid_review', 'Check this point again before submitting.');
     const existing = read();
-    if (review.scoreVersion === 'point-check-v3') {
+    if (review.scoreVersion === 'point-check-v3' || review.scoreVersion === 'point-check-v4') {
       const duplicate = duplicateOf(review as PointReview, existing);
       if (duplicate) throw new FindingsApiError(409, 'already_on_leaderboard', `This point is already on the leaderboard: “${duplicate.title}” by ${duplicate.displayName}. Join its discussion.`);
     }

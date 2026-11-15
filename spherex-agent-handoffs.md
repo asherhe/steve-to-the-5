@@ -210,8 +210,10 @@ an image build/replay; historical comparison/finding links retain exact frame re
 Catalog marks now cover all six catalogs, with published positions labeled and Gaia
 predictions preserved. Duplicate reviews expose an existing discussion; racing writes return
 409 `already_on_leaderboard`. The original same-object/15-arcsec SQL lock remains authoritative.
-The demo performs local duplicates and live catalog queries when available, but no brightness
-or public writes. New fixtures and tests live in `services/findings/fixtures/point-flow.json`,
+The demo performs real v4 spectral/WISE scoring through the local measurement-only
+factory, with required saved WISE evidence and browser-local duplicates/posts/rankings.
+It needs no Supabase configuration; `npm run dev` includes the service. There are no
+public writes in demo mode. New fixtures and tests live in `services/findings/fixtures/point-flow.json`,
 `services/findings/tests/test_cutout_sources.py` and `web/src/findings/tests/point-workflow.test.tsx`.
 Read `docs/verification/point-check-v3-completion.md` for checks and deployment boundaries.
 The unrelated unfinished CheckChain source/tests were left unchanged.

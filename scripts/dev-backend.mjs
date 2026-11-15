@@ -39,11 +39,19 @@ const services = {
     requirements: ["-r", "requirements.txt", "-c", "constraints.txt"],
     args: ["-m", "uvicorn", "services.findings.main:create_app", "--factory", "--host", "127.0.0.1", "--port", "8014"],
   },
+  scoring: {
+    // The measurement-only factory uses the same declared FastAPI/httpx/Astropy
+    // dependencies as the archive, just as WISE does; no Supabase SDK is needed.
+    directory: archive,
+    cwd: root,
+    minPythonMinor: 12,
+    args: ["-m", "uvicorn", `services.findings.main:${process.env.VITE_LIVE_FINDINGS === "1" ? "create_app" : "create_demo_app"}`, "--factory", "--host", "127.0.0.1", "--port", "8014"],
+  },
 };
 
 const name = process.argv[2];
 if (!Object.hasOwn(services, name)) {
-  console.error("Choose a development service: gaia, spherex, wise or findings.");
+  console.error("Choose a development service: gaia, spherex, wise, findings or scoring.");
   process.exit(1);
 }
 

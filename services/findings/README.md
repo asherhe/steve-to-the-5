@@ -196,9 +196,13 @@ posting also returns 409 `already_on_leaderboard` if another user wins the race.
 known duplicates, links their discussions and keeps drafts after a racing 409. No hosted
 migration is applied by local verification.
 
-The demo follows the same point-only flow, queries the live catalog service when available,
-awards only known-object 10 or unmeasured 0, and stores posts in localStorage. It never
-simulates 20-point brightness. Same-object/15-arcsec duplicate checks are serialized with a
+The demo follows the same point-only flow and uses the same v4 survey measurements,
+spectral screens and WISE variability scoring as production, without Supabase.
+`npm run dev` starts `create_demo_app` on loopback port 8014; standalone viewers
+can start it with `npm run dev:scoring`. A real saved WISE blink is required. The
+demo factory exposes only measurement and immutable spectral evidence routes;
+posts and rankings stay in localStorage. `VITE_LIVE_FINDINGS=1` switches the dev
+scoring runner to the configured authenticated production factory. Same-object/15-arcsec duplicate checks are serialized with a
 same-origin Web Lock where supported; this is browser-local simulation, not public database
 enforcement. The production flow derives identity from real authenticated sessions.
 

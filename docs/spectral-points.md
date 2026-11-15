@@ -122,8 +122,12 @@ WISE attribution remains in the referenced blink manifests.
 
 Apply `20261115160000_findings_spectral_points.sql` after preceding migrations
 through the normal release process. Configure the existing Supabase/auth/archive
-services and build with `VITE_LIVE_FINDINGS=1`. The default local simulation
-awards no invented image/spectral/variability bonuses. No hosted migration,
+services and build with `VITE_LIVE_FINDINGS=1`. The default local demo now uses
+the same real measurement pipeline without Supabase: `npm run dev` starts its
+loopback-only scoring service, or run `npm run dev:scoring` alongside a standalone
+viewer. Load a real WISE blink, then select **Check and score this point**. All
+bonuses are measured; missing coverage and archive failures remain explicit.
+Posts and rankings stay in this browser. No hosted migration,
 public write or deployment was performed for this branch.
 
 ## Verification and future criteria
