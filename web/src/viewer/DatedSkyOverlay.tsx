@@ -11,7 +11,11 @@ export interface DatedLayer {
   marks: readonly (SkyPosition & { frameId: string })[];
   predictedMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
 }
+// Raster layers use the already-rendered PNGs and their saved FITS WCS. The
+// transparent canvas adds only the footprint and annotations, never a new stretch.
 export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView; aladin: AladinModule; dated:DatedLayer;redraw:unknown}) {
+  const mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   const layers=useRef(new Map<string,{id:string;image:AladinImage;ready:boolean}>());
   const canvas=useRef<HTMLCanvasElement>(null);
   const active=useRef(dated.frame.id);active.current=dated.frame.id;
@@ -20,7 +24,6 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
   const [label,setLabel]=useState<{x:number;y:number}|null>(null);
   const wcs=cutoutWcs(dated.comparison.grid);
   useEffect(()=>{
-    let alive=true;
     if (!wcs) return;
     const entries=layers.current;
     for(const frame of dated.comparison.frames){
@@ -35,11 +38,10 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
           added.setOpacity(active.current===frame.id?1:0);
           setReady(old=>({...old,[frame.id]:true}));
         },
-        errorCallback:()=>{if(alive)setFailure(true);},
+        errorCallback:()=>{if(mounted.current)setFailure(true);},
       });
       entries.set(frame.id,{id,image,ready:false});sky.setOverlayImageLayer(image,id);
     }
-    return ()=>{alive=false;};
   },[dated.assets,dated.comparison,dated.attempt,sky,aladin]);
   useEffect(()=>{
     for(const [frameId,entry] of layers.current)if(entry.ready)entry.image.setOpacity(frameId===dated.frame.id && dated.assets[frameId]?.state==="ready"?1:0);
@@ -73,7 +75,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
       context.stroke();context.setLineDash([]);
       const corner=points.find(point=>point && point[0]>=0 && point[0]<=box.width && point[1]>=0 && point[1]<=box.height);
       setLabel(corner?{x:Math.max(8,Math.min(box.width-240,corner[0])),y:Math.max(70,Math.min(box.height-30,corner[1]))}:null);
-      function mark(position:SkyPosition,color:string){const point=sky.world2pix(position.ra,position.dec);if(!point)return;context.strokeStyle=color;context.beginPath();context.arc(...point,7,0,2*Math.PI);context.stroke();}
+      function mark(position:SkyPosition,color:string){const point=sky.world2pix(position.ra,position.dec);if(!point || !point.every(Number.isFinite))return;context.strokeStyle=color;context.beginPath();context.arc(...point,7,0,2*Math.PI);context.stroke();}
       if(dated.selected)mark(dated.selected,"#8ce5ff");
       for(const saved of dated.marks)if(saved.frameId===dated.frame.id)mark(saved,"#8ce5ff");
       if(dated.predictedMark?.frameId===dated.frame.id)mark(dated.predictedMark,"#ffd08e");
@@ -82,7 +84,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
   },[sky,dated,redraw,ready]);
   return <>
     <canvas ref={canvas} className="dated-footprint" aria-label="Saved dated-image footprint and frame-specific marks" />
-    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated SPHEREx · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
+    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated SPHEREx · {dated.frame.observedAtUtc.slice(0,10)}{(dated.frame.release==="Synthetic" || ["fixture","synthetic_fixture"].includes(String(dated.comparison.provenance?.evidenceKind)))?" · synthetic":""}</p>}
     {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Compare details to inspect the saved image.</p>}
     {wcs && !ready[dated.frame.id] && dated.assets[dated.frame.id]?.state==="ready" && <p className="dated-overlay-status" role="status">Placing dated image on the sky…</p>}
   </>;

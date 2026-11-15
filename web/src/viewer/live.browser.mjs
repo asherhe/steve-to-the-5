@@ -17,21 +17,23 @@ try{
  const hashes=[];
  for(const frame of frames){const asset=await context.request.get(new URL(frame.imageUrl,origin).href);assert.equal(asset.status(),200);hashes.push(createHash("sha256").update(await asset.body()).digest("hex"));}
  await page.goto(`${origin}/?comparison=${encodeURIComponent(id)}`);
+ await page.getByRole("button",{name:"Compare details",exact:true}).click();
  const playback=page.getByRole("region",{name:"Comparison playback"});await playback.waitFor();
  const image=page.locator(".comparison-frame img");
  await image.evaluate(img=>img.decode());
  assert.equal(await image.getAttribute("src"),frames[0].imageUrl);
  const dimensions=await image.evaluate(img=>[img.naturalWidth,img.naturalHeight]);
  assert.deepEqual(dimensions,[comparison.grid.width,comparison.grid.height]);
- await page.getByRole("button",{name:"Play",exact:true}).waitFor();
- await page.getByRole("button",{name:"Next",exact:true}).click();await image.evaluate(img=>img.decode());
+ await page.locator("#time-window .pane-drag").focus();
+ await page.getByRole("button",{name:"Blink A ↔ B",exact:true}).waitFor();
+ await page.getByRole("button",{name:"Next observation",exact:true}).click();await image.evaluate(img=>img.decode());
  assert.equal(await image.getAttribute("src"),frames[1].imageUrl);
- await page.getByRole("button",{name:"Previous",exact:true}).click();
- await page.getByRole("button",{name:"Play",exact:true}).click();
+ await page.getByRole("button",{name:"Previous observation",exact:true}).click();
+ await page.getByRole("button",{name:"Blink A ↔ B",exact:true}).click();
  await playback.locator("figcaption time").filter({hasText:frames[1].observedAtUtc}).waitFor();
- await page.getByRole("button",{name:"Pause",exact:true}).click();
+ await page.getByRole("button",{name:"Pause blink",exact:true}).click();
  checks.push("real_archive_images_decoded_stepped_and_played");
- await page.getByRole("button",{name:"Previous",exact:true}).click();await image.evaluate(img=>img.decode());
+ await page.getByRole("button",{name:"Previous observation",exact:true}).click();await image.evaluate(img=>img.decode());
  await page.getByRole("button",{name:"Inspect image. Press Enter to inspect its center."}).focus();
  const nearbyPromise=page.waitForResponse(r=>r.url().includes("/api/catalogs/nearby?"));
  await page.keyboard.press("Enter");
@@ -43,15 +45,16 @@ try{
    await page.locator(".si-detail").waitFor();
    await page.locator(".si-detail__source-link").waitFor();
    await page.getByRole("button",{name:/Mark/}).click();
-   await page.getByRole("button",{name:"Comparison",exact:true}).click();
+   await page.getByRole("button",{name:"Close Source inspector",exact:true}).click();
    await page.locator('[aria-label="Predicted Gaia position"]').waitFor();
-   await page.getByRole("button",{name:"Next",exact:true}).click();
+   await page.getByRole("button",{name:"Next observation",exact:true}).click();
    assert.equal(await page.locator('[aria-label="Predicted Gaia position"]').count(),0);
    checks.push("live_gaia_inspector_and_frame_specific_prediction_mark");
  }else{await page.getByText("No catalog source here",{exact:true}).waitFor();checks.push("live_gaia_inspector_valid_empty_result");}
  const fresh=await browser.newContext();const replayPage=await fresh.newPage();
  const searches=[];replayPage.on("request",r=>{if(new URL(r.url()).pathname==="/api/comparisons")searches.push(r.url());});
  await replayPage.goto(`${origin}/?comparison=${encodeURIComponent(id)}`);
+ await replayPage.getByRole("button",{name:"Compare details",exact:true}).click();
  await replayPage.getByRole("region",{name:"Comparison playback"}).waitFor();
  assert.equal(searches.length,0);
  const replay=await (await fresh.request.get(`${origin}/api/comparisons/${encodeURIComponent(id)}`)).json();
@@ -61,7 +64,7 @@ try{
    assert.equal(createHash("sha256").update(await asset.body()).digest("hex"),hashes[i]);
  }
  checks.push("fresh_anonymous_session_replays_identical_manifest_and_image_bytes_without_search");
- const report={kind:"executed_local_real_services",origin,comparisonId:id,evidenceKind:comparison.provenance.evidenceKind,dimensions,wavelengthRangeUm:comparison.wavelengthRangeUm,stretch:comparison.stretch,frames:frames.map((f,i)=>({id:f.id,observedAtUtc:f.observedAtUtc,alignment:f.alignment,imageSha256:hashes[i]})),gaiaSourcesNearSelectedCutout:nearby.sources.length,checks,limitations:["No findings/auth check before their integration lands.","No claim of a significant motion or variability detection.","Local origin only; not deployed."]};
+ const report={kind:"executed_local_real_services",origin,comparisonId:id,evidenceKind:comparison.provenance.evidenceKind,dimensions,wavelengthRangeUm:comparison.wavelengthRangeUm,stretch:comparison.stretch,frames:frames.map((f,i)=>({id:f.id,observedAtUtc:f.observedAtUtc,alignment:f.alignment,imageSha256:hashes[i]})),gaiaSourcesNearSelectedCutout:nearby.sources.length,checks,limitations:["Findings/auth are outside this playback verification.","No claim of a significant motion or variability detection.","Local origin only; not deployed."]};
  if(process.env.REPORT_FILE)await writeFile(process.env.REPORT_FILE,JSON.stringify(report,null,2)+"\n");
  console.log(JSON.stringify(report,null,2));
 }finally{await browser.close();}

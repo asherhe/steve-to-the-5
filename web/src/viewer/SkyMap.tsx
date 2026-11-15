@@ -290,7 +290,7 @@ export function SkyMap({
         {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
         {statusText && !datedReady && <p className="map-status" role="status">{statusText}</p>}
       </div>
-      <FloatingPane id="map-tools" title="Map" anchor="map" reset={layoutReset} defaultCollapsed={innerWidth<672}>
+      <FloatingPane id="map-tools" title="Map" anchor="map" reset={layoutReset} defaultCollapsed={innerWidth<1280}>
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         {datedReady && statusText && <small className="reference-status">Reference sky: {statusText}</small>}

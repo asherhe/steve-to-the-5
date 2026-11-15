@@ -185,7 +185,10 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         }
 
         const result = await source.search(field, signal);
-        if (!signal.aborted) setPreview({ kind: "search", result, field });
+        if (!signal.aborted) {
+          setPreview({ kind: "search", result, field });
+          if (result.comparison && synthetic) setFocus(result.comparison.field);
+        }
       } catch (error) {
         if (signal.aborted) return;
         if (!resolving) {
@@ -200,7 +203,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
 
     void load();
     return () => controller.abort();
-  }, [dataSource, loadFinding, request]);
+  }, [dataSource, loadFinding, request, synthetic]);
 
   function search(field: Field) {
     setPanels(old=>({...old,search:false}));
@@ -323,7 +326,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       <FloatingPane id="search-panel" title="Advanced search" anchor="left" open={panels.search} onClose={()=>closePanel("search")} reset={layoutReset}>
         <FieldSearch field={initialField} limits={fieldLimits} onSearch={search} onResolve={resolve} />
       </FloatingPane>
-      <FloatingPane id="time-window" title="Time" anchor="time" open={timeOpen} reset={layoutReset} onClose={()=>{playback.pause();setTimeOpen(false);timeButton.current?.focus();}}>
+      <FloatingPane id="time-window" title="Time" anchor="time" badge={comparison ? synthetic || kind === "synthetic_fixture" || kind === "fixture" ? "Synthetic" : kind === "saved_real_example" ? "Saved example" : "SPHEREx" : undefined} open={timeOpen} reset={layoutReset} onClose={()=>{playback.pause();setTimeOpen(false);timeButton.current?.focus();}}>
 
         {Controls && <details className="fixture-tools"><summary>Development fixtures</summary>
           <p>Comparison images and metadata are synthetic.</p>
@@ -355,15 +358,14 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
         {preview.kind === "idle" && <button type="button" onClick={()=>search(initialField)}>Load images of Barnard’s Star</button>}
         {preview.kind === "loading" && <button type="button" onClick={()=>setRequest(null)}>Cancel</button>}
         {comparison && <>
-          <p className="evidence-kind">{synthetic || kind === "synthetic_fixture" ? "Synthetic comparison" : kind === "saved_real_example" ? "Saved real SPHEREx example" : "Dated SPHEREx imagery"}</p>
-          <TimeControls comparison={comparison} playback={playback} onDetails={()=>openPanel("comparison")} />
+          <TimeControls comparison={comparison} playback={playback} onDetails={button=>{panelButtons.current.comparison=button;openPanel("comparison");}} />
         </>}
       </FloatingPane>
       <FloatingPane id="comparison-panel" title="Compare details" open={panels.comparison} reset={layoutReset} onClose={()=>closePanel("comparison")}>
         {!comparison && <p>Load dated images using the Time window.</p>}
         {comparison && (
           <>
-            <p>{synthetic || kind === "synthetic_fixture" ? "Synthetic comparison" :
+            <p>{synthetic || kind === "synthetic_fixture" || kind === "fixture" ? "Synthetic comparison" :
               kind === "saved_real_example" ? "Saved real SPHEREx example" : "SPHEREx archive observations"}</p>
             <ComparisonPlayback key={comparison.id} comparison={comparison} playback={playback}
               selectedPosition={selection?.position ?? null} frameMark={frameMark} savedMarks={finding?.marks}
