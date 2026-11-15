@@ -16,7 +16,8 @@ npm run dev
 
 `npm run dev` starts the viewer on port 5173, Gaia on 8010, and the SPHEREx archive
 on 8000. Each backend creates its own `services/<service>/.venv` in the current
-checkout and installs missing dependencies before starting. The same setup runs
+checkout and installs missing dependencies before starting. Vite starts after
+the local Gaia catalog health check passes. The same backend setup runs
 with `npm run dev:gaia`, `npm run dev:spherex`, and the optional
 `npm run dev:findings`. Set `SPHEREX_DEV_PYTHON` to a Python executable to choose
 which interpreter creates new environments.

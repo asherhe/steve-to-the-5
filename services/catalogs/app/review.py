@@ -33,6 +33,7 @@ CATALOGS = ("Gaia DR3", "SIMBAD", "CatWISE2020", "UltracoolSheet", "SkyBoT", "Vi
 ULTRACOOL_URL = "https://zenodo.org/records/15802304/files/UltracoolSheet%20-%20Main.csv?download=1"
 _sheet_cache = BoundedCache(1)
 MAX_ROWS = 50
+REVIEW_CACHE_TTL_S = 3600
 MOTION_ROWS = 2000
 # Bounded quick-look search, not a completeness claim for arbitrary stellar motion.
 MOTION_ARCSEC_PER_YEAR = 15.0
@@ -49,6 +50,10 @@ class CatalogCheck(BaseModel):
     columns: list[dict[str, str | None]] = Field(default_factory=list)
     rows: list[dict] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+
+
+# Gaia DR3 is already cached by its provider. Each other catalog has its own cone cache.
+_check_caches = {name: BoundedCache[CatalogCheck](128) for name in CATALOGS[1:]}
 
 
 class CatalogReview(BaseModel):
@@ -299,12 +304,23 @@ def run_review(ra, dec, radius, observed, settings=None):
 
     def attempt(item):
         name, task = item
+        cache = _check_caches.get(name)
+        key = (
+            ra, dec, radius,
+            observed if name in {"SIMBAD", "CatWISE2020", "SkyBoT"} else None,
+            settings.simbad_tap_urls if name == "SIMBAD" else None,
+        )
+        if cache is not None and (cached := cache.get(key)) is not None:
+            return cached.model_copy(deep=True)
         try:
-            return task()
+            result = task()
         except Exception:
             # Never turn a failed/malformed query into a successful zero-row result.
             return CatalogCheck(catalog=name, status="unavailable", scope="Search did not complete", sourceUrl="",
                 limitations=["The catalog could not be checked. No absence was established; up to two unavailable catalogs are allowed by the candidate-scoring policy."])
+        if cache is not None and result.status in {"candidates", "no_candidates", "partial"}:
+            cache.put(key, result.model_copy(deep=True), REVIEW_CACHE_TTL_S)
+        return result
 
     with ThreadPoolExecutor(max_workers=6) as pool:
         checks = list(pool.map(attempt, zip(CATALOGS, tasks)))

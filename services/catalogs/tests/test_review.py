@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import replace
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -36,6 +37,55 @@ def test_independent_checks_keep_failures_distinct(monkeypatch):
     assert [c.catalog for c in result.checks] == list(review.CATALOGS)
     assert [c.status for c in result.checks] == ["no_candidates", "unavailable", "no_candidates", "partial", "candidates", "no_candidates"]
     assert "only" in result.checks[-1].scope
+
+
+def test_live_route_reuses_each_catalog_and_retries_failures(client, monkeypatch):
+    monkeypatch.setenv("CATALOGS_LIVE", "1")
+    monkeypatch.setattr(review, "_check_caches", {
+        name: review.BoundedCache(8) for name in review._check_caches
+    })
+    monkeypatch.setattr(review, "get_provider", lambda *_: SimpleNamespace(nearby=lambda *args: []))
+    calls = Counter()
+
+    def check(name, status="no_candidates"):
+        calls[name] += 1
+        if name == "SIMBAD" and calls[name] == 1:
+            raise EndpointDown("temporary outage")
+        return review.CatalogCheck(catalog=name, status=status, scope="test cone", sourceUrl="",
+                                   retrievedAtUtc=f"2026-01-01T00:00:0{calls[name]}Z")
+
+    monkeypatch.setattr(review, "tap_check", lambda name, *args, **kwargs: check(name))
+    monkeypatch.setattr(review, "ultracool", lambda *args: check("UltracoolSheet", "partial"))
+    monkeypatch.setattr(review, "skybot", lambda *args: check("SkyBoT", "candidates"))
+
+    params = {"ra": 12.3, "dec": -4.5, "radiusArcsec": 30, "observedAtUtc": "2026-01-01T00:00:00Z"}
+
+    def fetch(**changes):
+        response = client.get("/api/catalogs/review", params=params | changes)
+        assert response.status_code == 200, response.text
+        return {item["catalog"]: item for item in response.json()["checks"]}
+
+    first = fetch()
+    assert first["SIMBAD"]["status"] == "unavailable"
+    second = fetch()
+    assert second["SIMBAD"]["status"] == "no_candidates"
+    for name in review._check_caches.keys() - {"SIMBAD"}:
+        assert calls[name] == 1
+        assert second[name] == first[name]
+
+    later = fetch(observedAtUtc="2026-01-02T00:00:00Z")
+    assert calls == {"SIMBAD": 3, "CatWISE2020": 2, "UltracoolSheet": 1, "SkyBoT": 2, "VizieR": 1}
+    for name in ("SIMBAD", "CatWISE2020", "SkyBoT"):
+        assert later[name]["retrievedAtUtc"] != second[name]["retrievedAtUtc"]
+    for name in ("UltracoolSheet", "VizieR"):
+        assert later[name] == second[name]
+    revisit = fetch()
+    for name in review._check_caches:
+        assert revisit[name] == second[name]
+
+    fetch(radiusArcsec=60)
+    fetch(ra=12.4)
+    assert calls == {"SIMBAD": 5, "CatWISE2020": 4, "UltracoolSheet": 3, "SkyBoT": 4, "VizieR": 3}
 
 
 def votable(info="", rows=""):
