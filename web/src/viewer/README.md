@@ -21,19 +21,19 @@ or set `VIEWER_PORT` to use another viewer port.
 
 Open the URL printed by Vite. The Aladin Lite map opens on Barnard’s Star in an orthographic globe view. Drag to rotate and scroll or pinch to zoom. The bottom-left map panel shows the ICRS map center (RA/Dec, decimal degrees on hover) and the field of view as width × height.
 
-The reference sky defaults to the 0.771 µm layer of the [SPHEREx DR1 all-sky mosaic](https://doi.org/10.26131/IRSA679) from Caltech/IPAC IRSA. Use **SPHEREx** / **DSS** to switch between that mosaic and the DSS2 colour optical survey (CDS HiPS, served from the IRSA mirror with an ESA fallback). With SPHEREx selected, the slider steps through the 102 mosaic wavelengths (0.753–4.988 µm, read from the cube's `properties`); the blank dichroic channels 50 and 51 are skipped. Both are reference layers: the SPHEREx mosaic combines observations and DSS is not SPHEREx data. The comparison panel loads dated spectral images separately. If the imagery is unavailable, select **Retry imagery**, switch imagery, or search by coordinates.
+The reference sky defaults to the 0.771 µm layer of the [SPHEREx DR1 all-sky mosaic](https://doi.org/10.26131/IRSA679) from Caltech/IPAC IRSA. Use **SPHEREx** / **DSS** to switch between that mosaic and the DSS2 colour optical survey (CDS HiPS, served from the IRSA mirror with an ESA fallback). With SPHEREx selected, the slider steps through the 102 mosaic wavelengths (0.753–4.988 µm, read from the cube's `properties`); the blank dichroic channels 50 and 51 are skipped. Both are reference layers: the SPHEREx mosaic combines observations and DSS is not SPHEREx data. Dated spectral images appear inside their outlined, sky-aligned footprint; their date selection is separate from the reference-layer wavelength slider. If the imagery is unavailable, select **Retry imagery**, switch imagery, or search by coordinates.
 
 Aladin Lite 3.8's `setSliceNumber` maps a slice to the wrong cube frame for this wavelength-ascending cube (slice 1 displays frame 95). The viewer sets the frequency of each frame's bin instead; see `spherexSliceFrequencyHz` in `spherexSurvey.ts`.
 
 The ☰ **More map options** menu holds **All-sky view** / **Globe view** (360° Hammer–Aitoff overview), **Inspect map center**, and **Advanced search**.
 
-The sky fills the viewport. Type an object name, a challenge target, or coordinates (`269.4521, 4.6934`, `17:57:48.5 +04:41:36`) in the top-left search box and press Enter to center the map and compare a 6 arcmin field. Names go to the catalog resolver. **Advanced search** opens the full form with separate RA/Dec, field width, and preset buttons. Open **Comparison** or **Gaia** in the top bar to show its panel. The panels become bottom sheets on narrow screens. Use **Close** or Escape to return to the sky. Closing the comparison panel pauses playback and keeps your place.
+The sky fills the viewport. Type an object name, a challenge target, or coordinates (`269.4521, 4.6934`, `17:57:48.5 +04:41:36`) in the top-left search box and press Enter to center the map and compare a 6 arcmin field. Names go to the catalog resolver. **Advanced search** opens the full form with separate RA/Dec, field width, and preset buttons. Loading images opens the compact **Time** window and a dated image overlay on the sky. The earliest observation starts paused. Use the snapping timeline, previous/next buttons, or **Blink A ↔ B** to change dates. Choose A and B from their date selectors; the timeline preserves actual gaps between observations. **Compare details** opens the larger cutout, metadata and sharing pane when needed. **Inspect** opens the source inspector. These panes can remain open together. Drag a pane by its heading, or focus the heading and use arrow keys. Each pane can collapse; use its close button or Escape to close it. **Reset layout** restores default positions. Closing Time pauses playback and preserves the active date; reopening it does not resume automatically.
 
 Click a dated image to open Gaia at the selected sky coordinate. Keyboard users can focus the image and press Enter to inspect its center. The selection stays at the same sky position across frames. A Gaia prediction marked from the inspector appears only on the frame used for that prediction. These marks are local to the current viewer session.
 
 Pan and zoom, then select **Compare this field** once the map width is within the archive's 1–30 arcmin range. You can also submit RA/Dec in decimal degrees or sexagesimal form in the search box or **Advanced search**, or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
-Open `/?fixtures=1` in development to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.
+Open `/?fixtures=1` in development, open **Time**, and expand **Development fixtures** to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.
 
 ## SPHEREx archive integration
 
@@ -266,3 +266,55 @@ findings component/client and browser session through the app shell, mount/proxy
 same-origin routes, and use two distinct sessions to test post, public replay,
 signed-out write denial and a signed-in reply. Checkpoint 7 is not complete until
 those checks pass. Deployment checks do not apply to this local-only app.
+
+## Floating time workspace
+
+Aladin remains fullscreen. `usePlayback.ts` owns the selected observation, A/B
+endpoints, speed, and decoded-image status. The Time window, dated sky overlay,
+optional details preview, sky selections and inspector all use that same frame.
+Manual scrubbing, stepping or endpoint changes pause blink. Playback also pauses
+when Time closes or the browser tab becomes hidden. Collapsing a pane retains its
+state. A single observation remains viewable with blink disabled.
+
+`DatedSkyOverlay.tsx` uses Aladin's native PNG/WCS image layers. It passes the saved
+FITS header and rendered dimensions, keeps inactive layers transparent, and draws
+a sampled sky-coordinate footprint and frame-specific marks. It uses the saved
+rendered PNGs without re-stretching or reprocessing them. Unsupported grids have an
+explicit details-only fallback. Image failures disable blink and expose retry.
+The field label in Playback settings identifies the loaded field; map browsing
+alone never starts another archive comparison or alters the loaded grid.
+
+`FloatingPane.tsx` supplies drag handles, pointer capture, keyboard movement,
+collapse, close, stacking, viewport bounds, and reset behavior. The top toolbar
+remains accessible above the panes. Map controls collapse initially on narrower
+screens, and touch devices can drag the same handles. Layout is session state;
+it is separate from the saved scientific comparison identity.
+
+Try the browser-only synthetic examples:
+
+- `/?fixtures=1&comparison=fixture-matched-pair`: two dated frames.
+- `/?fixtures=1&comparison=fixture-irregular-times`: three observations with visibly unequal time gaps.
+- `/?fixtures=1&comparison=fixture-single-epoch`: one still, no blink.
+- `/?fixtures=1&comparison=fixture-matched-pair&finding=fixture-finding`: saved frame marks and discussion replay.
+
+Verification commands from the repository root:
+
+```sh
+node --test web/src/viewer/timeline.test.mjs web/src/viewer/evidence.test.mjs web/src/viewer/production.test.mjs
+npm run build
+PLAYWRIGHT_MODULE="$test_tools/node_modules/playwright/index.mjs" VIEWER_TEST_URL=http://localhost:5173 node web/src/viewer/time-window.browser.mjs
+PLAYWRIGHT_MODULE="$test_tools/node_modules/playwright/index.mjs" VIEWER_TEST_URL=http://localhost:5173 node web/src/viewer/overlay.browser.mjs
+```
+
+Use the temporary Playwright installation described earlier. The time-window test
+checks irregular date spacing, distinct A/B blink, pointer and keyboard scrubbing,
+shared details/inspector state, drag and touch movement, collapse/close/reset,
+viewport resizing, single-epoch behavior, image retry, and saved finding links.
+The overlay diagnostic uses an asymmetric synthetic RGBA image to check orientation,
+exact colour values, transparency, zoom/pan/projection, and absence of comparison
+searches during browsing. It needs no live archive or catalog.
+
+The existing `production.browser.mjs`, `harness/evidence.browser.mjs` and
+`live.browser.mjs` checks now use Time controls and explicitly open Compare details.
+Real-service checks use a retained real pair and real Gaia reads; they do not claim
+a new archive coverage result, a significant change, or a discovery.
