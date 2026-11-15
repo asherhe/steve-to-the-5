@@ -16,6 +16,8 @@ declare module "aladin-lite" {
     getStackLayers(): string[];
     view: { swapLayers(first: string, second: string): void };
     removeImageLayer(id: string): void;
+    /** Aladin's built-in right-click menu; set to null to disable it. */
+    contextMenu: unknown;
     getRaDec(): [ra: number, dec: number];
     getFoV(): [width: number, height: number];
     gotoRaDec(ra: number, dec: number): void;
@@ -66,6 +68,7 @@ declare module "aladin-lite" {
         showFrame: boolean;
         showFov: boolean;
         showSimbadPointerControl: boolean;
+        showStatusBar: boolean;
       },
     ): AladinView;
   };

@@ -128,7 +128,12 @@ export function SkyMap({
           showFrame: false,
           showFov: false,
           showSimbadPointerControl: false,
+          // Its only remaining message here would be "Opening menu..." on touch-hold.
+          showStatusBar: false,
         });
+        // Aladin opens its stock menu on right-click and touch-hold even with showContextMenu
+        // off; every map path checks this property first, so clearing it removes the menu.
+        sky.contextMenu = null;
         makeCubeCoverageOpaque(element);
         sky.gotoRaDec(initialCenter.ra, initialCenter.dec);
         const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle" });
