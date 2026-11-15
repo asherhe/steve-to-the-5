@@ -23,6 +23,8 @@ class NameProvenance(CamelModel):
     url: str
     retrieved_at_utc: str
     kind: str
+    # The server that answered a live lookup (for example a SIMBAD mirror), when known.
+    served_by: str | None = None
 
 
 class CatalogReference(CamelModel):
@@ -70,15 +72,27 @@ class NearbySource(CamelModel):
     separation_arcsec: float
 
 
-class NearbyResponse(CamelModel):
-    sources: list[NearbySource]
-
-
 class SourceProvenance(CamelModel):
+    """Where a catalog result came from.
+
+    `catalog` and `data_release` identify the dataset (Gaia DR3) and never change with the
+    server. `served_by` names the archive that actually answered (for example ESA or the
+    AIP mirror); `retrieved_at_utc` is when that archive was queried, which stays the
+    original time when the result is later served from the in-memory cache.
+    """
+
     catalog: str
     data_release: str
     source_table_url: str | None = None
     source_detail_url: str | None = None
+    served_by: str | None = None
+    retrieved_at_utc: str | None = None
+    from_cache: bool | None = None
+
+
+class NearbyResponse(CamelModel):
+    sources: list[NearbySource]
+    provenance: SourceProvenance | None = None
 
 
 class GaiaDetail(CamelModel):

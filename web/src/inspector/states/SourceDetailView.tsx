@@ -1,5 +1,5 @@
 import { predictAtObservation } from "../propagate";
-import type { GaiaDetail, MarkAction, NearbySource, SelectedFrameMeta } from "../types";
+import type { GaiaDetail, MarkAction, NearbySource, SelectedFrameMeta, SourceProvenance } from "../types";
 import { DetailSections } from "./DetailSections";
 import { InspectorInfoTip } from "./InspectorInfoTip";
 import { SummaryCard } from "./SummaryCard";
@@ -10,10 +10,12 @@ interface Props {
   selectedFrame?: SelectedFrameMeta | null;
   mosaicGuideTimeUtc?: string;
   onMark: (mark: MarkAction) => void;
+  /** Provenance of the cone search, used until the detail response supplies its own. */
+  listProvenance?: SourceProvenance | null;
 }
 
 /** A plain-language summary card, the mark action, then every raw value in collapsed sections. */
-export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTimeUtc, onMark }: Props) {
+export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTimeUtc, onMark, listProvenance }: Props) {
   const d = detail;
   const identity = detail?.identity ?? source.identity;
 
@@ -70,7 +72,8 @@ export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTim
         </button>
       )}
 
-      <DetailSections source={source} detail={d} predicted={predicted} identity={identity ?? null} />
+      <DetailSections source={source} detail={d} predicted={predicted} identity={identity ?? null}
+        provenance={d?.provenance ?? listProvenance ?? null} />
     </div>
   );
 }

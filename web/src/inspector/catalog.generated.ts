@@ -146,11 +146,14 @@ export interface components {
             retrievedAtUtc: string;
             /** Kind */
             kind: string;
+            /** Servedby */
+            servedBy?: string | null;
         };
         /** NearbyResponse */
         NearbyResponse: {
             /** Sources */
             sources: components["schemas"]["NearbySource"][];
+            provenance?: components["schemas"]["SourceProvenance"] | null;
         };
         /** NearbySource */
         NearbySource: {
@@ -215,7 +218,15 @@ export interface components {
             identity?: components["schemas"]["ObjectIdentity"] | null;
             positionProvenance?: components["schemas"]["PositionProvenance"] | null;
         };
-        /** SourceProvenance */
+        /**
+         * SourceProvenance
+         * @description Where a catalog result came from.
+         *
+         *     `catalog` and `data_release` identify the dataset (Gaia DR3) and never change with the
+         *     server. `served_by` names the archive that actually answered (for example ESA or the
+         *     AIP mirror); `retrieved_at_utc` is when that archive was queried, which stays the
+         *     original time when the result is later served from the in-memory cache.
+         */
         SourceProvenance: {
             /** Catalog */
             catalog: string;
@@ -225,6 +236,12 @@ export interface components {
             sourceTableUrl?: string | null;
             /** Sourcedetailurl */
             sourceDetailUrl?: string | null;
+            /** Servedby */
+            servedBy?: string | null;
+            /** Retrievedatutc */
+            retrievedAtUtc?: string | null;
+            /** Fromcache */
+            fromCache?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -252,6 +269,8 @@ export interface operations {
         parameters: {
             query: {
                 name: string;
+                /** @description A manual retry: probe SIMBAD servers that are in cooldown. */
+                retry?: boolean;
             };
             header?: never;
             path?: never;
@@ -321,6 +340,8 @@ export interface operations {
                 ra: number;
                 dec: number;
                 radiusArcsec: number;
+                /** @description A manual retry: probe archives that are in cooldown. */
+                retry?: boolean;
             };
             header?: never;
             path?: never;
@@ -350,7 +371,10 @@ export interface operations {
     };
     gaia_detail_api_catalogs_gaia__source_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description A manual retry: probe archives that are in cooldown. */
+                retry?: boolean;
+            };
             header?: never;
             path: {
                 source_id: string;

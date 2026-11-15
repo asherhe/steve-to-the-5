@@ -24,6 +24,7 @@ def nearby(
     ra: float = Query(...),
     dec: float = Query(...),
     radius_arcsec: float = Query(..., alias="radiusArcsec"),
+    retry: bool = Query(False, description="A manual retry: probe archives that are in cooldown."),
 ) -> NearbyResponse:
     settings = get_settings()
     ra = validate_ra(ra)
@@ -32,8 +33,12 @@ def nearby(
 
     provider = get_provider(settings)
     try:
-        sources = provider.nearby(ra, dec, radius_arcsec, settings.max_rows)
+        # Only the live provider understands a recovery probe; fixtures take the plain call.
+        sources = provider.nearby(ra, dec, radius_arcsec, settings.max_rows, **({"probe": True} if retry else {}))
     except UpstreamError as exc:
         raise upstream_unavailable(str(exc)) from exc
     response.headers["X-SPHEREx-Catalog-Mode"] = "live" if settings.live else "fixture"
-    return NearbyResponse(sources=[row.model_copy(update={"identity": gaia_identity(row.source_id, settings)}) for row in sources])
+    return NearbyResponse(
+        sources=[row.model_copy(update={"identity": gaia_identity(row.source_id, settings)}) for row in sources],
+        provenance=getattr(sources, "provenance", None),
+    )

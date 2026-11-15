@@ -29,12 +29,32 @@ export function UnmatchedView({ mosaic = false }: { mosaic?: boolean }) {
   );
 }
 
-export function UnavailableView({ error }: { error: ApiErrorBody }) {
+const UNAVAILABLE_TITLES: Record<string, string> = {
+  // The archive itself is down: nothing to do with the position that was selected.
+  upstream_unavailable: "The Gaia archive is not responding",
+  // The request never reached the catalog service (an HTML page came back).
+  catalog_route_unavailable: "Catalog service is not reachable",
+  // The service is running on synthetic fixtures, which are not shown beside real imagery.
+  live_catalog_required: "Catalog is in test-data mode",
+};
+
+/** A service problem, kept distinct from a genuine empty result (UnmatchedView). */
+export function UnavailableView({ error, onRetry }: { error: ApiErrorBody; onRetry?: () => void }) {
+  const outage = error.code === "upstream_unavailable";
   return (
     <div className="si-state si-state--unavailable" role="alert">
-      <p className="si-state__title">Catalog unavailable</p>
+      <p className="si-state__title">{UNAVAILABLE_TITLES[error.code] ?? "Catalog unavailable"}</p>
+      {outage && (
+        <p className="si-state__detail">
+          This is a problem reaching Gaia, not with the star you selected. Any point on the sky
+          would show the same message right now.
+        </p>
+      )}
       <p className="si-state__detail">{error.message}</p>
       <p className="si-state__code">({error.code})</p>
+      {onRetry && (
+        <button type="button" className="si-retry" onClick={onRetry}>Try again</button>
+      )}
     </div>
   );
 }

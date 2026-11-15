@@ -56,10 +56,23 @@ local list's scope; `not_found` (404) means an enabled external lookup returned 
 identity; `upstream_unavailable` (503) and invalid-response messages preserve coordinate
 fallbacks. A missing name is never presented as evidence for a new object.
 
-External resolution uses current lowercase degree-valued astroquery SIMBAD responses,
-canonical IDs and identifier aliases. Each HTTP hop has an eight-second timeout; this
-is not a total deadline for the multi-request lookup. A process-local 256-entry cache
-keeps successful resolutions for 24 hours and confirmed misses for five minutes.
+External resolution asks SIMBAD over TAP for the object whose identifier matches the typed
+name exactly (SIMBAD normalises case and spacing; no wildcard or positional match is used).
+CDS Strasbourg is tried first, within six seconds, and the CfA Harvard mirror second, with
+the rest of a twenty-second total; a failed server is skipped for three minutes. A response
+counts as "no such name" only when it is a well-formed table with no rows: an empty body or
+an unexpected header is treated as the server being unavailable and is never cached.
+The answering server is recorded in the name provenance (`servedBy`) and in the position
+provenance text. SIMBAD's main identifier stays the canonical designation. A recognised
+`NAME ...` identifier becomes the common and display name: the one typed if present,
+otherwise the shortest, alphabetical on ties. Without one the designation is shown; a name
+is never invented. Reference links use the current `simbad.cds.unistra.fr` address;
+historical verification records keep the addresses they were made with.
+
+`not_found_in_mirror` (404) means Strasbourg did not respond and the Harvard copy, which is
+dated, had no match: the object may still exist. That miss is kept for one minute and only
+while Strasbourg is in cooldown. A process-local 256-entry cache keeps successful
+resolutions for 24 hours and authoritative misses for five minutes.
 Mode/snapshot version are part of the cache key. Outages/ambiguity are never cached as
 misses. Bundled references change only with explicit snapshot review and restart/rebuild.
 

@@ -141,3 +141,16 @@ viewer/inspector display state, not a change to saved finding marks or archive e
 Barnard's curated search position retains main's newer center with an explicit
 prediction epoch; its original reference position is recorded separately in the
 snapshot. See `docs/common-names.md` and the dated integration verification report.
+
+## Additive catalog reliability contract
+
+Approved by the catalog owner and coordinator. Additive and optional; existing fixtures
+remain valid. `SourceProvenance` gains `servedBy`, `retrievedAtUtc` and `fromCache`;
+`NearbyResponse` gains an optional `provenance`; `NameProvenance` gains `servedBy`. The
+dataset identity (`dataRelease` = Gaia DR3) is unchanged: `servedBy` only names the archive
+that answered (ESA, or the AIP mirror during an outage). `/api/catalogs/nearby`,
+`/api/catalogs/gaia/{id}` and `/api/resolve` accept `retry=true` for a manual recovery
+probe. `/api/resolve` adds `not_found_in_mirror` (404) within the existing error-body shape.
+The OpenAPI export, representative responses and generated inspector types were regenerated
+together. No archive, findings or saved-evidence contract change. See
+`services/catalogs/README.md` for failover, deadlines, cooldown and cache behaviour.

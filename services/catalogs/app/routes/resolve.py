@@ -1,24 +1,49 @@
-"""Exact identity resolution; bundled targets are independent of upstream services."""
+"""Exact identity resolution; bundled targets are independent of upstream services.
+
+Order: bundled targets and their component-ambiguity checks first, then (only when live
+and external resolution are both enabled) SIMBAD, Strasbourg before the Harvard mirror.
+The three ways a name can fail are kept distinct: lookup switched off (`resolver_disabled`),
+SIMBAD not responding (`upstream_unavailable`), and no such name (`not_found`, or
+`not_found_in_mirror` when only the dated mirror could be asked).
+"""
 from __future__ import annotations
-import math
-import threading
-import time
-from collections import OrderedDict
+import time  # noqa: F401  (tests patch time.monotonic through this module)
 from datetime import datetime, timezone
 from urllib.parse import quote
 from fastapi import APIRouter, Query
+from app import simbad
 from app.config import get_settings
+from app.deps import failover_for
 from app.errors import ApiError, not_found, upstream_unavailable
 from app.models import ErrorBody, ResolveResult
-from app.presets import normalize_name, partial_preset_names, resolve_preset
+from app.presets import naming_version, normalize_name, partial_preset_names, resolve_preset
+from app.reliability import AllEndpointsDown, BoundedCache, parse_endpoints
 
 router = APIRouter()
-_cache: OrderedDict[tuple, tuple[float, ResolveResult | None]] = OrderedDict()
-_lock = threading.Lock()
+
+HIT_TTL_S = 86_400.0
+MISS_TTL_S = 300.0
+# A miss from the mirror alone is not authoritative: keep it only briefly.
+MIRROR_MISS_TTL_S = 60.0
+NOT_FOUND_MESSAGE = "No object with that name in SIMBAD. Try a full catalog designation or coordinates."
+MIRROR_MISS_MESSAGE = (
+    "No match in the available SIMBAD mirror. The main SIMBAD server is not responding and the "
+    "mirror is a dated copy, so the object may still exist. Try a catalog designation or coordinates."
+)
+
+# Name-resolution namespace of the shared cache: a ResolveResult, or a (code, message) miss.
+_cache: BoundedCache[ResolveResult | tuple[str, str]] = BoundedCache(256)
+
+
+def _endpoints(settings):
+    return parse_endpoints(settings.simbad_tap_urls, simbad.DEFAULT_SIMBAD_ENDPOINTS)
 
 
 @router.get("/api/resolve", response_model=ResolveResult, responses={code: {"model": ErrorBody} for code in (400, 404, 409, 503)})
-def resolve(name: str = Query(..., min_length=1, max_length=256)) -> ResolveResult:
+def resolve(
+    name: str = Query(..., min_length=1, max_length=256),
+    retry: bool = Query(False, description="A manual retry: probe SIMBAD servers that are in cooldown."),
+) -> ResolveResult:
     settings = get_settings()
     preset = resolve_preset(name, settings)
     if preset is not None:
@@ -27,79 +52,58 @@ def resolve(name: str = Query(..., min_length=1, max_length=256)) -> ResolveResu
     if partials:
         raise ApiError("incomplete_name", "Choose a matching target: " + ", ".join(partials) + ". Or enter a full name or catalog identifier.", 400)
     if not (settings.live and settings.external_resolve):
-        raise ApiError("resolver_disabled", "Not in the five bundled targets. External name lookup is disabled; choose a suggestion or enter coordinates.", 503)
-    from app.presets import naming_version
+        raise ApiError("resolver_disabled", "Name lookup beyond the five bundled targets is switched off on this server. Choose a suggestion or enter coordinates.", 503)
     key = (naming_version(str(settings.fixtures_dir)), str(settings.fixtures_dir), settings.live, settings.external_resolve, normalize_name(name))
-    now = time.monotonic()
-    with _lock:
-        cached = _cache.get(key)
-        if cached and cached[0] > now:
-            _cache.move_to_end(key)
-            if cached[1] is None:
-                raise not_found("No identifier found by SIMBAD. Try a full catalog designation or coordinates.")
-            return cached[1].model_copy(deep=True)
+    cached = _cache.get(key)
+    if isinstance(cached, ResolveResult):
+        return cached.model_copy(deep=True)
+    if cached is not None:
+        code, message = cached
+        # A mirror-only miss stops applying as soon as the main server may be reachable again.
+        primary = _endpoints(settings)[0]
+        if code != "not_found_in_mirror" or (failover_for(settings).cooling(primary) and not retry):
+            raise ApiError(code, message, 404)
     try:
-        result = _resolve_external(name.strip())
+        result = _resolve_external(name.strip(), probe=True) if retry else _resolve_external(name.strip())
     except ApiError as exc:
-        if exc.code != "not_found":
-            raise
-        result = None
-    with _lock:
-        _cache[key] = (now + (86400 if result else 300), result)
-        _cache.move_to_end(key)
-        while len(_cache) > 256:
-            _cache.popitem(last=False)
-    if result is None:
-        raise not_found("No identifier found by SIMBAD. Try a full catalog designation or coordinates.")
+        if exc.code == "not_found":
+            _cache.put(key, (exc.code, NOT_FOUND_MESSAGE), MISS_TTL_S)
+            raise not_found(NOT_FOUND_MESSAGE) from exc
+        if exc.code == "not_found_in_mirror":
+            _cache.put(key, (exc.code, exc.message), MIRROR_MISS_TTL_S)
+        raise
+    _cache.put(key, result, HIT_TTL_S)
     return result.model_copy(deep=True)
 
 
-def _resolver_session():
-    # Live-only import: the offline service must not require astroquery/requests.
-    from requests import Session
-
-    class ResolverSession(Session):
-        def request(self, method, url, **kwargs):
-            # Also bounds TAP capability and identifier requests.
-            kwargs["timeout"] = 8
-            return super().request(method, url, **kwargs)
-
-    return ResolverSession()
-
-
-def _resolve_external(name: str) -> ResolveResult:
-    client = None
+def _resolve_external(name: str, probe: bool = False, fetch=None) -> ResolveResult:
+    settings = get_settings()
+    endpoints = _endpoints(settings)
     try:
-        from astroquery.simbad import Simbad
-        client = Simbad()
-        client._session.close()
-        client._session = _resolver_session()
-        table = client.query_object(name, wildcard=False)
-        if table is None or len(table) == 0:
-            raise not_found("No identifier found by SIMBAD.")
-        if len(table) != 1:
-            raise ApiError("ambiguous_name", "Several identities matched. Enter a full catalog or component designation.", 409)
-        row = table[0]
-        # astroquery >=0.4.8 returns lowercase column names and degree-valued angles.
-        ra, dec = float(row["ra"]), float(row["dec"])
-        canonical = str(row["main_id"]).strip()
-        if not canonical or not math.isfinite(ra) or not math.isfinite(dec) or not 0 <= ra < 360 or not -90 <= dec <= 90:
-            raise ValueError("Invalid SIMBAD position or identifier")
-        identities = client.query_objectids(canonical)
-        aliases = [] if identities is None else [str(value).strip() for value in identities["id"]]
-        url = "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=" + quote(canonical, safe="")
-        return ResolveResult.model_validate({
-            "name": canonical, "ra": ra, "dec": dec,
-            "identity": {"objectId": "simbad:" + canonical, "commonName": None,
-                "canonicalDesignation": canonical, "displayName": canonical,
-                "aliases": aliases, "component": "SIMBAD resolved object",
-                "relatedDesignations": [], "catalogIds": [{"catalog": "SIMBAD", "dataRelease": None, "id": canonical}],
-                "provenance": [{"source": "SIMBAD", "url": url, "retrievedAtUtc": datetime.now(timezone.utc).isoformat(), "kind": "live_lookup"}]},
-            "positionProvenance": {"source": "SIMBAD identifier lookup; epoch not supplied", "refEpochJulianYear": None, "role": "catalog_reference_position"}})
-    except ApiError:
-        raise
-    except Exception as exc:
-        raise upstream_unavailable("SIMBAD name lookup is unavailable or returned invalid data. Use a bundled target or coordinates.") from exc
-    finally:
-        if client is not None:
-            client._session.close()
+        endpoint, found = simbad.lookup(name, endpoints, failover_for(settings), probe=probe, fetch=fetch)
+    except AllEndpointsDown as exc:
+        if exc.busy:
+            raise upstream_unavailable("SIMBAD lookups are busy with other requests. Try again in a moment.") from exc
+        raise upstream_unavailable(
+            "SIMBAD is not responding, so this name could not be looked up. "
+            "The five bundled targets and coordinate search still work."
+        ) from exc
+    except simbad.SimbadAmbiguous as exc:
+        raise ApiError("ambiguous_name", "Several identities matched. Enter a full catalog or component designation.", 409) from exc
+    except simbad.SimbadInvalid as exc:
+        raise upstream_unavailable("SIMBAD returned unusable data for this name. Use a bundled target or coordinates.") from exc
+    if found is None:
+        if endpoint != endpoints[0]:
+            raise ApiError("not_found_in_mirror", MIRROR_MISS_MESSAGE, 404)
+        raise not_found(NOT_FOUND_MESSAGE)
+    name_alias = simbad.common_name(found.identifiers, name)
+    display = name_alias or (found.main_id[5:].strip() if found.main_id.startswith("NAME ") else found.main_id)
+    return ResolveResult.model_validate({
+        "name": display, "ra": found.ra, "dec": found.dec,
+        "identity": {"objectId": "simbad:" + found.main_id, "commonName": name_alias,
+            "canonicalDesignation": found.main_id, "displayName": display,
+            "aliases": found.identifiers, "component": "SIMBAD resolved object",
+            "relatedDesignations": [], "catalogIds": [{"catalog": "SIMBAD", "dataRelease": None, "id": found.main_id}],
+            "provenance": [{"source": "SIMBAD", "url": simbad.SIMBAD_OBJECT_URL + quote(found.main_id, safe=""),
+                "retrievedAtUtc": datetime.now(timezone.utc).isoformat(), "kind": "live_lookup", "servedBy": endpoint.name}]},
+        "positionProvenance": {"source": f"SIMBAD identifier lookup via {endpoint.name}; epoch not supplied", "refEpochJulianYear": None, "role": "catalog_reference_position"}})

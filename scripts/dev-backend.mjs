@@ -117,7 +117,11 @@ async function setup() {
 
 try {
   await setup();
-  const env = name === "gaia" ? { ...process.env, CATALOGS_LIVE: gaiaMode } : process.env;
+  // Live Gaia also enables SIMBAD name lookup unless CATALOGS_EXTERNAL_RESOLVE=0 opts out.
+  // Fixture mode (CATALOGS_LIVE=0) stays fully offline: the service ignores the flag there.
+  const env = name === "gaia"
+    ? { ...process.env, CATALOGS_LIVE: gaiaMode, CATALOGS_EXTERNAL_RESOLVE: process.env.CATALOGS_EXTERNAL_RESOLVE ?? (liveGaia ? "1" : "0") }
+    : process.env;
   process.exitCode = await run(python, service.args, service.cwd, env);
 } catch (error) {
   if (!stopSignal) console.error(error.message);

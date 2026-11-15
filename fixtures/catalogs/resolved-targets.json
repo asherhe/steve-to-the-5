@@ -30,7 +30,8 @@
           "source": "SIMBAD",
           "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Barnard%27s+star&output.format=ASCII",
           "retrievedAtUtc": "2026-11-15T03:45:32Z",
-          "kind": "curated_reference"
+          "kind": "curated_reference",
+          "servedBy": null
         }
       ]
     },
@@ -68,7 +69,8 @@
           "source": "McCaughrean et al. 2004",
           "url": "https://arxiv.org/abs/astro-ph/0309256",
           "retrievedAtUtc": "2026-11-15T03:45:32Z",
-          "kind": "curated_reference"
+          "kind": "curated_reference",
+          "servedBy": null
         }
       ]
     },
@@ -113,7 +115,8 @@
           "source": "SIMBAD",
           "url": "https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=WISE+J085510.83-071442.5",
           "retrievedAtUtc": "2026-11-15T03:45:32Z",
-          "kind": "curated_reference"
+          "kind": "curated_reference",
+          "servedBy": null
         }
       ]
     },
@@ -153,7 +156,8 @@
           "source": "AAVSO VSX",
           "url": "https://vsx.aavso.org/index.php?revid=418953&view=detail.top",
           "retrievedAtUtc": "2026-11-15T03:45:32Z",
-          "kind": "curated_reference"
+          "kind": "curated_reference",
+          "servedBy": null
         }
       ]
     },
@@ -193,13 +197,15 @@
           "source": "SIMBAD R Dra identifier record",
           "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=R+Dra",
           "retrievedAtUtc": "2026-11-15T04:29:40Z",
-          "kind": "curated_reference"
+          "kind": "curated_reference",
+          "servedBy": null
         },
         {
           "source": "ESA Gaia DR3 exact source record",
           "url": "https://gea.esac.esa.int/archive/?source_id=1648328016354496384",
           "retrievedAtUtc": "2026-11-15T04:29:40Z",
-          "kind": "live_lookup"
+          "kind": "live_lookup",
+          "servedBy": null
         }
       ]
     },

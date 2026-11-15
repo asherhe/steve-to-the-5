@@ -55,16 +55,17 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
   const doFetch = options.fetchImpl ?? fetch;
 
   return {
-    async nearby(ra: number, dec: number, radiusArcsec: number): Promise<NearbyResponse & { catalogMode?: "live" | "fixture" }> {
-      const url = `${baseUrl}/catalogs/nearby?ra=${ra}&dec=${dec}&radiusArcsec=${radiusArcsec}`;
+    /** `retry` marks a manual retry, which lets the service probe an archive in cooldown. */
+    async nearby(ra: number, dec: number, radiusArcsec: number, options: { retry?: boolean } = {}): Promise<NearbyResponse & { catalogMode?: "live" | "fixture" }> {
+      const url = `${baseUrl}/catalogs/nearby?ra=${ra}&dec=${dec}&radiusArcsec=${radiusArcsec}${options.retry ? "&retry=true" : ""}`;
       const response = await doFetch(url);
       const result = await readCatalogResponse<NearbyResponse>(response);
       const mode = response.headers.get("X-SPHEREx-Catalog-Mode");
       return { ...result, catalogMode: mode === "live" || mode === "fixture" ? mode : undefined };
     },
 
-    async detail(sourceId: string): Promise<GaiaDetail> {
-      const url = `${baseUrl}/catalogs/gaia/${encodeURIComponent(sourceId)}`;
+    async detail(sourceId: string, options: { retry?: boolean } = {}): Promise<GaiaDetail> {
+      const url = `${baseUrl}/catalogs/gaia/${encodeURIComponent(sourceId)}${options.retry ? "?retry=true" : ""}`;
       return readCatalogResponse<GaiaDetail>(await doFetch(url));
     },
 

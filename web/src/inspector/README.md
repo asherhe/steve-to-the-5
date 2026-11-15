@@ -74,6 +74,20 @@ the name, and a **Names** section lists the designation, aliases, distinct relat
 objects and name references. Without one, the card says the association with the
 requested target is unverified. Never set a title from position.
 
+### Outages, retry and the serving archive
+
+A service problem (`UnavailableView`) is kept apart from a genuine empty result
+(`UnmatchedView`). An archive outage reads "The Gaia archive is not responding" and says it
+is not about the star selected; a routing error and fixture-mode rejection have their own
+titles. **Try again** re-runs the lookup with `retry: true`, which lets the catalog service
+probe an archive it had put in cooldown. An empty result offers no retry. During an
+outage of the first archive a cold lookup can take several seconds (up to 20 s in the
+worst case) before the mirror answers; later lookups skip the failed archive.
+
+**Identifiers & links** shows the catalog (always Gaia DR3), the archive that served the
+response (`servedBy`, with a note when it came from the service's cache), when it was
+retrieved, and a link to that archive.
+
 ### Predicted vs observed
 
 When a frame is selected, the observed position (epoch 2016.0) is propagated to the frame's

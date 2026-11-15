@@ -21,6 +21,11 @@ _DETAIL_COLUMNS = (
 )
 
 
+# Columns a response must carry before it is trusted, including an empty one.
+NEARBY_COLUMN_NAMES = tuple(name.strip() for name in _NEARBY_COLUMNS.split(",")) + ("sep_deg",)
+DETAIL_COLUMN_NAMES = tuple(name.strip() for name in _DETAIL_COLUMNS.split(","))
+
+
 def nearby_query(ra: float, dec: float, radius_deg: float, top: int) -> str:
     return (
         f"SELECT TOP {int(top)} {_NEARBY_COLUMNS}, "

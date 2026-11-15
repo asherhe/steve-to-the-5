@@ -6,7 +6,7 @@ is not_found; a backend failure is upstream_unavailable.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.config import get_settings
 from app.deps import get_provider
@@ -20,12 +20,15 @@ router = APIRouter()
 
 
 @router.get("/api/catalogs/gaia/{source_id}", response_model=GaiaDetail)
-def gaia_detail(source_id: str) -> GaiaDetail:
+def gaia_detail(
+    source_id: str,
+    retry: bool = Query(False, description="A manual retry: probe archives that are in cooldown."),
+) -> GaiaDetail:
     settings = get_settings()
     sid = validate_source_id(source_id)
     provider = get_provider(settings)
     try:
-        result = provider.detail(sid)
+        result = provider.detail(sid, **({"probe": True} if retry else {}))
         return result.model_copy(update={"identity": gaia_identity(sid, settings)})
     except SourceNotFound as exc:
         raise not_found(str(exc)) from exc

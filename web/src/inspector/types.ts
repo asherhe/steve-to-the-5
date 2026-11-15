@@ -25,8 +25,8 @@ export type ResolveResult = components["schemas"]["ResolveResult"];
 export type PositionProvenance = components["schemas"]["PositionProvenance"];
 export type NearbySource = Required<Omit<components["schemas"]["NearbySource"], "identity">> &
   Pick<components["schemas"]["NearbySource"], "identity">;
-export type NearbyResponse = { sources: NearbySource[] };
 export type SourceProvenance = components["schemas"]["SourceProvenance"];
+export type NearbyResponse = { sources: NearbySource[]; provenance?: SourceProvenance | null };
 export type GaiaDetail = Required<Omit<components["schemas"]["GaiaDetail"], "identity">> &
   Pick<components["schemas"]["GaiaDetail"], "identity">;
 
