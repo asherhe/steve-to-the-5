@@ -322,3 +322,10 @@ The existing `production.browser.mjs`, `harness/evidence.browser.mjs` and
 `live.browser.mjs` checks now use Time controls and explicitly open Compare details.
 Real-service checks use a retained real pair and real Gaia reads; they do not claim
 a new archive coverage result, a significant change, or a discovery.
+
+## Integrated common names
+
+See [five-target naming and integration verification](../../../docs/common-names.md).
+Compact and advanced search share offline names and aliases. Exact names select a target
+identity; coordinate searches and saved replay do not infer one. The shared snapshot
+retains the newer Barnard center and its prediction epoch.

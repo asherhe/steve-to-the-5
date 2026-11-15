@@ -1,0 +1,135 @@
+{
+  "kind": "live_same_origin_catalog_smoke",
+  "origin": "http://127.0.0.1:5187",
+  "catalogOrigin": "http://127.0.0.1:18010",
+  "runtimeFlags": {
+    "CATALOGS_LIVE": true,
+    "CATALOGS_EXTERNAL_RESOLVE": true
+  },
+  "results": [
+    {
+      "check": "vega",
+      "requestPath": "/api/resolve",
+      "params": {
+        "name": "Vega"
+      },
+      "checkedAtUtc": "2026-11-15T04:33:39.824283+00:00",
+      "httpStatus": 503,
+      "contentType": "application/json",
+      "body": {
+        "code": "upstream_unavailable",
+        "message": "SIMBAD name lookup is unavailable or returned invalid data. Use a bundled target or coordinates."
+      },
+      "elapsedSeconds": 1.922
+    },
+    {
+      "check": "partial",
+      "requestPath": "/api/resolve",
+      "params": {
+        "name": "barnard"
+      },
+      "checkedAtUtc": "2026-11-15T04:33:39.824987+00:00",
+      "httpStatus": 400,
+      "contentType": "application/json",
+      "body": {
+        "code": "incomplete_name",
+        "message": "Choose a matching target: Barnard’s Star. Or enter a full name or catalog identifier."
+      },
+      "elapsedSeconds": 0.255
+    },
+    {
+      "check": "component",
+      "requestPath": "/api/resolve",
+      "params": {
+        "name": "epsilon indi"
+      },
+      "checkedAtUtc": "2026-11-15T04:33:39.825147+00:00",
+      "httpStatus": 409,
+      "contentType": "application/json",
+      "body": {
+        "code": "ambiguous_name",
+        "message": "Choose Epsilon Indi B (the Ba/Bb brown-dwarf pair), or enter an explicit component designation. A, Ba, Bb and planet designations are distinct."
+      },
+      "elapsedSeconds": 0.254
+    },
+    {
+      "check": "bundled",
+      "requestPath": "/api/resolve",
+      "params": {
+        "name": "GJ699"
+      },
+      "checkedAtUtc": "2026-11-15T04:33:40.078820+00:00",
+      "httpStatus": 200,
+      "contentType": "application/json",
+      "body": {
+        "name": "Barnard's Star",
+        "ra": 269.45207695833335,
+        "dec": 4.693364966666667,
+        "identity": {
+          "objectId": "barnards-star",
+          "commonName": "Barnard’s Star",
+          "canonicalDesignation": "GJ 699",
+          "displayName": "Barnard’s Star",
+          "aliases": [
+            "Barnard's Star",
+            "Barnards Star",
+            "Barnard Star",
+            "GJ 699",
+            "HIP 87937",
+            "Gaia DR3 4472832130942575872"
+          ],
+          "component": "star",
+          "relatedDesignations": [],
+          "catalogIds": [
+            {
+              "catalog": "Gaia",
+              "dataRelease": "DR3",
+              "id": "4472832130942575872"
+            }
+          ],
+          "provenance": [
+            {
+              "source": "SIMBAD",
+              "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Barnard%27s+star&output.format=ASCII",
+              "retrievedAtUtc": "2026-11-15T03:45:32Z",
+              "kind": "curated_reference"
+            }
+          ]
+        },
+        "positionProvenance": {
+          "source": "SIMBAD J2000 field center",
+          "refEpochJulianYear": 2000.0,
+          "role": "search_field_center"
+        }
+      },
+      "elapsedSeconds": 0.04
+    },
+    {
+      "check": "rDraconisGaia",
+      "requestPath": "/api/catalogs/gaia/1648328016354496384",
+      "params": {},
+      "checkedAtUtc": "2026-11-15T04:33:40.079649+00:00",
+      "httpStatus": 503,
+      "contentType": "application/json",
+      "body": {
+        "code": "upstream_unavailable",
+        "message": "Gaia TAP query failed: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)"
+      },
+      "elapsedSeconds": 1.666
+    },
+    {
+      "check": "epsilonIndiBaGaia",
+      "requestPath": "/api/catalogs/gaia/6412596012146801152",
+      "params": {},
+      "checkedAtUtc": "2026-11-15T04:33:40.118976+00:00",
+      "httpStatus": 503,
+      "contentType": "application/json",
+      "body": {
+        "code": "upstream_unavailable",
+        "message": "Gaia TAP query failed: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1032)"
+      },
+      "elapsedSeconds": 1.626
+    }
+  ],
+  "note": "Temporary opt-in processes only. Default flags unchanged. Vega success is not asserted when upstream fails."
+}

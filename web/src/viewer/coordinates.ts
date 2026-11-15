@@ -1,4 +1,5 @@
 import type { SkyPosition } from "./comparison";
+import { namedTargets } from "./targetNames.ts";
 
 const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 const separated = /^([+-]?\d+)(?::|\s+)(\d+)(?::|\s+)(\d+(?:\.\d+)?)$/;
@@ -28,25 +29,10 @@ export function parseAngle(input: string, axis: "ra" | "dec"): number | null {
   return valid ? degrees : null;
 }
 
-const targetCoordinates = [
-  // Gaia DR3 4472832130942575872, propagated to the DR1 survey midpoint (2025-11-07).
-  ["Barnard’s Star", "269.44630202", "4.76777074"],
-  // SIMPLE archive, Epsilon Indi B system.
-  ["Epsilon Indi B", "331.0656", "-56.7901"],
-  // Coordinates supplied in the challenge brief.
-  ["WISE 0855", "08:55:10.831", "-07:14:42.53"],
-  // Chandra Cycle 21 target list.
-  ["RW Aurigae", "05:07:49.5", "+30:24:05.0"],
-  // AAVSO Bulletin coordinates.
-  ["R Draconis", "16:32:40.2258", "+66:45:17.943"],
-] as const;
-
-export const targetPresets = targetCoordinates.map(([name, rightAscension, declination]): SkyPosition & { name: string } => {
-  const ra = parseAngle(rightAscension, "ra");
-  const dec = parseAngle(declination, "dec");
-  if (ra === null || dec === null) throw new Error(`Invalid preset coordinates for ${name}`);
-  return { name, ra, dec };
-});
+// Names and centers are shared with /api/resolve, including the recorded center epoch.
+export const targetPresets = namedTargets.map(target => ({
+  name: target.identity!.displayName, ra: target.ra, dec: target.dec,
+}));
 
 const plainNumber = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 

@@ -1,3 +1,4 @@
+import type { ResolveResult } from "../inspector/types";
 import type { components } from "./archive.generated";
 
 export interface SkyPosition {
@@ -50,5 +51,5 @@ export interface ViewerDataSource {
   resolveName(
     name: string,
     signal?: AbortSignal,
-  ): Promise<(SkyPosition & { name: string }) | null>;
+  ): Promise<ResolveResult | null>;
 }

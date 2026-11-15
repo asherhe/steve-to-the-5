@@ -11,7 +11,8 @@
     "preview": "vite preview web/src/viewer --strictPort",
     "check": "tsc --project web/src/viewer/tsconfig.json",
     "generate:archive-types": "openapi-typescript fixtures/archive/openapi.json -o web/src/viewer/archive.generated.ts",
-    "build": "npm run check && vite build web/src/viewer"
+    "build": "npm run check && vite build web/src/viewer",
+    "generate:catalog-types": "openapi-typescript fixtures/catalogs/openapi.json -o web/src/inspector/catalog.generated.ts"
   },
   "dependencies": {
     "aladin-lite": "3.8.2",

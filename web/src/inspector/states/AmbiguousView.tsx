@@ -25,6 +25,7 @@ export function AmbiguousView({ sources, onSelect, selectedId }: Props) {
               }
               onClick={() => onSelect(s)}
             >
+              {s.identity && <strong>{s.identity.commonName || s.identity.displayName}</strong>}
               <span className="si-candidate__id">{s.sourceId}</span>
               <span className="si-candidate__sep">{fmtNumber(s.separationArcsec, 2)}″</span>
               <span className="si-candidate__mag">

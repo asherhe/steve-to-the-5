@@ -39,18 +39,10 @@ try {
  await fresh.getByRole('button',{name:'Copy comparison link',exact:true}).click();const plain=await fresh.evaluate(()=>navigator.clipboard.readText());assert.equal(new URL(plain).searchParams.has('finding'),false);
  await fresh.locator('#time-window .pane-drag').focus();
  await fresh.getByText('Development fixtures',{exact:true}).click();
- await p.getByText('Development fixtures',{exact:true}).press('Enter');
- await p.getByLabel('Archive response').selectOption('single_epoch');
- await p.getByText('Observation 1 of 2',{exact:false}).waitFor({state:'hidden'});
- const [,fresh]=await session();await fresh.goto(link);await fresh.getByRole('region',{name:'Fixture discussion'}).waitFor();assert.deepEqual(await evidence(fresh),first);
- await fresh.getByRole('button',{name:'Next observation',exact:true}).click();assert.deepEqual(await evidence(fresh),second);
- await fresh.getByRole('button',{name:'Copy comparison link',exact:true}).click();const plain=await fresh.evaluate(()=>navigator.clipboard.readText());assert.equal(new URL(plain).searchParams.has('finding'),false);
- await fresh.getByText('Development fixtures',{exact:true}).press('Enter');
  for(const [button,message] of [['Try missing ID','Saved comparison not found'],['Try missing finding','Saved finding not found. Check the finding ID.'],['Try mismatched evidence','This finding belongs to a different comparison. Open its own evidence link.']]){
   await fresh.getByRole('button',{name:button,exact:true}).click();await fresh.getByText(message,{exact:true}).waitFor();assert.equal(await fresh.getByRole('region',{name:'Comparison playback'}).count(),0);
  }
  await fresh.goto(origin+'/?fixtures=1&finding=fixture-finding');await fresh.getByRole('region',{name:'Fixture discussion'}).waitFor();assert.deepEqual(await evidence(fresh),first);
  const [,mobile]=await session(true);await mobile.goto(link);await mobile.getByRole('region',{name:'Fixture discussion'}).waitFor();assert.deepEqual(await evidence(mobile),first);await mobile.locator('#time-window .pane-drag').focus();await mobile.getByRole('button',{name:'Next observation',exact:true}).click();assert.deepEqual(await evidence(mobile),second);
- const [,mobile]=await session(true);await mobile.goto(link);await mobile.getByRole('region',{name:'Fixture discussion'}).waitFor();assert.deepEqual(await evidence(mobile),first);await mobile.getByRole('button',{name:'Next observation',exact:true}).press('Enter');assert.deepEqual(await evidence(mobile),second);
  console.log('PASS: offline desktop/mobile replay, frame-specific marks, Show evidence reset, clipboard links, fresh-session replay after changed search/scenario, missing comparison/finding, mismatched IDs, finding-only links.');
 } finally {await browser.close();}

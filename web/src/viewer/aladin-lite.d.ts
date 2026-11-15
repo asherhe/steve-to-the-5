@@ -50,8 +50,8 @@ declare module "aladin-lite" {
       successCallback: (survey: AladinImageSurvey) => void;
       errorCallback: (error: unknown) => void;
     }): AladinImageSurvey;
-    catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" }): AladinCatalog;
-    source(ra: number, dec: number): unknown;
+    catalog(options: { name: string; color: string; sourceSize: number; shape: "circle" | "cross"; displayLabel?: boolean; labelColumn?: string; labelColor?: string; labelFont?: string }): AladinCatalog;
+    source(ra: number, dec: number, data?: Record<string, string>): unknown;
     aladin(
       element: HTMLElement,
       options: {

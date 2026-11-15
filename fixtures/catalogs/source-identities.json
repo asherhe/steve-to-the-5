@@ -1,0 +1,39 @@
+[
+  {
+    "objectId": "epsilon-indi-ba",
+    "commonName": null,
+    "canonicalDesignation": "Epsilon Indi Ba",
+    "displayName": "Epsilon Indi Ba",
+    "aliases": [
+      "eps Ind Ba",
+      "ε Indi Ba"
+    ],
+    "component": "Ba component of the B brown-dwarf pair; not Bb or the whole pair",
+    "relatedDesignations": [
+      "Epsilon Indi B",
+      "Epsilon Indi Bb",
+      "Epsilon Indi A"
+    ],
+    "catalogIds": [
+      {
+        "catalog": "Gaia",
+        "dataRelease": "DR3",
+        "id": "6412596012146801152"
+      }
+    ],
+    "provenance": [
+      {
+        "source": "Baig et al. 2024, Table 2: Ba component cross-identification",
+        "url": "https://doi.org/10.1093/mnras/stae2005",
+        "retrievedAtUtc": "2026-11-15T04:29:40Z",
+        "kind": "curated_reference"
+      },
+      {
+        "source": "ESA Gaia DR3 exact source record",
+        "url": "https://gea.esac.esa.int/archive/?source_id=6412596012146801152",
+        "retrievedAtUtc": "2026-11-15T04:29:40Z",
+        "kind": "live_lookup"
+      }
+    ]
+  }
+]

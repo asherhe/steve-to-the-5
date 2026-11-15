@@ -537,3 +537,25 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
   .pane-time .pane-body { padding: 0.6rem 0.75rem; }
   .search-box { flex-basis: 100%; max-width: none; order: 5; }
 }
+
+/* Naming is context inside the existing panels and instrument bar. */
+.target-suggestions { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.target-suggestions button { width: 100%; text-align: left; display: grid; gap: .25rem; }
+.target-suggestions [aria-selected="true"] { outline: 2px solid #7edaff; }
+.target-suggestions span, .target-suggestions small { color: #b8c6d8; }
+.target-context { border-left: 2px solid #ffd68a; padding: .65rem; margin: .75rem 0; background: #ffffff06; }
+.target-context p { margin: .4rem 0; }
+.target-readout dd { max-width: 13rem; overflow-wrap: anywhere; }
+.map-name-legend { display: block; padding: .2rem .5rem; color: #dbe4f1; }
+
+/* The compact bar and advanced form share the same naming control. */
+.target-name-control { display: grid; gap: .4rem; min-width: 0; }
+.target-name-control input { width: 100%; min-width: 0; }
+.compact-name-control { position: relative; }
+.compact-name-control .target-suggestions { position: absolute; top: 100%; left: 0; width: max(100%, 19rem); max-width: calc(100vw - 3rem); max-height: 55vh; overflow: auto; z-index: 40; background: #0a1219; padding: .5rem; border: 1px solid #324453; }
+.target-summary { display: grid; gap: .25rem; margin-bottom: .65rem; }
+.target-summary small { color: #b8c6d8; }
+.name-form .target-name-control { flex: 1; }
+
+.search-box .compact-name-control { flex: 1; }
+.instrument-bar:focus-within { z-index: 1000; }

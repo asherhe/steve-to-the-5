@@ -1,0 +1,152 @@
+{
+  "kind": "live_same_origin_catalog_smoke_with_ca_bundle",
+  "origin": "http://127.0.0.1:5187",
+  "catalogOrigin": "http://127.0.0.1:18010",
+  "transport": "TLS verification enabled; temporary process uses installed certifi CA bundle",
+  "runtimeFlags": {
+    "CATALOGS_LIVE": true,
+    "CATALOGS_EXTERNAL_RESOLVE": true
+  },
+  "results": [
+    {
+      "check": "rDraconisGaia",
+      "requestPath": "/api/catalogs/gaia/1648328016354496384",
+      "checkedAtUtc": "2026-11-15T04:36:11.535323+00:00",
+      "httpStatus": 200,
+      "body": {
+        "identity": {
+          "objectId": "r-draconis",
+          "commonName": null,
+          "canonicalDesignation": "R Dra",
+          "displayName": "R Draconis",
+          "aliases": [
+            "R Draconis",
+            "R Dra",
+            "HIP 81014",
+            "HD 149880",
+            "Gaia DR3 1648328016354496384"
+          ],
+          "component": "variable star",
+          "relatedDesignations": [],
+          "catalogIds": [
+            {
+              "catalog": "Gaia",
+              "dataRelease": "DR3",
+              "id": "1648328016354496384"
+            }
+          ],
+          "provenance": [
+            {
+              "source": "SIMBAD R Dra identifier record",
+              "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=R+Dra",
+              "retrievedAtUtc": "2026-11-15T04:29:40Z",
+              "kind": "curated_reference"
+            },
+            {
+              "source": "ESA Gaia DR3 exact source record",
+              "url": "https://gea.esac.esa.int/archive/?source_id=1648328016354496384",
+              "retrievedAtUtc": "2026-11-15T04:29:40Z",
+              "kind": "live_lookup"
+            }
+          ]
+        },
+        "sourceId": "1648328016354496384",
+        "ra": 248.1673783672889,
+        "dec": 66.75500674547219,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": -20.642811719160797,
+        "pmDecMasYr": 6.148818852711324,
+        "parallaxMas": 1.2509180143740992,
+        "gMag": 6.3743791580200195,
+        "raErrorMas": 0.06687162816524506,
+        "decErrorMas": 0.06601263582706451,
+        "pmRaCosDecErrorMasYr": 0.0851282924413681,
+        "pmDecErrorMasYr": 0.09132147580385208,
+        "parallaxErrorMas": 0.06478790193796158,
+        "radialVelocityKmS": null,
+        "radialVelocityErrorKmS": null,
+        "bpMag": 9.502541542053223,
+        "rpMag": 6.220059394836426,
+        "provenance": {
+          "catalog": "gaiadr3.gaia_source",
+          "dataRelease": "Gaia DR3",
+          "sourceTableUrl": "https://gea.esac.esa.int/archive/",
+          "sourceDetailUrl": "https://gea.esac.esa.int/archive/?source_id=1648328016354496384"
+        }
+      },
+      "verifiedIdentityJoin": true,
+      "elapsedSeconds": 3.204
+    },
+    {
+      "check": "epsilonIndiBaGaia",
+      "requestPath": "/api/catalogs/gaia/6412596012146801152",
+      "checkedAtUtc": "2026-11-15T04:36:11.535747+00:00",
+      "httpStatus": 200,
+      "body": {
+        "identity": {
+          "objectId": "epsilon-indi-ba",
+          "commonName": null,
+          "canonicalDesignation": "Epsilon Indi Ba",
+          "displayName": "Epsilon Indi Ba",
+          "aliases": [
+            "eps Ind Ba",
+            "ε Indi Ba"
+          ],
+          "component": "Ba component of the B brown-dwarf pair; not Bb or the whole pair",
+          "relatedDesignations": [
+            "Epsilon Indi B",
+            "Epsilon Indi Bb",
+            "Epsilon Indi A"
+          ],
+          "catalogIds": [
+            {
+              "catalog": "Gaia",
+              "dataRelease": "DR3",
+              "id": "6412596012146801152"
+            }
+          ],
+          "provenance": [
+            {
+              "source": "Baig et al. 2024, Table 2: Ba component cross-identification",
+              "url": "https://doi.org/10.1093/mnras/stae2005",
+              "retrievedAtUtc": "2026-11-15T04:29:40Z",
+              "kind": "curated_reference"
+            },
+            {
+              "source": "ESA Gaia DR3 exact source record",
+              "url": "https://gea.esac.esa.int/archive/?source_id=6412596012146801152",
+              "retrievedAtUtc": "2026-11-15T04:29:40Z",
+              "kind": "live_lookup"
+            }
+          ]
+        },
+        "sourceId": "6412596012146801152",
+        "ra": 331.07645259656397,
+        "dec": -56.79381206688221,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": 3981.97666296105,
+        "pmDecMasYr": -2466.8318147663504,
+        "parallaxMas": 270.6580324694526,
+        "gMag": 18.030664443969727,
+        "raErrorMas": 0.5048008561134338,
+        "decErrorMas": 0.46758729219436646,
+        "pmRaCosDecErrorMasYr": 0.6016567945480347,
+        "pmDecErrorMasYr": 0.6256827116012573,
+        "parallaxErrorMas": 0.6895573139190674,
+        "radialVelocityKmS": null,
+        "radialVelocityErrorKmS": null,
+        "bpMag": 21.142072677612305,
+        "rpMag": 16.060108184814453,
+        "provenance": {
+          "catalog": "gaiadr3.gaia_source",
+          "dataRelease": "Gaia DR3",
+          "sourceTableUrl": "https://gea.esac.esa.int/archive/",
+          "sourceDetailUrl": "https://gea.esac.esa.int/archive/?source_id=6412596012146801152"
+        }
+      },
+      "verifiedIdentityJoin": true,
+      "elapsedSeconds": 3.203
+    }
+  ],
+  "note": "No system trust settings, default flags or credentials changed."
+}

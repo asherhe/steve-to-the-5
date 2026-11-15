@@ -1,0 +1,7 @@
+{
+  "httpStatus": 400,
+  "body": {
+    "code": "incomplete_name",
+    "message": "Choose a matching target: Barnard’s Star. Or enter a full name or catalog identifier."
+  }
+}

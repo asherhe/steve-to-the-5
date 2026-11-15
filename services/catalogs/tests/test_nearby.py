@@ -7,6 +7,7 @@ UNMATCHED = (83.8221, 9.9357)
 UNAVAILABLE = (359.999, 89.999)
 
 FIELDS = {
+    "identity",
     "sourceId",
     "ra",
     "dec",

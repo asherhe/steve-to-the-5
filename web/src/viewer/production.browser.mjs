@@ -8,8 +8,9 @@ const ready=await json('responses/ready.json');
 const store=await json(`synthetic/evidence/manifests/${ready.comparison.id}.json`);
 const unavailable=await json('responses/upstream_unavailable.json');
 const browser=await chromium.launch({channel:process.env.PLAYWRIGHT_CHANNEL ?? 'chrome',headless:true});
+const nameReference=JSON.parse(await readFile(new URL("../../../fixtures/catalogs/resolved-targets.json",import.meta.url),"utf8"))[0].identity;
 const source={
- sourceId:'1234567890',ra:10,dec:20,refEpoch:2016,
+ identity:nameReference,sourceId:nameReference.catalogIds.find(ref=>ref.catalog==="Gaia"&&ref.dataRelease==="DR3").id,ra:10,dec:20,refEpoch:2016,
  pmRaCosDecMasYr:0,pmDecMasYr:3600,parallaxMas:null,gMag:10,separationArcsec:0,
 };
 try {
@@ -71,10 +72,13 @@ try {
  const catalogCalls=()=>calls.filter(path=>path.startsWith('/api/catalogs/'));
  const initialCatalogCalls=catalogCalls();
  assert.equal(initialCatalogCalls.length,2);
+ const sourceName=page.locator("#gaia-panel .si-detail__header").getByText(nameReference.displayName,{exact:true});
+ await sourceName.waitFor();
  const firstTop=await markerAt(firstFrame);
  await mapMarker.waitFor();
  await page.getByRole('button',{name:'Next observation',exact:true}).press('Enter');
  const secondTop=await markerAt(secondFrame);
+ assert.equal(await sourceName.count(),1,"The verified name must follow the same source during playback");
  await mapMarker.waitFor();
  assert(secondTop<firstTop,'Northward proper motion should move the marker up');
  await page.getByRole('button',{name:'Previous observation',exact:true}).press('Enter');

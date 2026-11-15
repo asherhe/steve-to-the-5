@@ -40,3 +40,12 @@ describe("propagate", () => {
     expect(predictAtObservation(source, "invalid time")).toBeNull();
   });
 });
+
+
+it("does not predict using missing motion or a non-finite reference epoch", () => {
+  const source = {sourceId:"123",ra:10,dec:20,refEpoch:2016,pmRaCosDecMasYr:0,pmDecMasYr:1};
+  expect(predictAtObservation({...source,pmRaCosDecMasYr:null},"2026-01-01T00:00:00Z")).toBeNull();
+  expect(predictAtObservation({...source,pmDecMasYr:null},"2026-01-01T00:00:00Z")).toBeNull();
+  expect(predictAtObservation({...source,refEpoch:NaN},"2026-01-01T00:00:00Z")).toBeNull();
+  expect(predictAtObservation({...source,pmRaCosDecMasYr:0,pmDecMasYr:0},"2026-01-01T00:00:00Z")).not.toBeNull();
+});

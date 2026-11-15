@@ -10,6 +10,7 @@ export interface DatedLayer {
   selected: SkyPosition | null;
   marks: readonly (SkyPosition & { frameId: string })[];
   predictedMark: SkyPosition | null;
+  predictedLabel?: string;
 }
 // Raster layers use the already-rendered PNGs and their saved FITS WCS. The
 // transparent canvas adds only the footprint and annotations, never a new stretch.
@@ -79,7 +80,14 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
       function mark(position:SkyPosition,color:string){const point=sky.world2pix(position.ra,position.dec);if(!point || !point.every(Number.isFinite))return;context.strokeStyle=color;context.beginPath();context.arc(...point,7,0,2*Math.PI);context.stroke();}
       if(dated.selected)mark(dated.selected,"#8ce5ff");
       for(const saved of dated.marks)if(saved.frameId===dated.frame.id)mark(saved,"#8ce5ff");
-      if(predictedMark)mark(predictedMark,"#ffd08e");
+      if(predictedMark) {
+        mark(predictedMark,"#ffd08e");
+        const point=sky.world2pix(predictedMark.ra,predictedMark.dec);
+        if(point && point.every(Number.isFinite) && dated.predictedLabel) {
+          context.fillStyle="#ffd08e"; context.font="12px sans-serif";
+          context.fillText(`${dated.predictedLabel} (predicted)`,point[0]+10,point[1]-10);
+        }
+      }
     });
     return ()=>cancelAnimationFrame(task);
   },[sky,dated,redraw,predictedMark]);

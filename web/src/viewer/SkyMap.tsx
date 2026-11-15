@@ -2,6 +2,7 @@ import { DatedSkyOverlay, type DatedLayer } from "./DatedSkyOverlay";
 import { cutoutWcs } from "./cutoutWcs";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AladinView } from "aladin-lite";
+import type { MarkAction, ResolveResult } from "../inspector/types";
 import type { Field, SkyPosition } from "./comparison";
 import { formatAngularSize, formatDec, formatRa, normalizeRa } from "./coordinates";
 import {
@@ -50,6 +51,7 @@ export function SkyMap({
   onInspect,
   onAdvancedSearch,
   catalogMark,
+  target,
   notice,
   dated, onInspectDated, slice, onStateChange, dock,
 }: {
@@ -58,7 +60,8 @@ export function SkyMap({
   onCompare: (field: Field) => void;
   onInspect: (position: SkyPosition, onSpherexMosaic: boolean) => void;
   onAdvancedSearch: () => void;
-  catalogMark: (SkyPosition & { predicted: boolean }) | null;
+  catalogMark: MarkAction | null;
+  target: ResolveResult | null;
   notice: string;
   dated?: DatedLayer | null;
   onInspectDated?: (position: SkyPosition) => void;
@@ -75,7 +78,8 @@ export function SkyMap({
   const spherexDetail = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
   const spherexOverview = useRef<ReturnType<AladinModule["HiPS"]> | null>(null);
   const layerToken = useRef(0);
-  const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
+  const markPosition = useRef<((position: MarkAction | null) => void) | null>(null);
+  const targetPosition = useRef<((target: ResolveResult | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
   const menu = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -136,11 +140,17 @@ export function SkyMap({
         sky.contextMenu = null;
         makeCubeCoverageOpaque(element);
         sky.gotoRaDec(initialCenter.ra, initialCenter.dec);
-        const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle" });
+        const catalog = Aladin.catalog({ name: "Marked Gaia position", color: "#7edaff", sourceSize: 14, shape: "circle", displayLabel: true, labelColumn: "label", labelColor: "#7edaff", labelFont: "12px sans-serif" });
         sky.addCatalog(catalog);
         markPosition.current = (position) => {
           catalog.clear();
-          if (position) catalog.addSources([Aladin.source(position.ra, position.dec)]);
+          if (position) catalog.addSources([Aladin.source(position.ra, position.dec, { label: `${position.displayName ?? `Gaia DR3 ${position.sourceId}`} (${position.predicted ? "predicted" : `catalog epoch ${position.astrometry.refEpoch}`})` })]);
+        };
+        const fields = Aladin.catalog({ name: "Requested target field center", color: "#ffd68a", sourceSize: 20, shape: "cross", displayLabel: true, labelColumn: "label", labelColor: "#ffd68a", labelFont: "12px sans-serif" });
+        sky.addCatalog(fields);
+        targetPosition.current = target => {
+          fields.clear();
+          if (target) fields.addSources([Aladin.source(target.ra, target.dec, { label: `Search field: ${target.identity?.displayName ?? target.name} (field center)` })]);
         };
         sky.on("positionChanged", syncReadout);
         sky.on("zoomChanged", syncReadout);
@@ -165,6 +175,7 @@ export function SkyMap({
       spherexOverview.current = null;
       ++layerToken.current;
       markPosition.current = null;
+      targetPosition.current = null;
       setViewStatus("loading");
     };
   }, [initialCenter]);
@@ -298,9 +309,12 @@ export function SkyMap({
     return () => sky.on("click", () => {});
   }, [onInspect, onInspectDated, dated, imagery, viewStatus]);
 
+  const visibleCatalogMark = catalogMark?.predicted === (imagery === "spherex") ? catalogMark : null;
   useEffect(() => {
-    markPosition.current?.(catalogMark?.predicted === (imagery === "spherex") ? catalogMark : null);
-  }, [catalogMark, imagery, viewStatus]);
+    markPosition.current?.(visibleCatalogMark);
+  }, [visibleCatalogMark, viewStatus]);
+
+  useEffect(() => { targetPosition.current?.(target); }, [target, viewStatus]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -366,6 +380,7 @@ export function SkyMap({
         {statusText && !datedReady && <p className="map-status" role="status">{statusText}</p>}
       </div>
       <div className="sky-dock">
+      {(target || visibleCatalogMark) && <small className="map-name-legend">{target && `Search field: ${target.identity?.displayName ?? target.name} (field center, not a detection). `}{visibleCatalogMark && `Marked source: ${visibleCatalogMark.displayName ?? `Gaia DR3 ${visibleCatalogMark.sourceId}`} (${visibleCatalogMark.predicted ? "predicted position" : "catalog position"}).`}</small>}
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         {datedReady && statusText && <small className="reference-status">Reference sky: {statusText}</small>}

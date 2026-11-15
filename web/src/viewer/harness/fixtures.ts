@@ -1,3 +1,5 @@
+import { localTarget, nameIssue, partialNameIssue } from "../targetNames";
+import { CatalogApiError } from "../../inspector/api";
 import type { Comparison, ComparisonResult, ViewerDataSource } from "../comparison";
 import firstImage from "./epoch-one.png";
 import secondImage from "./epoch-two.png";
@@ -94,7 +96,18 @@ export function fixtureDataSource(scenario: Scenario): ViewerDataSource {
       return [pair, single, irregular].find((comparison) => comparison.id === id) ?? null;
     },
     async resolveName(name, signal) {
+      const issue = nameIssue(name) ?? partialNameIssue(name);
+      if (issue) throw new CatalogApiError(issue);
+      if (name === "Fixture slow") {
+        await new Promise(resolve => setTimeout(resolve, 1200)); // deliberately ignores abort
+        return { name: "Slow old response", ra: 42, dec: -20 };
+      }
       await wait(signal);
+      const local = localTarget(name);
+      if (local) return structuredClone(local);
+      if (name === "Fixture timeout") throw new CatalogApiError({ code: "upstream_unavailable", message: "Name lookup timed out. Use a preset or coordinates." });
+      if (name === "Fixture disabled") throw new CatalogApiError({ code: "resolver_disabled", message: "External name lookup is disabled. Use a preset or coordinates." });
+      if (name === "Fixture malformed") throw new CatalogApiError({ code: "invalid_response", message: "Name lookup returned invalid data. Use coordinates." });
       return name.trim().toLowerCase() === "fixture field"
         ? { name: "Fixture field", ra: pair.field.ra, dec: pair.field.dec }
         : null;

@@ -1,0 +1,80 @@
+{
+  "checkedAtUtc": "2026-11-15T05:32:52.598314+00:00",
+  "branch": "codex/integrate-common-names",
+  "parents": {
+    "main": "677709b9c0a35ab857e612699ab8a34b2281c188",
+    "Test-case-work-stuff": "b6260347b7e1f68a4419804809300ec0cdf6f06a"
+  },
+  "scope": "Local integration of main UI and five-target common names; no new live-service checks.",
+  "unitTests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 services/catalogs/.venv/bin/python -m pytest -q -p no:cacheprovider services/catalogs/tests",
+      "passed": 73
+    },
+    {
+      "command": "node --test web/src/viewer/*.test.mjs",
+      "passed": 31
+    },
+    {
+      "command": "npm --prefix web test",
+      "passed": 53
+    }
+  ],
+  "typeChecks": [
+    "npm run check",
+    "npm --prefix web run typecheck"
+  ],
+  "build": {
+    "command": "npm run build",
+    "result": "passed",
+    "warnings": [
+      "Existing Aladin bundle-size warning."
+    ]
+  },
+  "browserChecks": {
+    "harness/names.browser.mjs": {
+      "result": "passed",
+      "scope": "Desktop/mobile shared compact/advanced picker, all five names/presets, aliases, keyboard/touch, ambiguity, failure, cancellation/stale responses, coordinate fallback, saved-context reset. Production local lookup and field/source labels at a mocked Aladin boundary; DSS/SPHEREx marker visibility."
+    },
+    "harness/evidence.browser.mjs": {
+      "result": "passed",
+      "scope": "Synthetic saved-frame marks, Show evidence, clipboard/deep links, fresh sessions after changed defaults, missing/mismatched IDs at desktop/mobile sizes."
+    },
+    "time-window.browser.mjs": {
+      "result": "passed",
+      "scope": "Synthetic irregular times, A/B blink, scrub/step, shared inspector/details state, pane drag/keyboard/touch/reset/collapse/close/resize, retry and single epoch."
+    },
+    "overlay.browser.mjs": {
+      "result": "passed",
+      "scope": "Actual native Aladin renderer with synthetic asymmetric RGBA/WCS diagnostic: orientation, exact color, transparency, zoom/pan/projection, no comparison requests during browsing."
+    },
+    "zoom.browser.mjs": {
+      "result": "passed",
+      "scope": "Actual renderer and synthetic HiPS tiles: overview retained while zoom detail loads, detailed pixels replace overview when covered."
+    },
+    "production.browser.mjs": {
+      "result": "passed",
+      "scope": "Built public app on isolated local preview; mocked same-origin APIs and retained fixture PNGs; decoded playback, verified-name display, marker updates without refetch, clear/failed/out-of-field markers, saved replay, outage/retry and development-fixture exclusion."
+    }
+  },
+  "browserEnvironment": {
+    "developmentOrigin": "http://127.0.0.1:5187",
+    "productionOrigin": "http://127.0.0.1:5188",
+    "liveServices": false,
+    "externalTraffic": "Blocked or locally fulfilled by test routes."
+  },
+  "preserved": [
+    "Main fullscreen map, instrument bar, floating Time/details panes, DSS, wavelength mapping, zoom loading and frame-time predictions.",
+    "Feature aliases, component ambiguity, verified exact-source-ID joins, provenance, typed resolver errors and external resolver opt-in.",
+    "Main Barnard search center with explicit 2025-11-07 prediction epoch; original J2000 reference retained separately.",
+    "No changes to services/archive, fixtures/archive, evidence.ts or ComparisonPlayback.tsx relative to main.",
+    "Historical live verification reports retained unchanged."
+  ],
+  "limitations": [
+    "No new live SIMBAD/Gaia/archive or deployed-origin verification.",
+    "No new image coverage or target-detection claim.",
+    "RW Aur component cross-identifications remain unresolved.",
+    "Historical SIMBAD outage is not resolved by this merge."
+  ],
+  "reviewState": "Resolved and staged for review, merge uncommitted; both source branches retained."
+}

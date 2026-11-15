@@ -40,3 +40,28 @@ Own `web/src/findings/**`. Build activity toggle, cluster/pin data adapter, sele
 
 The coordinator wires archive + map first, then catalog inspector, then findings backend + UI. Test contracts against fixtures before merging and smoke test real data after the first join. Before release, verify on the deployed origin with a cold request and a simulated archive failure. Use two browser sessions to prove public read, auth, posting and reply. Log actual coverage for each required target and show one observed change with metadata and source links. 
 
+
+## Additive five-target naming contract
+
+The catalog schema and representative responses are now exported in `fixtures/catalogs`,
+with generated inspector types. `/api/resolve` preserves `name`, `ra`, `dec` and adds
+optional `identity` and `positionProvenance`. Gaia nearby/detail rows may add a verified
+identity by exact release-specific source ID; absence stays null. Naming is display
+context, never part of an archive evidence hash or recorded finding mark. See
+`docs/common-names.md` for component ambiguity, errors, source limits and regeneration.
+
+Checkpoint 1 adds `incomplete_name` (400) within the existing error-body shape and a
+`source-identities.json` representative fixture using the existing ObjectIdentity
+schema. Ba source identity is separate from the B target preset. R Dra gains a verified
+DR3 association; unresolved RW component bindings remain absent. Generation and contract
+checks cover the new fixtures. No archive or findings contract change is introduced.
+
+
+Main/common-name integration preserves the nearby route's
+`X-SPHEREx-Catalog-Mode` response header and the inspector's live/fixture guard.
+The frontend `MarkAction` retains required `astrometry` for frame-time recomputation
+and optional `displayName`/`refEpoch` metadata for verified source labels. This is
+viewer/inspector display state, not a change to saved finding marks or archive evidence.
+Barnard's curated search position retains main's newer center with an explicit
+prediction epoch; its original reference position is recorded separately in the
+snapshot. See `docs/common-names.md` and the dated integration verification report.

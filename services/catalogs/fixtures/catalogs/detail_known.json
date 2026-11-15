@@ -13,7 +13,7 @@
   "decErrorMas": 0.034,
   "pmRaCosDecErrorMasYr": 0.031,
   "pmDecErrorMasYr": 0.042,
-  "parallaxErrorMas": 0.040,
+  "parallaxErrorMas": 0.04,
   "radialVelocityKmS": -110.353,
   "radialVelocityErrorKmS": 0.123,
   "bpMag": 9.978,
@@ -23,5 +23,6 @@
     "dataRelease": "Gaia DR3",
     "sourceTableUrl": "https://gea.esac.esa.int/archive/",
     "sourceDetailUrl": "https://gea.esac.esa.int/archive/?source_id=4472832130942575872"
-  }
+  },
+  "identity": null
 }

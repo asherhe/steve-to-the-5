@@ -13,6 +13,7 @@ interface Props {
 /** Shows the catalog position and, when available, the prediction used for the mark. */
 export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTimeUtc, onMark }: Props) {
   const d = detail;
+  const identity = detail?.identity ?? source.identity;
 
   const predictionTime = selectedFrame?.observedAtUtc ?? mosaicGuideTimeUtc;
   const predicted = predictionTime ? predictAtObservation(source, predictionTime) : null;
@@ -28,6 +29,8 @@ export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTim
       sourceId: source.sourceId,
       predicted: predicted !== null,
       astrometry: source,
+      displayName: identity?.commonName || identity?.displayName,
+      refEpoch: source.refEpoch,
     });
   }
 
@@ -37,9 +40,12 @@ export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTim
         <span className="si-detail__catalog">
           {d ? d.provenance.dataRelease : "Gaia DR3"}
         </span>
+        {identity && <strong>{identity.commonName || identity.displayName || identity.canonicalDesignation}</strong>}
         <span className="si-detail__id">{source.sourceId}</span>
       </header>
 
+      <p>{identity ? "Verified catalog cross-identification. Image detection is not established." : "Nearby Gaia source. Association with the requested target is unverified."}</p>
+      {identity && <details><summary>Name provenance</summary><p>{identity.canonicalDesignation} · {identity.component}</p>{identity.provenance.map(item => <p key={item.url}><a href={item.url} target="_blank" rel="noreferrer">{item.source}</a> · {item.retrievedAtUtc.slice(0, 10)}</p>)}</details>}
       <section className="si-group" aria-label="Observed position">
         <h4 className="si-group__title">Observed position</h4>
         <dl className="si-fields">
@@ -122,7 +128,7 @@ export function SourceDetailView({ source, detail, selectedFrame, mosaicGuideTim
       )}
 
       {predictionTime && !predicted ? (
-        <p>Prediction unavailable for this observation time.</p>
+        <p>{selectedFrame ? "Frame-time prediction unavailable" : "Prediction unavailable"}: complete proper motion, reference epoch and a valid observation time are required.</p>
       ) : (
         <button type="button" className="si-mark-button" onClick={handleMark}>
           {mosaicGuideTimeUtc ? "Mark approximate mosaic position" : predicted ? "Mark predicted position" : "Mark position"}

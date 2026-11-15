@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { Field, SkyPosition } from "./comparison";
+import { nameIssue, partialNameIssue } from "./targetNames";
+import { TargetNameInput } from "./TargetNameInput";
 import { parseAngle, targetPresets } from "./coordinates";
 
 export interface FieldLimits {
@@ -26,6 +28,15 @@ export function FieldSearch({
   const [decInput, setDec] = useState(String(field.dec));
   const [size, setSize] = useState(String(field.fovArcmin));
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [dismissKey, setDismissKey] = useState(0);
+  function chooseName(value: string) {
+    setName(value);
+    setDismissKey(key => key + 1);
+    setNameError("");
+    setChecked(current => ({ ...current, size: true }));
+    if (validSize) onResolve(value, fovArcmin);
+  }
   const [checked, setChecked] = useState({ coordinates: false, size: false });
   const ra = parseAngle(raInput, "ra");
   const dec = parseAngle(decInput, "dec");
@@ -38,17 +49,19 @@ export function FieldSearch({
     if (ra !== null && dec !== null && validSize) onSearch({ ra, dec, fovArcmin });
   }
 
-  function pickTarget(position: SkyPosition) {
+  function pickTarget(position: SkyPosition & { name: string }) {
     setRa(String(position.ra));
     setDec(String(position.dec));
     setChecked({ coordinates: false, size: true });
-    if (validSize) onSearch({ ...position, fovArcmin });
+    chooseName(position.name);
   }
 
   function resolve(event: FormEvent) {
     event.preventDefault();
     setChecked((current) => ({ ...current, size: true }));
-    if (validSize && name.trim()) onResolve(name.trim(), fovArcmin);
+    const issue = nameIssue(name) ?? partialNameIssue(name);
+    if (issue) { setNameError(issue.message); return; }
+    if (validSize && name.trim()) chooseName(name.trim());
   }
 
   return (
@@ -85,16 +98,17 @@ export function FieldSearch({
       </form>
       <div className="presets" role="group" aria-label="Challenge target presets">
         {targetPresets.map(({ name: target, ra, dec }) => (
-          <button type="button" key={target} onClick={() => pickTarget({ ra, dec })}>{target}</button>
+          <button type="button" key={target} onClick={() => pickTarget({ name: target, ra, dec })}>{target}</button>
         ))}
       </div>
       <form className="controls name-form" onSubmit={resolve}>
-        <label>
-          Object name
-          <input value={name} onChange={(event) => setName(event.target.value)} />
-        </label>
+        <TargetNameInput id="advanced-target" label="Object name" value={name}
+          onChange={value => { setName(value); setNameError(""); }} onChoose={chooseName}
+          error={nameError} dismissKey={dismissKey} describedBy="name-search-hint" />
         <button type="submit" disabled={!name.trim()}>Resolve and compare</button>
       </form>
+      <small id="name-search-hint">Suggestions filter the five challenge targets and their aliases. Other full identifiers use optional external lookup.</small>
+      {nameError && <p role="alert">{nameError}</p>}
     </div>
   );
 }

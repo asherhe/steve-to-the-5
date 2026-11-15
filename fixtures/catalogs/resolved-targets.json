@@ -1,0 +1,212 @@
+[
+  {
+    "name": "Barnard's Star",
+    "ra": 269.44630202,
+    "dec": 4.76777074,
+    "identity": {
+      "objectId": "barnards-star",
+      "commonName": "Barnard’s Star",
+      "canonicalDesignation": "GJ 699",
+      "displayName": "Barnard’s Star",
+      "aliases": [
+        "Barnard's Star",
+        "Barnards Star",
+        "Barnard Star",
+        "GJ 699",
+        "HIP 87937",
+        "Gaia DR3 4472832130942575872"
+      ],
+      "component": "star",
+      "relatedDesignations": [],
+      "catalogIds": [
+        {
+          "catalog": "Gaia",
+          "dataRelease": "DR3",
+          "id": "4472832130942575872"
+        }
+      ],
+      "provenance": [
+        {
+          "source": "SIMBAD",
+          "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=Barnard%27s+star&output.format=ASCII",
+          "retrievedAtUtc": "2026-11-15T03:45:32Z",
+          "kind": "curated_reference"
+        }
+      ]
+    },
+    "positionProvenance": {
+      "source": "Gaia DR3 4472832130942575872, approximate proper-motion prediction for the DR1 survey midpoint, 2025-11-07 UTC",
+      "refEpochJulianYear": 2025.8494182067077,
+      "role": "predicted_search_field_center"
+    }
+  },
+  {
+    "name": "Epsilon Indi B",
+    "ra": 331.0656,
+    "dec": -56.7901,
+    "identity": {
+      "objectId": "epsilon-indi-b",
+      "commonName": null,
+      "canonicalDesignation": "Epsilon Indi B",
+      "displayName": "Epsilon Indi B",
+      "aliases": [
+        "Epsilon Indi B",
+        "eps ind B",
+        "eps indi B",
+        "ε Indi B",
+        "ε Ind B"
+      ],
+      "component": "brown-dwarf subsystem Ba/Bb",
+      "relatedDesignations": [
+        "Epsilon Indi A",
+        "Epsilon Indi Ba",
+        "Epsilon Indi Bb"
+      ],
+      "catalogIds": [],
+      "provenance": [
+        {
+          "source": "McCaughrean et al. 2004",
+          "url": "https://arxiv.org/abs/astro-ph/0309256",
+          "retrievedAtUtc": "2026-11-15T03:45:32Z",
+          "kind": "curated_reference"
+        }
+      ]
+    },
+    "positionProvenance": {
+      "source": "SIMPLE legacy field center",
+      "refEpochJulianYear": null,
+      "role": "search_field_center"
+    }
+  },
+  {
+    "name": "WISE 0855-0714",
+    "ra": 133.79512916666667,
+    "dec": -7.245147222222222,
+    "identity": {
+      "objectId": "wise-0855",
+      "commonName": null,
+      "canonicalDesignation": "WISE J085510.83-071442.5",
+      "displayName": "WISE 0855",
+      "aliases": [
+        "WISE 0855-0714",
+        "WISE 0855",
+        "WISE0855",
+        "WISE J085510.83-071442.5",
+        "WISEA J085510.74-071442.5"
+      ],
+      "component": "brown dwarf",
+      "relatedDesignations": [],
+      "catalogIds": [
+        {
+          "catalog": "WISE",
+          "dataRelease": null,
+          "id": "J085510.83-071442.5"
+        },
+        {
+          "catalog": "WISEA",
+          "dataRelease": null,
+          "id": "J085510.74-071442.5"
+        }
+      ],
+      "provenance": [
+        {
+          "source": "SIMBAD",
+          "url": "https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=WISE+J085510.83-071442.5",
+          "retrievedAtUtc": "2026-11-15T03:45:32Z",
+          "kind": "curated_reference"
+        }
+      ]
+    },
+    "positionProvenance": {
+      "source": "Challenge-supplied field center",
+      "refEpochJulianYear": null,
+      "role": "search_field_center"
+    }
+  },
+  {
+    "name": "RW Aurigae",
+    "ra": 76.95625,
+    "dec": 30.40138888888889,
+    "identity": {
+      "objectId": "rw-aurigae",
+      "commonName": null,
+      "canonicalDesignation": "RW Aur",
+      "displayName": "RW Aurigae",
+      "aliases": [
+        "RW Aurigae",
+        "RW Aur"
+      ],
+      "component": "unresolved system context",
+      "relatedDesignations": [
+        "RW Aur A",
+        "RW Aur B"
+      ],
+      "catalogIds": [
+        {
+          "catalog": "AAVSO",
+          "dataRelease": "VSX",
+          "id": "000-BBH-936"
+        }
+      ],
+      "provenance": [
+        {
+          "source": "AAVSO VSX",
+          "url": "https://vsx.aavso.org/index.php?revid=418953&view=detail.top",
+          "retrievedAtUtc": "2026-11-15T03:45:32Z",
+          "kind": "curated_reference"
+        }
+      ]
+    },
+    "positionProvenance": {
+      "source": "Chandra Cycle 21 field center",
+      "refEpochJulianYear": null,
+      "role": "search_field_center"
+    }
+  },
+  {
+    "name": "R Draconis",
+    "ra": 248.1676075,
+    "dec": 66.75498416666667,
+    "identity": {
+      "objectId": "r-draconis",
+      "commonName": null,
+      "canonicalDesignation": "R Dra",
+      "displayName": "R Draconis",
+      "aliases": [
+        "R Draconis",
+        "R Dra",
+        "HIP 81014",
+        "HD 149880",
+        "Gaia DR3 1648328016354496384"
+      ],
+      "component": "variable star",
+      "relatedDesignations": [],
+      "catalogIds": [
+        {
+          "catalog": "Gaia",
+          "dataRelease": "DR3",
+          "id": "1648328016354496384"
+        }
+      ],
+      "provenance": [
+        {
+          "source": "SIMBAD R Dra identifier record",
+          "url": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=R+Dra",
+          "retrievedAtUtc": "2026-11-15T04:29:40Z",
+          "kind": "curated_reference"
+        },
+        {
+          "source": "ESA Gaia DR3 exact source record",
+          "url": "https://gea.esac.esa.int/archive/?source_id=1648328016354496384",
+          "retrievedAtUtc": "2026-11-15T04:29:40Z",
+          "kind": "live_lookup"
+        }
+      ]
+    },
+    "positionProvenance": {
+      "source": "AAVSO Bulletin field center",
+      "refEpochJulianYear": null,
+      "role": "search_field_center"
+    }
+  }
+]

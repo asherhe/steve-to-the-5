@@ -13,6 +13,7 @@ from app.deps import get_provider
 from app.errors import not_found, upstream_unavailable
 from app.gaia.provider import SourceNotFound, UpstreamError
 from app.models import GaiaDetail
+from app.presets import gaia_identity
 from app.validation import validate_source_id
 
 router = APIRouter()
@@ -24,7 +25,8 @@ def gaia_detail(source_id: str) -> GaiaDetail:
     sid = validate_source_id(source_id)
     provider = get_provider(settings)
     try:
-        return provider.detail(sid)
+        result = provider.detail(sid)
+        return result.model_copy(update={"identity": gaia_identity(sid, settings)})
     except SourceNotFound as exc:
         raise not_found(str(exc)) from exc
     except UpstreamError as exc:

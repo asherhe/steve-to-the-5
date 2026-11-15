@@ -4,14 +4,15 @@
   "sources": [
     {
       "sourceId": "5726817071037876736",
-      "ra": 133.79530,
+      "ra": 133.7953,
       "dec": -7.24498,
       "refEpoch": 2016.0,
       "pmRaCosDecMasYr": -3.214,
       "pmDecMasYr": 2.771,
       "parallaxMas": 1.482,
       "gMag": 18.431,
-      "separationArcsec": 1.11
+      "separationArcsec": 1.11,
+      "identity": null
     },
     {
       "sourceId": "5726817071037880448",
@@ -22,18 +23,20 @@
       "pmDecMasYr": -0.556,
       "parallaxMas": 0.733,
       "gMag": 19.004,
-      "separationArcsec": 1.63
+      "separationArcsec": 1.63,
+      "identity": null
     },
     {
       "sourceId": "5726817066742913024",
       "ra": 133.79561,
-      "dec": -7.24470,
+      "dec": -7.2447,
       "refEpoch": 2016.0,
       "pmRaCosDecMasYr": -0.118,
       "pmDecMasYr": 4.009,
       "parallaxMas": null,
       "gMag": 20.117,
-      "separationArcsec": 2.04
+      "separationArcsec": 2.04,
+      "identity": null
     }
   ]
 }

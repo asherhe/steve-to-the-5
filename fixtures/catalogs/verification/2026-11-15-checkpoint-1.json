@@ -1,0 +1,135 @@
+{
+  "checkedAtUtc": "2026-11-15T04:29:40Z",
+  "kind": "checkpoint_1_naming_verification",
+  "gaia": {
+    "kind": "live_exact_id_query",
+    "endpoint": "https://gea.esac.esa.int/tap-server/tap/sync",
+    "queries": [
+      "SELECT source_id,ra,dec,ref_epoch,pmra,pmdec,parallax,radial_velocity,ruwe FROM gaiadr3.gaia_source WHERE source_id IN (156430822114424576,156430817820015232,6412596012146801152)",
+      "SELECT source_id,ra,dec,ref_epoch,pmra,pmdec,parallax,radial_velocity,ruwe FROM gaiadr3.gaia_source WHERE source_id=1648328016354496384"
+    ],
+    "httpStatus": 200,
+    "measurements": [
+      {
+        "sourceId": "156430817820015232",
+        "dataRelease": "Gaia DR3",
+        "ra": 76.9565443110343,
+        "dec": 30.401316149887936,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": 4.90603392110511,
+        "pmDecMasYr": -24.577534567492915,
+        "parallaxMas": 5.454096456582266,
+        "radialVelocityKmS": null,
+        "ruwe": 16.422132
+      },
+      {
+        "sourceId": "6412596012146801152",
+        "dataRelease": "Gaia DR3",
+        "ra": 331.07645259656397,
+        "dec": -56.79381206688221,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": 3981.97666296105,
+        "pmDecMasYr": -2466.8318147663504,
+        "parallaxMas": 270.6580324694526,
+        "radialVelocityKmS": null,
+        "ruwe": 4.2955413
+      },
+      {
+        "sourceId": "156430822114424576",
+        "dataRelease": "Gaia DR3",
+        "ra": 76.95608119552952,
+        "dec": 30.401204589097233,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": 2.6406431770317083,
+        "pmDecMasYr": -27.397582540455325,
+        "parallaxMas": 6.406249329219477,
+        "radialVelocityKmS": -20.937069,
+        "ruwe": 1.5003728
+      },
+      {
+        "sourceId": "1648328016354496384",
+        "dataRelease": "Gaia DR3",
+        "ra": 248.1673783672889,
+        "dec": 66.75500674547219,
+        "refEpoch": 2016.0,
+        "pmRaCosDecMasYr": -20.642811719160797,
+        "pmDecMasYr": 6.148818852711324,
+        "parallaxMas": 1.2509180143740992,
+        "radialVelocityKmS": null,
+        "ruwe": 1.297982
+      }
+    ]
+  },
+  "identityReview": [
+    {
+      "target": "R Draconis",
+      "status": "verified_cross_id",
+      "sourceId": "1648328016354496384",
+      "scope": "R Dra variable star",
+      "crossIdSource": "https://simbad.u-strasbg.fr/simbad/sim-id?Ident=R+Dra",
+      "crossIdAccess": "indexed_primary_record; direct SIMBAD access unavailable",
+      "note": "DR2 identifier 1648328016352398848 differs. Do not use it as a DR3 join."
+    },
+    {
+      "target": "Epsilon Indi B",
+      "status": "verified_component_only",
+      "sourceId": "6412596012146801152",
+      "scope": "Epsilon Indi Ba; not the unresolved B pair or Bb",
+      "crossIdSource": "https://doi.org/10.1093/mnras/stae2005",
+      "sourceCopy": "https://uhra.herts.ac.uk/id/eprint/11346/1/stae2005.pdf",
+      "location": "Table 2, journal page 3790",
+      "note": "Table explicitly associates the ID with Ba; Bb has no listed Gaia ID in that table. This does not prove universal absence. RUWE 4.2955 cautions against treating a linear prediction as exact orbital astrometry."
+    },
+    {
+      "target": "RW Aurigae",
+      "status": "unresolved_component_conflict",
+      "candidateSourceIds": [
+        "156430822114424576",
+        "156430817820015232"
+      ],
+      "sources": [
+        "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+RW+Aur+B",
+        "https://doi.org/10.1093/mnras/sty2988",
+        "https://doi.org/10.1051/0004-6361/202347583"
+      ],
+      "note": "Indexed SIMBAD B record lists 156430817820015232, whereas Dodin et al. 2019 footnote 1 assigns the other ID to B (DR2). Live Gaia confirms distinct source records, not component names. Do not promote either candidate to a named inspector identity until conflict is resolved."
+    }
+  ],
+  "simbad": {
+    "directAdapterAttempt": {
+      "checkedAtUtc": "2026-11-15T04:26:10.518992+00:00",
+      "kind": "live_lookup_attempt",
+      "results": {
+        "vega": {
+          "status": "failed",
+          "code": "upstream_unavailable",
+          "message": "SIMBAD name lookup is unavailable or returned invalid data. Use a bundled target or coordinates.",
+          "cause": "DALServiceError",
+          "elapsedSeconds": 1.768
+        },
+        "identities": {
+          "status": "failed",
+          "errorType": "DALServiceError",
+          "message": "Unable to access the capabilities endpoint at:\n- https://simbad.cds.unistra.fr/simbad/sim-tap/capabilities: 404 Not Found\n- https://simbad.cds.unistra.fr/simbad/capabilities: 404 Not Found\n\nThis could mean:\n1. The service URL is incorrect\n2. The service is temporarily unavailable\n3. The service doesn't support this protocol\n4. If a 503 was encountered, retry after the suggested delay.\n"
+        }
+      }
+    },
+    "diagnostics": [
+      {
+        "endpoint": "https://simbad.cds.unistra.fr/simbad/sim-tap/capabilities",
+        "httpStatus": 404,
+        "result": "Page unavailable"
+      },
+      {
+        "endpoint": "https://simbad.cds.unistra.fr/simbad/sim-tap/sync",
+        "httpStatus": 404,
+        "result": "Page unavailable"
+      },
+      {
+        "endpoint": "https://simbad.u-strasbg.fr/simbad/sim-tap/capabilities",
+        "result": "DNS resolution failed in this environment"
+      }
+    ]
+  },
+  "imageAssessment": "Not performed. No archive queries, target recentering, image changes or visibility claims in checkpoint 1."
+}

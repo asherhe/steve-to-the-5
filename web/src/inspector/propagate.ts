@@ -18,7 +18,9 @@ export function isoToDecimalYear(isoUtc: string): number {
 
 export function predictAtObservation(source: CatalogAstrometry, observedAtUtc: string): PredictedPosition | null {
   const epoch = isoToDecimalYear(observedAtUtc);
-  if (!Number.isFinite(epoch)) return null;
+  if (!Number.isFinite(epoch) ||
+      ![source.ra, source.dec, source.refEpoch, source.pmRaCosDecMasYr, source.pmDecMasYr]
+        .every(value => typeof value === "number" && Number.isFinite(value))) return null;
   return propagate(source.ra, source.dec, source.refEpoch, epoch, source.pmRaCosDecMasYr, source.pmDecMasYr);
 }
 

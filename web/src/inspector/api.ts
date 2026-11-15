@@ -1,7 +1,7 @@
 // Typed client for the catalog service. Same-origin /api by default; the base path can be
 // overridden at integration. Distinguishes an empty result from a service error.
 
-import type { ApiErrorBody, GaiaDetail, NearbyResponse } from "./types";
+import type { ApiErrorBody, GaiaDetail, NearbyResponse, ResolveResult } from "./types";
 
 export class CatalogApiError extends Error {
   code: string;
@@ -68,9 +68,9 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
       return readCatalogResponse<GaiaDetail>(await doFetch(url));
     },
 
-    async resolve(name: string, signal?: AbortSignal): Promise<{ name: string; ra: number; dec: number }> {
+    async resolve(name: string, signal?: AbortSignal): Promise<ResolveResult> {
       const url = `${baseUrl}/resolve?name=${encodeURIComponent(name)}`;
-      return readCatalogResponse<{ name: string; ra: number; dec: number }>(await doFetch(url, { signal }));
+      return readCatalogResponse<ResolveResult>(await doFetch(url, { signal }));
     },
   };
 }
