@@ -161,3 +161,49 @@
 .si-mark-button:hover {
   filter: brightness(1.05);
 }
+
+/* Beginner help: "?" disclosures next to catalog terms. Scoped to the inspector. */
+.source-inspector .si-info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.source-inspector .si-info__button {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--si-accent);
+  border-radius: 50%;
+  background: var(--si-panel);
+  color: var(--si-accent);
+  font: 600 10px/1 inherit;
+  cursor: help;
+}
+.source-inspector .si-info__button:hover {
+  filter: brightness(1.15);
+}
+.source-inspector .si-info__bubble {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 240px;
+  max-width: 70vw;
+  padding: 10px 12px;
+  border: 1px solid var(--si-border);
+  border-radius: 8px;
+  background: #0c1118;
+  box-shadow: 0 10px 28px #000a;
+  color: var(--si-fg);
+  font: 13px/1.5 inherit;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.source-inspector .si-info__term {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--si-accent);
+  font-weight: 600;
+}

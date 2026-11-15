@@ -10,6 +10,8 @@ import { ComparisonPlayback } from "./ComparisonPlayback";
 import { SpectralRuler, bandColors } from "./SpectralRuler";
 import { bandForWavelength, spherexMosaicSlice } from "./spherexSurvey";
 import { EvidenceReplayError, evidenceLink, validateFinding, type SavedFinding, type EvidenceDiscussionProps } from "./evidence";
+import { InfoTip } from "./InfoTip";
+import { Tutorial, useTutorial } from "./Tutorial";
 import "./styles.css";
 
 const scenarios: Record<ComparisonResult["status"], string> = {
@@ -111,6 +113,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
   const workspace = useRef<HTMLElement>(null);
   useHeightVariable(workspace, ".instrument-bar", "--header-height");
   useHeightVariable(workspace, ".sky-dock", "--dock-height");
+  const tutorial = useTutorial();
   useEffect(() => {
     function restore() {
       const params = new URLSearchParams(location.search);
@@ -359,6 +362,9 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
               }} aria-expanded={panel === id} aria-controls={`${id}-panel`}
                 onClick={() => setPanel(panel === id ? null : id)}>{label}</button>
             ))}
+            <button type="button" className="tutorial-open" onClick={tutorial.openTutorial}>
+              <span aria-hidden="true">?</span> How this works
+            </button>
           </nav>
         </div>
       </header>
@@ -375,7 +381,11 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       )}
       <section id="gaia-panel" aria-labelledby="gaia-heading" className="floating-panel panel-right" hidden={panel !== "gaia"}>
         <div className="panel-heading">
-          <h2 id="gaia-heading">Gaia source inspector</h2>
+          <h2 id="gaia-heading">Gaia source inspector <InfoTip term="Gaia catalog">
+            Gaia is a European Space Agency mission that precisely measured the positions,
+            distances, and motions of nearly two billion stars. This panel checks whether a known
+            Gaia star sits at the point you clicked.
+          </InfoTip></h2>
           <button type="button" onClick={() => closePanel("gaia")}>Close</button>
         </div>
         {inspectingCutout && <p>Selected SPHEREx frame <time dateTime={inspectingCutout.frame.observedAtUtc}>
@@ -412,7 +422,12 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
       </section>
       <section id="comparison-panel" aria-labelledby="comparison-heading" className="floating-panel panel-right" hidden={panel !== "comparison"}>
         <div className="panel-heading">
-          <h2 id="comparison-heading">Comparison</h2>
+          <h2 id="comparison-heading">Comparison <InfoTip term="Blink comparison">
+            The dated images are stacked on the same grid and brightness scale, then shown one
+            after another. Objects that moved or changed brightness between the dates appear to
+            jump or flicker; the steady background stays put. This is how moving objects are
+            spotted.
+          </InfoTip></h2>
           <button type="button" onClick={() => closePanel("comparison")}>Close</button>
         </div>
         {synthetic && <p>Development fixtures. Comparison images and metadata are synthetic.</p>}
@@ -459,6 +474,7 @@ export function Viewer({ dataSource, Inspector, Discussion, loadFinding, Control
           </>
         )}
       </section>
+      <Tutorial open={tutorial.open} onClose={tutorial.close} />
     </main>
   );
 }
