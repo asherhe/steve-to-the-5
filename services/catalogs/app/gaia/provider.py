@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.models import GaiaDetail, NearbySource
+from app.models import GaiaDetail, NearbySource, SourceProvenance
 
 
 class UpstreamError(Exception):
@@ -21,6 +21,18 @@ class UpstreamError(Exception):
 
 class SourceNotFound(Exception):
     """Raised when a requested source ID does not exist in the catalog."""
+
+
+class NearbyResult(list):
+    """Cone-search rows plus the provenance of the archive that answered.
+
+    A list subclass so providers without provenance (fixtures, test doubles) can keep
+    returning a plain list.
+    """
+
+    def __init__(self, rows: list[NearbySource], provenance: SourceProvenance | None = None) -> None:
+        super().__init__(rows)
+        self.provenance = provenance
 
 
 class GaiaProvider(Protocol):

@@ -163,6 +163,7 @@ export function sourceAsText(
         `RA ${fmtDeg(predicted.ra)} deg, Dec ${fmtDeg(predicted.dec)} deg`
     );
   }
+  if (detail?.provenance.servedBy) lines.push(`Served by: ${detail.provenance.servedBy}`);
   if (detail?.provenance.sourceDetailUrl) lines.push(`Archive: ${detail.provenance.sourceDetailUrl}`);
   return lines.join("\n");
 }

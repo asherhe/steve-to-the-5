@@ -21,6 +21,18 @@
               "maxLength": 256,
               "title": "Name"
             }
+          },
+          {
+            "name": "retry",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "A manual retry: probe SIMBAD servers that are in cooldown.",
+              "default": false,
+              "title": "Retry"
+            },
+            "description": "A manual retry: probe SIMBAD servers that are in cooldown."
           }
         ],
         "responses": {
@@ -118,6 +130,18 @@
               "type": "number",
               "title": "Radiusarcsec"
             }
+          },
+          {
+            "name": "retry",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "A manual retry: probe archives that are in cooldown.",
+              "default": false,
+              "title": "Retry"
+            },
+            "description": "A manual retry: probe archives that are in cooldown."
           }
         ],
         "responses": {
@@ -157,6 +181,18 @@
               "type": "string",
               "title": "Source Id"
             }
+          },
+          {
+            "name": "retry",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "A manual retry: probe archives that are in cooldown.",
+              "default": false,
+              "title": "Retry"
+            },
+            "description": "A manual retry: probe archives that are in cooldown."
           }
         ],
         "responses": {
@@ -471,6 +507,17 @@
           "kind": {
             "type": "string",
             "title": "Kind"
+          },
+          "servedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servedby"
           }
         },
         "additionalProperties": false,
@@ -491,6 +538,16 @@
             },
             "type": "array",
             "title": "Sources"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -767,6 +824,39 @@
               }
             ],
             "title": "Sourcedetailurl"
+          },
+          "servedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servedby"
+          },
+          "retrievedAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrievedatutc"
+          },
+          "fromCache": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fromcache"
           }
         },
         "additionalProperties": false,
@@ -775,7 +865,8 @@
           "catalog",
           "dataRelease"
         ],
-        "title": "SourceProvenance"
+        "title": "SourceProvenance",
+        "description": "Where a catalog result came from.\n\n`catalog` and `data_release` identify the dataset (Gaia DR3) and never change with the\nserver. `served_by` names the archive that actually answered (for example ESA or the\nAIP mirror); `retrieved_at_utc` is when that archive was queried, which stays the\noriginal time when the result is later served from the in-memory cache."
       },
       "ValidationError": {
         "properties": {

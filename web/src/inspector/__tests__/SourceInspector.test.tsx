@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SourceInspector } from "../SourceInspector";
-import { createCatalogClient } from "../api";
+import { CatalogApiError, createCatalogClient } from "../api";
 import { ambiguousSources, knownDetail, knownSource, makeFixtureClient, states } from "../fixtures";
 import { isoToDecimalYear, propagate } from "../propagate";
 import type { MarkAction } from "../types";
@@ -380,5 +380,75 @@ describe("summary card and detail sections", () => {
     expect(rows[0]).toHaveTextContent("Very faint · G 18.43");
     expect(within(rows[0]).getByText("Brightest")).toBeInTheDocument();
     expect(screen.getAllByText("Brightest")).toHaveLength(1);
+  });
+});
+
+describe("archive outages, retry and serving archive", () => {
+  const position = { ra: knownSource.ra, dec: knownSource.dec };
+  const outage = () => new CatalogApiError({
+    code: "upstream_unavailable",
+    message: "No Gaia archive responded (ESA Gaia Archive: HTTP 502; AIP Gaia mirror (Potsdam): timed out after 6 s).",
+  });
+
+  it("retries on request, marks it as a manual retry, and recovers", async () => {
+    const nearby = vi.fn()
+      .mockRejectedValueOnce(outage())
+      .mockResolvedValue({ sources: [knownSource], catalogMode: "live" });
+    const retryClient = { ...client, nearby, detail: vi.fn().mockResolvedValue(knownDetail) };
+    render(<SourceInspector client={retryClient} skyPosition={position} onMark={noMark} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("The Gaia archive is not responding");
+    expect(alert).toHaveTextContent("not with the star you selected");
+    expect(alert).toHaveTextContent("ESA Gaia Archive: HTTP 502");
+    expect(nearby).toHaveBeenLastCalledWith(position.ra, position.dec, 30);
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: /mark position/i })).toBeInTheDocument();
+    expect(nearby).toHaveBeenLastCalledWith(position.ra, position.dec, 30, { retry: true });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps outage, routing, test-data and empty results distinct", async () => {
+    const cases: [() => Promise<unknown>, RegExp, boolean][] = [
+      [() => Promise.reject(outage()), /The Gaia archive is not responding/, true],
+      [() => Promise.reject(new CatalogApiError({ code: "catalog_route_unavailable", message: "The catalog URL returned a web page." })), /Catalog service is not reachable/, true],
+      [() => Promise.resolve({ sources: [knownSource], catalogMode: "fixture" }), /Catalog is in test-data mode/, true],
+      [() => Promise.resolve({ sources: [], catalogMode: "live" }), /No catalog source here/, false],
+    ];
+    const seen = new Set<string>();
+    for (const [nearby, title, isAlert] of cases) {
+      const { unmount } = render(<SourceInspector client={{ ...client, nearby: nearby as typeof client.nearby }}
+        skyPosition={position} requireLiveCatalog onMark={noMark} />);
+      const heading = await screen.findByText(title);
+      seen.add(heading.textContent!);
+      expect(screen.queryByRole("alert") !== null).toBe(isAlert);
+      // Only a service problem offers a retry; an empty field is a real answer.
+      expect(screen.queryByRole("button", { name: "Try again" }) !== null).toBe(isAlert);
+      if (!/not responding/.test(heading.textContent!)) expect(screen.queryByText(/not with the star you selected/)).not.toBeInTheDocument();
+      unmount();
+    }
+    expect(seen.size).toBe(4);
+  });
+
+  it("names the archive that answered and links to it", () => {
+    const provenance = {
+      ...knownDetail.provenance,
+      servedBy: "AIP Gaia mirror (Potsdam)",
+      retrievedAtUtc: "2026-11-15T09:30:00Z",
+      fromCache: true,
+      sourceDetailUrl: "https://gaia.aip.de/metadata/gaiadr3/gaia_source/",
+    };
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark}
+      initialState={{ kind: "matched", source: knownSource, detail: { ...knownDetail, provenance } }} />);
+    expect(screen.getByText("AIP Gaia mirror (Potsdam) · from this session's cache")).toBeInTheDocument();
+    expect(screen.getByText("2026-11-15 09:30 UTC")).toBeInTheDocument();
+    expect(screen.getByText("Gaia DR3")).toBeInTheDocument(); // dataset identity is unchanged
+    expect(screen.getByRole("link", { name: "View Gaia DR3 at AIP Gaia mirror (Potsdam)" }))
+      .toHaveAttribute("href", "https://gaia.aip.de/metadata/gaiadr3/gaia_source/");
+  });
+
+  it("keeps the plain archive link when the serving archive is not reported", () => {
+    render(<SourceInspector client={client} skyPosition={null} onMark={noMark} initialState={states.matched} />);
+    expect(screen.getByRole("link", { name: "View in Gaia DR3 archive" })).toBeInTheDocument();
+    expect(screen.queryByText("Served by")).not.toBeInTheDocument();
   });
 });

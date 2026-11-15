@@ -61,32 +61,46 @@ def test_snapshot_contract_and_representative_responses():
     assert json.loads((ROOT / "fixtures/catalogs/resolved-targets.json").read_text()) == expected
 
 
-def test_current_simbad_degrees_and_canonical_identity(monkeypatch):
-    from astropy.table import Table
-    Simbad = pytest.importorskip("astroquery.simbad").SimbadClass
-    monkeypatch.setattr(Simbad, "query_object", lambda *args, **kwargs: Table({"ra": [42.25], "dec": [-8.5], "main_id": ["HD 123"]}))
-    monkeypatch.setattr(Simbad, "query_objectids", lambda *args, **kwargs: Table({"id": ["HD 123", "HIP 456"]}))
-    result = module._resolve_external("other alias")
+def _csv(rows):
+    return ("oid,main_id,ra,dec,id\n" + "".join(f'{oid},"{main}",{ra},{dec},"{ident}"\n' for oid, main, ra, dec, ident in rows)).encode()
+
+
+def test_simbad_degrees_canonical_identity_and_answering_server():
+    module.failover_for(get_settings()).reset()
+    fetch = lambda url, adql, timeout: _csv([(7, "HD 123", 42.25, -8.5, "HD 123"), (7, "HD 123", 42.25, -8.5, "HIP 456")])
+    result = module._resolve_external("other alias", fetch=fetch)
     assert result.name == "HD 123" and result.ra == 42.25 and result.dec == -8.5
     assert result.identity.aliases == ["HD 123", "HIP 456"]
-    assert result.identity.common_name is None
+    assert result.identity.common_name is None  # no NAME identifier: never invent one
+    assert result.identity.canonical_designation == "HD 123"
+    assert result.identity.provenance[0].served_by == "SIMBAD (CDS Strasbourg)"
+    assert result.identity.provenance[0].url.startswith("https://simbad.cds.unistra.fr/")
 
-@pytest.mark.parametrize("rows, code", [([], "not_found"), ([{"ra": float("nan"), "dec": 1, "main_id": "X"}], "upstream_unavailable"), ([{"ra": 360, "dec": 1, "main_id": "X"}], "upstream_unavailable"), ([{"ra": 1, "dec": 2, "main_id": "X"}]*2, "ambiguous_name")])
-def test_simbad_empty_invalid_and_ambiguous(monkeypatch, rows, code):
-    Simbad = pytest.importorskip("astroquery.simbad").SimbadClass
-    monkeypatch.setattr(Simbad, "query_object", lambda *args, **kwargs: rows)
+
+@pytest.mark.parametrize("rows, code", [
+    ([], "not_found"),
+    ([(1, "X", "nan", 1, "X")], "upstream_unavailable"),
+    ([(1, "X", 360, 1, "X")], "upstream_unavailable"),
+    ([(1, "X", "", "", "X")], "upstream_unavailable"),
+    ([(1, "X", 1, 2, "X"), (2, "Y", 1, 2, "Y")], "ambiguous_name"),
+])
+def test_simbad_empty_invalid_and_ambiguous(rows, code):
+    module.failover_for(get_settings()).reset()
     with pytest.raises(ApiError) as error:
-        module._resolve_external("unknown")
+        module._resolve_external("unknown", fetch=lambda url, adql, timeout: _csv(rows))
     assert error.value.code == code
 
 
-def test_timeout_is_an_outage_not_unknown(monkeypatch):
-    Simbad = pytest.importorskip("astroquery.simbad").SimbadClass
-    def fail(*args, **kwargs): raise TimeoutError()
-    monkeypatch.setattr(Simbad, "query_object", fail)
+def test_timeout_is_an_outage_not_unknown():
+    from app.reliability import EndpointDown
+    failover = module.failover_for(get_settings())
+    failover.reset()
+    def fail(url, adql, timeout): raise EndpointDown("timed out")
     with pytest.raises(ApiError) as error:
-        module._resolve_external("unknown")
+        module._resolve_external("unknown", fetch=fail)
     assert error.value.code == "upstream_unavailable"
+    assert "not responding" in error.value.message
+    failover.reset()
 
 
 def test_cache_ttl_modes_misses_outages_and_bound(client, monkeypatch):
@@ -151,15 +165,6 @@ def test_high_proper_motion_against_astropy():
         reference = origin.apply_space_motion(new_obstime=Time(args[3], format="jyear"))
     linear = SkyCoord(predicted.ra*u.deg, predicted.dec*u.deg)
     assert linear.separation(reference).arcsec < 0.1  # angular model only; not image registration
-
-
-def test_http_transport_has_explicit_timeout(monkeypatch):
-    requests = pytest.importorskip("requests")
-    seen = []
-    monkeypatch.setattr(requests.Session, "request", lambda *args, **kwargs: seen.append(kwargs))
-    with module._resolver_session() as session:
-        session.get("https://example.invalid", timeout=None)
-    assert len(seen) == 1 and seen[0]["timeout"] == 8
 
 
 def test_offline_startup_without_live_dependencies():

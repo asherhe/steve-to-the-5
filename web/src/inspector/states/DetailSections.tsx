@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 
 import { sourceAsText } from "../describe";
 import { fmtDecDms, fmtDeg, fmtRaHms, fmtWithUnit } from "../format";
-import type { GaiaDetail, NearbySource, ObjectIdentity, PredictedPosition } from "../types";
+import type { GaiaDetail, NearbySource, ObjectIdentity, PredictedPosition, SourceProvenance } from "../types";
 import { InspectorInfoTip } from "./InspectorInfoTip";
 
 interface Props {
@@ -11,13 +11,15 @@ interface Props {
   predicted: PredictedPosition | null;
   /** Verified cross-identification by source ID, if any. */
   identity?: ObjectIdentity | null;
+  /** Dataset and the archive that actually answered (ESA, or a mirror during an outage). */
+  provenance?: SourceProvenance | null;
 }
 
 const NOT_MEASURED = "not measured";
 const shown = (text: string) => (text === "—" ? NOT_MEASURED : text);
 
 /** Every raw catalog value, collapsed by default below the summary card. */
-export function DetailSections({ source, detail, predicted, identity }: Props) {
+export function DetailSections({ source, detail, predicted, identity, provenance }: Props) {
   const d = detail;
   const [copied, setCopied] = useState("");
 
@@ -118,11 +120,24 @@ export function DetailSections({ source, detail, predicted, identity }: Props) {
               </button>
             </dd>
           </div>
-          <Field label="Catalog" value={d ? d.provenance.dataRelease : "Gaia DR3"} />
+          <Field label="Catalog" value={provenance?.dataRelease ?? "Gaia DR3"} />
+          {provenance?.servedBy && (
+            <Field label="Served by" value={`${provenance.servedBy}${provenance.fromCache ? " · from this session's cache" : ""}`} />
+          )}
+          {provenance?.retrievedAtUtc && (
+            <Field label="Retrieved" value={`${provenance.retrievedAtUtc.slice(0, 16).replace("T", " ")} UTC`} />
+          )}
         </dl>
-        {d?.provenance.sourceDetailUrl && (
-          <a className="si-detail__source-link" href={d.provenance.sourceDetailUrl} target="_blank" rel="noreferrer">
-            View in {d.provenance.dataRelease} archive
+        {provenance?.servedBy && (
+          <p className="si-group__note">
+            The same Gaia DR3 catalog is served by several archives. A mirror answers when the
+            ESA archive is unavailable; the measurements are identical.
+          </p>
+        )}
+        {provenance && (provenance.sourceDetailUrl ?? provenance.sourceTableUrl) && (
+          <a className="si-detail__source-link" href={(provenance.sourceDetailUrl ?? provenance.sourceTableUrl)!}
+            target="_blank" rel="noreferrer">
+            {provenance.servedBy ? `View ${provenance.dataRelease} at ${provenance.servedBy}` : `View in ${provenance.dataRelease} archive`}
           </a>
         )}
       </Section>

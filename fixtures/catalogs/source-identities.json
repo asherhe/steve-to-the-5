@@ -26,13 +26,15 @@
         "source": "Baig et al. 2024, Table 2: Ba component cross-identification",
         "url": "https://doi.org/10.1093/mnras/stae2005",
         "retrievedAtUtc": "2026-11-15T04:29:40Z",
-        "kind": "curated_reference"
+        "kind": "curated_reference",
+        "servedBy": null
       },
       {
         "source": "ESA Gaia DR3 exact source record",
         "url": "https://gea.esac.esa.int/archive/?source_id=6412596012146801152",
         "retrievedAtUtc": "2026-11-15T04:29:40Z",
-        "kind": "live_lookup"
+        "kind": "live_lookup",
+        "servedBy": null
       }
     ]
   }

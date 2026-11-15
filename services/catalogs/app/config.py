@@ -48,10 +48,19 @@ class Settings:
     # Bounds enforced on every request.
     max_radius_arcsec: float
     max_rows: int
-    # Live TAP timeout in seconds.
-    tap_timeout_s: float
     # Allow external name resolution (SIMBAD / Gaia) beyond bundled presets. Live only.
     external_resolve: bool
+    # Upstream archives in priority order, as "NAME=url,NAME=url". Empty uses the defaults.
+    gaia_tap_urls: str = ""
+    simbad_tap_urls: str = ""
+    # Timing shared by the Gaia and SIMBAD clients (seconds). A non-final archive attempt
+    # gets `request`; the last archive being tried gets whatever is left of `total`.
+    upstream_connect_timeout_s: float = 3.0
+    upstream_request_timeout_s: float = 6.0
+    upstream_total_timeout_s: float = 20.0
+    upstream_cooldown_s: float = 180.0
+    # Concurrent requests allowed per archive. There is no queue: a full archive is skipped.
+    upstream_max_concurrent: int = 4
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -64,8 +73,14 @@ class Settings:
             fixtures_dir=fixtures,
             max_radius_arcsec=_env_float("CATALOGS_MAX_RADIUS_ARCSEC", 300.0),
             max_rows=_env_int("CATALOGS_MAX_ROWS", 200),
-            tap_timeout_s=_env_float("CATALOGS_TAP_TIMEOUT_S", 20.0),
             external_resolve=_env_bool("CATALOGS_EXTERNAL_RESOLVE", False),
+            gaia_tap_urls=os.environ.get("CATALOGS_GAIA_TAP_URLS", ""),
+            simbad_tap_urls=os.environ.get("CATALOGS_SIMBAD_TAP_URLS", ""),
+            upstream_connect_timeout_s=_env_float("CATALOGS_UPSTREAM_CONNECT_TIMEOUT_S", 3.0),
+            upstream_request_timeout_s=_env_float("CATALOGS_UPSTREAM_REQUEST_TIMEOUT_S", 6.0),
+            upstream_total_timeout_s=_env_float("CATALOGS_UPSTREAM_TOTAL_TIMEOUT_S", 20.0),
+            upstream_cooldown_s=_env_float("CATALOGS_UPSTREAM_COOLDOWN_S", 180.0),
+            upstream_max_concurrent=max(1, _env_int("CATALOGS_UPSTREAM_MAX_CONCURRENT", 4)),
         )
 
 

@@ -12,6 +12,7 @@ import type {
   NearbySource,
   SelectedFrameMeta,
   SkyPosition,
+  SourceProvenance,
 } from "./types";
 
 export interface SourceInspectorProps {
@@ -54,6 +55,11 @@ export function SourceInspector({
   // Which source is chosen in the ambiguous list.
   const [chosen, setChosen] = useState<NearbySource | null>(null);
   const requestId = useRef(0);
+  // A manual retry re-runs the lookup and lets the service probe an archive in cooldown.
+  const [attempt, setAttempt] = useState(0);
+  const retryRequested = useRef(false);
+  // Which archive answered the cone search, shown until the detail response supplies its own.
+  const nearbyProvenance = useRef<SourceProvenance | null>(null);
   const guideDetail = useRef<GaiaDetail | null>(null);
 
   // When driven by an explicit state (tests/harness), do not fetch.
@@ -62,6 +68,9 @@ export function SourceInspector({
   useEffect(() => {
     if (controlled) return;
     const id = ++requestId.current;
+    const retry = retryRequested.current;
+    retryRequested.current = false;
+    nearbyProvenance.current = null;
     guideDetail.current = null;
     if (!skyPosition) {
       setState({ kind: "idle" });
@@ -75,9 +84,12 @@ export function SourceInspector({
     // Fetch a wider catalog cone for the mosaic, then apply the original click radius.
     const catalogRadius = mosaicGuideTimeUtc ? Math.min(radiusArcsec + 120, 300) : radiusArcsec;
     const guideRequest = mosaicGuideSourceId
-      ? client.detail(mosaicGuideSourceId).catch(() => null)
+      ? (retry ? client.detail(mosaicGuideSourceId, { retry: true }) : client.detail(mosaicGuideSourceId)).catch(() => null)
       : Promise.resolve(null);
-    Promise.all([client.nearby(skyPosition.ra, skyPosition.dec, catalogRadius), guideRequest])
+    const nearbyRequest = retry
+      ? client.nearby(skyPosition.ra, skyPosition.dec, catalogRadius, { retry: true })
+      : client.nearby(skyPosition.ra, skyPosition.dec, catalogRadius);
+    Promise.all([nearbyRequest, guideRequest])
       .then(([resp, guide]) => {
         if (id !== requestId.current) return; // stale
         if (requireLiveCatalog && resp.catalogMode !== "live") {
@@ -93,6 +105,7 @@ export function SourceInspector({
           return;
         }
         guideDetail.current = guide;
+        nearbyProvenance.current = resp.provenance ?? null;
         // The reference-epoch cone can hit its row limit before reaching a fast mover.
         const candidates = guide
           ? [...resp.sources.filter(source => source.sourceId !== guide.sourceId), { ...guide, separationArcsec: 0 }]
@@ -124,7 +137,12 @@ export function SourceInspector({
         });
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skyPosition?.ra, skyPosition?.dec, radiusArcsec, controlled, requireLiveCatalog, mosaicGuideTimeUtc, mosaicGuideSourceId]);
+  }, [skyPosition?.ra, skyPosition?.dec, radiusArcsec, controlled, requireLiveCatalog, mosaicGuideTimeUtc, mosaicGuideSourceId, attempt]);
+
+  function retry() {
+    retryRequested.current = true;
+    setAttempt((value) => value + 1);
+  }
 
   function loadDetail(source: NearbySource, id: number) {
     if (guideDetail.current?.sourceId === source.sourceId) {
@@ -163,7 +181,7 @@ export function SourceInspector({
       case "loading":
         return <LoadingView />;
       case "unavailable":
-        return <UnavailableView error={state.error} />;
+        return <UnavailableView error={state.error} onRetry={controlled || !skyPosition ? undefined : retry} />;
       case "unmatched":
         return <UnmatchedView mosaic={!!mosaicGuideTimeUtc} />;
       case "ambiguous":
@@ -181,6 +199,7 @@ export function SourceInspector({
                 selectedFrame={selectedFrame}
                 mosaicGuideTimeUtc={mosaicGuideTimeUtc}
                 onMark={onMark}
+                listProvenance={nearbyProvenance.current}
               />
             )}
           </>
@@ -193,6 +212,7 @@ export function SourceInspector({
             selectedFrame={selectedFrame}
             mosaicGuideTimeUtc={mosaicGuideTimeUtc}
             onMark={onMark}
+            listProvenance={nearbyProvenance.current}
           />
         );
     }
