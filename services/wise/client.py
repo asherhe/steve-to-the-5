@@ -75,12 +75,19 @@ class WiseClient:
                                       "attempts": min(2, config.attempts)}),
             cache_dir, transport, sleep, **kwargs)
 
+    def close(self):
+        self.http.close()
+        self.search_http.close()
+
     def _cached(self, folder, url, suffix, fetch, valid):
         """Return (bytes, attempts); zero attempts is a cache hit. Only validated
         responses are cached. The mission's image sets are final, so they do not change."""
         path = self.cache_dir / folder / f"{digest(url.encode())}.{suffix}"
         if path.exists():
-            return path.read_bytes(), 0
+            data = path.read_bytes()
+            if valid(data):
+                return data, 0
+            path.unlink()
         data, attempts = fetch(url)
         if not valid(data):
             raise ArchiveError("UPSTREAM_DATA", "IRSA returned an unexpected response",
@@ -99,10 +106,17 @@ class WiseClient:
         query = urlencode({"POS": f"{field.ra},{field.dec}",
                            "SIZE": round(field.fov_arcmin / 60 + 2 * pad, 6),
                            "INTERSECT": "COVERS", "where": f"band={field.band}"})
+        def valid(data):
+            try:
+                parse_search(data.decode("utf-8", "replace"), dataset, path, release, field.band)
+                return True
+            except Exception:
+                return False
+
         content, _ = self._cached(
             "search", f"{IBE}/search/{path}?{query}", "tbl",
             lambda url: self.search_http._get(url, deadline=deadline),
-            lambda data: b"QUERY_STATUS" in data[:4000])
+            valid)
         try:
             return parse_search(content.decode("utf-8", "replace"), dataset, path, release, field.band)
         except Exception as exc:

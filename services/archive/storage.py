@@ -78,7 +78,7 @@ class LocalStore:
         record["manifestSha256"] = digest(canonical(record))
         self._write(manifest, canonical(record))
 
-    def _record(self, comparison_id):
+    def _record(self, comparison_id, verify_assets=True):
         path = self._manifest(comparison_id)
         root = self.root
         if not path.exists():
@@ -102,24 +102,27 @@ class LocalStore:
             for sha in record["assets"].values():
                 if not re.fullmatch(r"[a-f0-9]{64}", sha):
                     raise ValueError("Invalid blob identity")
-                content = (root / "blobs" / sha).read_bytes()
-                if digest(content) != sha:
-                    raise ValueError("Invalid blob content")
+                if verify_assets:
+                    content = (root / "blobs" / sha).read_bytes()
+                    if digest(content) != sha:
+                        raise ValueError("Invalid blob content")
             return record, root
         except (OSError, ValueError, KeyError, TypeError) as exc:
             raise ArchiveError("EVIDENCE_CORRUPT", "Saved evidence is missing or corrupt", 500) from exc
 
-    def matching_recorded_field(self, field):
+    def matching_recorded_field(self, field, config_values=None):
         """Instant replay only for the exact reviewed field; other fields still query IRSA."""
         for example in self.examples:
             for path in (example / "manifests").glob("*.json"):
-                response = self.load_raw(path.stem)
+                response = self._record(path.stem, verify_assets=False)[0]["response"]
                 saved = response.get("comparison") or {}
+                if any(saved.get("config", {}).get(key) != value for key, value in (config_values or {}).items()):
+                    continue
                 previous = saved.get("field") or {}
                 if (abs(previous.get("ra", -999) - field.ra) < 1e-8 and
                     abs(previous.get("dec", -999) - field.dec) < 1e-8 and
                     abs(previous.get("fovArcmin", -999) - field.fov_arcmin) < 1e-8):
-                    return response
+                    return self.load_raw(path.stem)
         return None
 
     def load(self, comparison_id):
@@ -133,8 +136,16 @@ class LocalStore:
         return record["response"]
 
     def asset(self, comparison_id, name):
-        record, root = self._record(comparison_id)
+        # Replay verifies the complete evidence set once. Serving each PNG should
+        # hash that PNG, not reread every original FITS in the entire comparison.
+        record, root = self._record(comparison_id, verify_assets=False)
         sha = record["assets"].get(name)
         if sha is None:
             raise ArchiveError("NOT_FOUND", "Unknown asset", 404)
-        return (root / "blobs" / sha).read_bytes(), sha
+        try:
+            content = (root / "blobs" / sha).read_bytes()
+            if digest(content) != sha:
+                raise ValueError("Invalid blob content")
+        except (OSError, ValueError) as exc:
+            raise ArchiveError("EVIDENCE_CORRUPT", "Saved evidence is missing or corrupt", 500) from exc
+        return content, sha

@@ -1,0 +1,79 @@
+{
+  "kind": "local_http_check",
+  "deployed": false,
+  "results": [
+    {
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6,
+        "band": 2
+      },
+      "httpStatus": 200,
+      "status": "ready",
+      "source": "saved-example",
+      "seconds": 0.2792,
+      "comparisonId": "69b16206d33440bb0cda45fc473b46d926c7cddd0e586aea646a0059712eed9a",
+      "frames": [
+        {
+          "date": "2010-05-04T05:23:46.501728Z",
+          "exposures": 3
+        },
+        {
+          "date": "2024-04-16T13:34:28.515648Z",
+          "exposures": 3
+        }
+      ]
+    },
+    {
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6,
+        "band": 1
+      },
+      "httpStatus": 200,
+      "status": "ready",
+      "source": "archive",
+      "seconds": 8.0857,
+      "comparisonId": "7bc7634a8192f292125440ab39a3cf33a3a5d7fb3c54afb51692ed90adff32cd",
+      "frames": [
+        {
+          "date": "2010-03-20T13:37:42.120336Z",
+          "exposures": 3
+        },
+        {
+          "date": "2024-03-19T15:11:53.212128Z",
+          "exposures": 3
+        }
+      ]
+    },
+    {
+      "survey": "spherex",
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6
+      },
+      "httpStatus": 200,
+      "status": "ready",
+      "source": "saved-example",
+      "seconds": 0.3233,
+      "comparisonId": "c8b69cb6d887da6f5e7e3d18164de1e0e3a24f6eef9002f9d26b3b44085f9416"
+    },
+    {
+      "survey": "wise",
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6,
+        "band": 1
+      },
+      "httpStatus": 200,
+      "status": "ready",
+      "source": "saved-cache",
+      "seconds": 0.3852,
+      "comparisonId": "7bc7634a8192f292125440ab39a3cf33a3a5d7fb3c54afb51692ed90adff32cd"
+    }
+  ]
+}

@@ -158,6 +158,7 @@ export interface ViewerProps {
   /** Optional engagement layer; the leaderboard button is hidden without it. */
   leaderboard?: LeaderboardDataSource;
   savedExampleId: string;
+  wiseSavedExampleId?: string;
   synthetic?: boolean;
 }
 
@@ -177,10 +178,15 @@ export function Viewer({
   Controls,
   leaderboard,
   savedExampleId,
+  wiseSavedExampleId,
   synthetic = false,
 }: ViewerProps) {
   // A link's `view` parameter says which survey its comparison ID belongs to.
   const [skyView, setSkyView] = useState<SkyView>(() => wiseDataSource ? viewFromUrl() : "spherex");
+  const [mapImagery, setMapImagery] = useState<"spherex" | "wise" | "dss">(skyView);
+  const datedEnabled = mapImagery !== "dss";
+  const dssLookup = useRef<AbortController | null>(null);
+  useEffect(() => () => dssLookup.current?.abort(), [mapImagery]);
   const [wiseBand, setWiseBand] = useState<WiseBand>(2);
   const wiseSource = useMemo(() => wiseDataSource?.(wiseBand) ?? null, [wiseDataSource, wiseBand]);
   const [focus, setFocus] = useState<Field | null>(null);
@@ -204,6 +210,13 @@ export function Viewer({
     }),
   };
   const { request, setRequest, preview } = loaders[skyView];
+  useEffect(() => {
+    if (!datedEnabled) {
+      for (const loader of Object.values(loaders)) {
+        if (loader.preview.kind === "loading") loader.setRequest(null);
+      }
+    }
+  }, [datedEnabled, loaders.spherex.preview.kind, loaders.wise.preview.kind]);
   const other = loaders[skyView === "wise" ? "spherex" : "wise"].preview;
   const survey = surveys[skyView];
   // While a build runs, its field stays outlined on the sky wherever the map is moved.
@@ -276,6 +289,7 @@ export function Viewer({
       loaders[view].setRequest(null);
       loaders[value.survey].setRequest(value.request);
       setSkyView(value.survey);
+      setMapImagery(value.survey);
       const url = new URL(location.href);
       if (value.survey === "wise") url.searchParams.set("view", "wise");
       else url.searchParams.delete("view");
@@ -288,6 +302,7 @@ export function Viewer({
       const view = wiseDataSource ? viewFromUrl() : "spherex";
       const saved = requestFromUrl();
       setSkyView(view);
+      setMapImagery(view);
       setFrameSelection(null); setInspectFrame(false);
       loaders[view].setRequest(saved);
       setTimeOpen(!!saved);
@@ -322,6 +337,7 @@ export function Viewer({
 
   /** Swaps the survey. The map keeps its centre and zoom; each view keeps its own result. */
   function switchView(next: SkyView) {
+    setMapImagery(next);
     if (next === skyView) return;
     setFrameSelection(null); setInspectFrame(false); setReviewOpen(false);
     setSkyView(next);
@@ -364,6 +380,7 @@ export function Viewer({
     if (view === "wise" && !wiseSource) { setMapNotice("The WISE evidence service is not connected."); return; }
     setFrameSelection(null); setInspectFrame(false); setReviewOpen(false);
     setSkyView(view);
+    setMapImagery(view);
     loaders[view].setRequest({ kind: "saved", id: comparisonId, findingId });
     setTimeOpen(true); setDiscussionOpen(true);
     openPanel("comparison");
@@ -411,6 +428,7 @@ export function Viewer({
     setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
     focusField(field);
+    if (!datedEnabled) return;
     setRequest({ kind: "field", field });
     setTimeOpen(true);
   }
@@ -419,12 +437,26 @@ export function Viewer({
     setPanels((old) => ({ ...old, search: false }));
     setMapNotice("");
     setCrossReferencePosition(null);
+    if (!datedEnabled) {
+      dssLookup.current?.abort();
+      const controller = new AbortController();
+      dssLookup.current = controller;
+      void dataSource.resolveName(name, controller.signal).then(position => {
+        if (controller.signal.aborted) return;
+        if (position) focusField({ ra: position.ra, dec: position.dec, fovArcmin });
+        else setMapNotice("Name not found. Try coordinates or another name.");
+      }).catch(error => {
+        if (!controller.signal.aborted) setMapNotice(error instanceof Error ? error.message : "Name lookup unavailable.");
+      });
+      return;
+    }
     setRequest({ kind: "name", name, fovArcmin });
     setTimeOpen(true);
   }
 
   /** Compares the field at the map centre. `view.fovArcmin` is the width of the map view. */
   function compareViewport(view: Field) {
+    if (!datedEnabled) return;
     const fovArcmin = fieldWidthFromView(view.fovArcmin / 60, fieldLimits);
     if (fovArcmin === null) {
       setMapNotice(`Zoom in until the map is under ${compareReachDeg}° wide, then compare. The button turns amber when it is ready.`);
@@ -449,7 +481,7 @@ export function Viewer({
   }, [preview, savedExampleId]);
   const playback = usePlayback(
     comparison,
-    (timeOpen || panels.comparison) && preview.kind !== "loading",
+    datedEnabled && (timeOpen || panels.comparison) && preview.kind !== "loading",
   );
   const selection =
     frameSelection?.comparisonId === comparison?.id && frameSelection?.survey === skyView ? frameSelection : null;
@@ -556,6 +588,8 @@ export function Viewer({
       ? preview.result.diagnostics
       : comparison?.diagnostics;
   const kind = comparison?.provenance?.evidenceKind;
+  const savedDelivery = preview.kind === "saved" || (preview.kind === "search" &&
+    (preview.result.servedFrom === "saved-cache" || preview.result.servedFrom === "saved-example"));
   const fallbackAvailable =
     preview.kind === "error" ||
     (preview.kind === "search" &&
@@ -564,7 +598,8 @@ export function Viewer({
   function openExample() {
     setMapNotice("Saved WISE 0855 field: 6 arcmin image footprint; the requested object is not confirmed in these frames.");
     setTimeOpen(true);
-    setRequest({ kind: "saved", id: savedExampleId });
+    if (skyView === "wise") setWiseBand(2);
+    setRequest({ kind: "saved", id: skyView === "wise" && wiseSavedExampleId ? wiseSavedExampleId : savedExampleId });
     setComparisonLarge(false);
     openPanel("comparison");
   }
@@ -603,7 +638,7 @@ export function Viewer({
   const source =
     synthetic || kind === "synthetic_fixture"
       ? "synthetic"
-      : comparison?.id === savedExampleId || kind === "saved_real_example"
+      : savedDelivery || comparison?.id === savedExampleId || kind === "saved_real_example"
         ? "saved real"
         : "live archive";
   const badgeFor = (state: ComparisonResult["status"]) =>
@@ -648,17 +683,18 @@ export function Viewer({
         onInspect={inspect}
         onAdvancedSearch={() => openPanel("search")}
         catalogMark={catalogMark}
-        target={target}
+        target={datedEnabled ? target : null}
         notice={mapNotice}
         slice={mapSlice}
-        survey={skyView}
+        imagery={mapImagery}
         onSurveyChange={switchView}
+        onImageryChange={setMapImagery}
         tiles={tiles}
         compareLimits={fieldLimits}
         pinnedField={pinnedField}
         onStateChange={setMapState}
         dated={
-          comparison && playback.frame
+          datedEnabled && comparison && playback.frame
             ? {
                 comparison,
                 survey: skyView,
@@ -796,7 +832,7 @@ export function Viewer({
             {badge}
           </span>
           <nav className="panel-buttons" aria-label="Viewer panels">
-            <button
+            {datedEnabled && <button
               ref={timeButton}
               type="button"
               aria-expanded={timeOpen}
@@ -804,14 +840,14 @@ export function Viewer({
               onClick={() => setTimeOpen(!timeOpen)}
             >
               Time
-            </button>
+            </button>}
             {(
               [
                 ["search", "Advanced"],
                 ["comparison", survey.panel],
                 ["gaia", "Gaia"],
               ] as const
-            ).map(([id, label]) => (
+            ).filter(([id]) => datedEnabled || id !== "comparison").map(([id, label]) => (
               <button
                 key={id}
                 type="button"
@@ -983,12 +1019,12 @@ export function Viewer({
           comparison
             ? synthetic || kind === "synthetic_fixture" || kind === "fixture"
               ? "Synthetic"
-              : comparison?.id === savedExampleId || kind === "saved_real_example"
+              : savedDelivery || comparison?.id === savedExampleId || kind === "saved_real_example"
                 ? "Saved example"
                 : survey.name
             : undefined
         }
-        open={timeOpen}
+        open={datedEnabled && timeOpen}
         reset={layoutReset}
         onClose={() => {
           playback.pause();
@@ -1033,8 +1069,10 @@ export function Viewer({
             />
             <p>
               {skyView === "wise"
-                ? "Building a few dated frames spread over 14 years of WISE exposures. The first build of a field usually takes about a minute."
-                : "An archive search can take a few minutes."}
+                ? request && request.mode === "timeline"
+                  ? "Building the longer time-lapse. Previously downloaded exposures are reused."
+                  : "Finding dated WISE exposures through a compact image index and preparing two separated visits."
+                : "Checking small batches for the first comparable pair. Previously downloaded exposures are reused."}
             </p>
           </>
         )}
@@ -1042,21 +1080,25 @@ export function Viewer({
           <p>{diagnostics.message}</p>
         )}
         {comparison && diagnostics?.complete === false && (
-          <p>This comparison comes from an incomplete archive search.</p>
+            <p>This comparison uses a subset of available observations. See the saved metadata for its selection limits.</p>
         )}
         {fallbackAvailable && request && (
           <div className="controls">
             <button type="button" onClick={() => setRequest({ ...request })}>
               Retry
             </button>
-            {request.kind !== "saved" && skyView === "spherex" && (
+            {request.kind !== "saved" && (skyView === "spherex" || wiseSavedExampleId) && (
               <button type="button" onClick={openExample}>
                 {synthetic ? "Open saved fixture" : "Open saved real example"}
               </button>
             )}
           </div>
         )}
-        {!synthetic && preview.kind === "idle" && skyView === "spherex" && (
+        {skyView === "wise" && !comparison && request?.kind === "field" && request.mode !== "timeline" &&
+          preview.kind !== "loading" && <button type="button" onClick={() => setRequest({ ...request, mode: "timeline" })}>
+            Try longer time-lapse
+          </button>}
+        {!synthetic && preview.kind === "idle" && (skyView === "spherex" || wiseSavedExampleId) && (
           <button type="button" onClick={openExample}>
             Open saved real example
           </button>
@@ -1066,6 +1108,10 @@ export function Viewer({
             Dated frames come from single WISE and NEOWISE exposures, 2010 to 2024, one frame per
             visit. Pick the band in the bar under the map.
           </p>
+        )}
+        {request?.kind === "saved" && request.id === wiseSavedExampleId && (
+          <p className="example-notice">Saved real WISE W2 example · WISE 0855 field, 6 arcminutes across.
+            These dated visits replay from retained files without an archive search. The field label does not establish a source identification or motion measurement.</p>
         )}
         {preview.kind === "idle" &&
           otherField &&
@@ -1106,6 +1152,20 @@ export function Viewer({
         )}
         {comparison && (
           <>
+            {preview.kind === "search" && preview.result.servedFrom === "saved-cache" &&
+              <p>Previously built comparison · replayed without an archive search.</p>}
+            {preview.kind === "search" && preview.result.servedFrom === "saved-example" &&
+              <p>Saved real example · replayed without an archive search.</p>}
+            <div className="controls">
+              {skyView === "wise" && comparison.frames.length <= 2 &&
+                <button type="button" onClick={() => setRequest({ kind: "field", field: comparison.field, mode: "timeline" })}>
+                  Load longer time-lapse
+                </button>}
+              <button type="button" onClick={() => setRequest({ kind: "field", field: comparison.field,
+                mode: request && request.kind !== "saved" ? request.mode : undefined, refresh: true })}>
+                Check archive again
+              </button>
+            </div>
             <TimeControls
               comparison={comparison}
               playback={playback}
@@ -1118,7 +1178,7 @@ export function Viewer({
         id="comparison-panel"
         title="Compare details"
         size={comparisonLarge ? "large" : "wide"}
-        open={panels.comparison}
+        open={datedEnabled && panels.comparison}
         reset={layoutReset}
         onClose={() => closePanel("comparison")}
       >

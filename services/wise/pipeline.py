@@ -12,7 +12,8 @@ from astropy.wcs import WCS
 import numpy as np
 from reproject import reproject_interp
 
-from services.archive.models import (ArchiveError, Comparison, ComparisonResponse, Deadline,
+from services.archive.builds import CancellableDeadline
+from services.archive.models import (ArchiveError, Comparison, ComparisonResponse,
                                      FieldRequest, Frame)
 from services.archive.pipeline import iso, utc
 from services.archive.processing import (alignment_check, common_coverage, cutout_size_deg,
@@ -76,24 +77,6 @@ def implementation_identity():
                          for name in ("numpy", "astropy", "reproject", "pillow")}}
 
 
-class CancellableDeadline(Deadline):
-    """The build deadline, plus a flag the viewer's Cancel button sets. Once set, every
-    stage check and every archive request stops, and nothing is published."""
-
-    def __init__(self, seconds, clock, cancel):
-        super().__init__(seconds, clock)
-        self.cancel = cancel
-
-    def expired(self):
-        return self.cancel.is_set() or super().expired()
-
-    def check(self, stage):
-        if self.cancel.is_set():
-            raise ArchiveError("BUILD_CANCELLED", "Build cancelled; nothing was published", 409,
-                               details={"limit": "cancelled", "stage": stage})
-        super().check(stage)
-
-
 @dataclass
 class PreparedExposure:
     exposure: object
@@ -152,6 +135,12 @@ def prepare_exposure(exposure, raw, field, grid, output_wcs):
                     raise ValueError("Invalid image dimensions")
                 if "BAND" in header and int(header["BAND"]) != exposure.band:
                     raise ValueError("Cutout disagrees with discovery metadata")
+                for key, expected in (("SCAN", exposure.scan_id), ("FRNUM", exposure.frame_num)):
+                    if key in header and str(header[key]).strip() != str(expected):
+                        raise ValueError("Cutout exposure identity disagrees with metadata")
+                if "MJD_OBS" in header and (not np.isfinite(float(header["MJD_OBS"])) or
+                        abs(float(header["MJD_OBS"]) - exposure.mjd_obs) > 1e-6):
+                    raise ValueError("Cutout observation time disagrees with metadata")
                 native_wcs = WCS(header).celestial
                 x, y = native_wcs.world_to_pixel_values(field.ra, field.dec)
                 if not (0 <= x <= science.shape[1] - 1 and 0 <= y <= science.shape[0] - 1):
@@ -249,23 +238,33 @@ class WisePipeline:
         try:
             discovery = self.client.discover(field, deadline, on_done=progress.step)
         except ArchiveError as exc:
+            if deadline.cancel.is_set():
+                deadline.check("discovery")
             if exc.code == "PROCESSING_LIMIT" or exc.http_status < 500:
                 raise
             diagnostics["incompleteStages"].append("discovery")
             return self._unavailable(diagnostics, exc.code, exc.message)
         self.last_timings["discoverySeconds"] = self.clock() - started
+        deadline.check("discovery")
         found = discovery.observations
+        indexed = bool(getattr(discovery, "metadata", None))
+        scope = getattr(discovery, "scope", "wise_neowise_single_exposures_all_mission_phases"
+                        if self.client.discovery_scope == "unwise_neo11_index_then_ibe"
+                        else self.client.discovery_scope)
         usable = [e for e in found if e.qual_frame is None or e.qual_frame >= config.min_qual_frame]
         by_dataset = {}
         for e in found:
             by_dataset[e.dataset] = by_dataset.get(e.dataset, 0) + 1
         diagnostics["discovery"] = {
-            "scope": self.client.discovery_scope, "band": band["name"],
+            "scope": scope, "band": band["name"],
             "totalExposures": len(found), "byDataset": dict(sorted(by_dataset.items())),
             "rejectedByFrameQuality": len(found) - len(usable),
             "observedTimeRangeUtc": ({"start": iso(found[0].mjd_obs), "end": iso(found[-1].mjd_obs)}
                                      if found else None),
-            "failedDatasetQueries": discovery.failures, "complete": not discovery.failures}
+            "failedDatasetQueries": discovery.failures, "complete": not discovery.failures and not indexed}
+        if indexed:
+            diagnostics["discovery"]["metadataSources"] = discovery.metadata
+            diagnostics["incompleteStages"].append("index_candidate_subset")
         if discovery.failures:
             diagnostics["incompleteStages"].append("discovery")
         if not usable:
@@ -277,11 +276,15 @@ class WisePipeline:
             return ComparisonResponse(status="no_coverage", diagnostics=diagnostics)
 
         epochs = group_epochs(usable, config)
-        sampled = spaced(epochs, config.max_epochs)
+        eligible = [epoch for epoch in epochs if len(epoch) >= config.min_exposures_per_epoch]
+        sampled = spaced(eligible, config.max_epochs)
         chosen = [spaced(epoch, config.exposures_per_epoch) for epoch in sampled]
         diagnostics["epochs"] = {"discovered": len(epochs), "sampled": len(sampled),
+                                 "tooFewExposures": len(epochs) - len(eligible),
                                  "exposuresRequested": sum(len(c) for c in chosen),
                                  "exposuresNotRequested": len(usable) - sum(len(c) for c in chosen)}
+        diagnostics["selectionScope"] = ("all_discovered_visits" if len(sampled) == len(epochs)
+                                         else "bounded_visit_sample")
 
         # The grid model is shared with the SPHEREx archive; only the pixel scale differs.
         grid, wcs = make_grid(FieldRequest(ra=field.ra, dec=field.dec, fovArcmin=field.fov_arcmin), config)
@@ -320,7 +323,7 @@ class WisePipeline:
                 except ArchiveError as exc:
                     invalid.append({**exposure_ref(exposure), "reason": exc.message})
             window = {"start": iso(epoch[0].mjd_obs), "end": iso(epoch[-1].mjd_obs)}
-            if len(prepared) < min(config.min_exposures_per_epoch, len(group)):
+            if len(prepared) < config.min_exposures_per_epoch:
                 rejected.append({**window, "reason": "too_few_usable_exposures", "usableExposures": len(prepared)})
                 continue
             frame = combine(prepared, len(epoch), config)
@@ -349,10 +352,17 @@ class WisePipeline:
         complete = not diagnostics["incompleteStages"]
         diagnostics["complete"] = complete
         if not frames:
+            if indexed and not result.failures and not discovery.failures:
+                raise ArchiveError("PROCESSING_LIMIT", "The indexed exposure subset did not produce a usable "
+                                   "frame; this does not establish absence of WISE coverage")
             if not complete:
                 return self._unavailable(diagnostics, "INCOMPLETE_RETRIEVAL",
                                          "Some archive requests failed and no usable epoch was built from "
                                          "the exposures retrieved; absence of coverage is not established")
+            if len(sampled) < len(eligible):
+                raise ArchiveError("PROCESSING_LIMIT", "The sampled visits did not produce a usable frame. "
+                                   "Try the longer time-lapse; other visits have not been checked",
+                                   details={"limit": "epoch_sample"})
             return ComparisonResponse(status="no_comparable_pair", diagnostics=diagnostics)
 
         deadline.check("rendering")
@@ -368,7 +378,7 @@ class WisePipeline:
         provenance = {"schemaVersion": 1, "survey": "WISE/NEOWISE single-exposure (Level 1b) images",
                       "implementation": implementation_identity(),
                       "evidenceKind": self.client.evidence_kind,
-                      "discoveryScope": self.client.discovery_scope,
+                      "discoveryScope": scope,
                       "inputs": inputs, "acknowledgement": ACKNOWLEDGEMENT,
                       "releaseDocumentation": DOCUMENTATION,
                       "timestampPolicy": config.timestamp_policy,
@@ -378,7 +388,7 @@ class WisePipeline:
                     "grid": grid.model_dump(), "stretch": stretch.model_dump(),
                     "provenance": provenance, "coverage": coverage, "selectionDiagnostics": diagnostics}
         comparison_id = digest(canonical(identity))
-        output, assets = [], {}
+        output, assets = [], dict(getattr(discovery, "assets", {}))
         for frame in frames:
             exposures = [p.exposure for p in frame.exposures]
             frame_id = digest(canonical({"band": field.band, "source": frame.sha256,
@@ -410,14 +420,21 @@ class WisePipeline:
             "visits and also any uniform extended emission. Values are raw DN without zero-point scaling; this is not photometry.",
             "No bad-pixel bitmask or uncertainty image is applied. The median rejects isolated artefacts, but "
             "diffraction spikes, latents, scattered moonlight and saturated cores remain.",
-            f"{len(sampled)} of the {len(epochs)} visits found are used, evenly spaced in time and including "
-            "the first and last. The others were not downloaded, so short-lived changes between frames are not shown.",
+            f"{len(sampled)} of the {len(epochs)} visits found are sampled, evenly spaced through the eligible "
+            "visits and including their first and last. Each requires the configured minimum exposure count. "
+            "The others were not downloaded, so short-lived changes between frames are not shown.",
             "Alignment is WCS reprojection only; the stationary-source check labels frames and applies no correction.",
             f"{band['name']} is a broad filter ({band['wavelength_um']:.2f} µm, {band['bandwidth_um']:.2f} µm wide). "
             "It is not comparable with a SPHEREx spectral channel.",
             "PNG rows are flipped relative to FITS: fitsY=height-1-pngY (zero-based)."]
         if not complete:
             limitations.append("Archive search incomplete (see diagnostics.incompleteStages); some visits or exposures were not retrieved or not requested.")
+        if indexed:
+            limitations.append("Candidates come from the nearest unWISE neo11 tile's input-exposure table, "
+                               f"restricted to included, usable frames centred within {config.index_center_radius_deg} degrees. "
+                               "This is a conservative subset, not a complete archive search. Pixels are original WISE/NEOWISE "
+                               "single exposures, not unWISE coadd images. Metadata tables are retained with their hashes. "
+                               "Metadata credit: Lang (2014), Meisner, Lang & Schlegel (2017a,b); https://unwise.me/.")
         half = band["bandwidth_um"] / 2
         comparison = Comparison(
             id=comparison_id, field=FieldRequest(ra=field.ra, dec=field.dec, fovArcmin=field.fov_arcmin),

@@ -2,12 +2,15 @@ import importlib.metadata
 from pathlib import Path
 import platform
 import time
+import threading
 
 from astropy.time import Time
 from datetime import UTC
 
 from .client import observation_ref
-from .models import (ArchiveError, Comparison, ComparisonResponse, Deadline, Frame,
+from .candidates import order_candidates
+from .builds import CancellableDeadline
+from .models import (ArchiveError, Comparison, ComparisonResponse, Frame,
                      ProcessingConfig)
 from .processing import (common_coverage, cutout_size_deg, make_grid, prepare, render,
                          select, shared_stretch)
@@ -64,7 +67,7 @@ class Pipeline:
         self.client, self.store, self.clock = client, store, clock
         self.last_timings = {}
 
-    def build(self, field):
+    def build(self, field, report=None, cancel=None):
         """Run one bounded build. Errors carry the diagnostics gathered so far in
         `details["diagnostics"]` for logs; the public error body stays {code, message}."""
         config = self.config
@@ -75,8 +78,10 @@ class Pipeline:
                            "minCommonValidCoverage": config.min_common_valid_coverage,
                            "denominator": "all_output_grid_pixels"}}
         self.last_timings = {}
+        self.report = report or (lambda state: None)
         try:
-            return self._build(field, Deadline(config.build_deadline_seconds, self.clock), diagnostics)
+            return self._build(field, CancellableDeadline(config.build_deadline_seconds, self.clock,
+                                                          cancel or threading.Event()), diagnostics)
         except ArchiveError as exc:
             if (exc.details or {}).get("limit") and exc.details["limit"] not in diagnostics["incompleteStages"]:
                 diagnostics["incompleteStages"].append(exc.details["limit"])
@@ -90,14 +95,18 @@ class Pipeline:
 
     def _build(self, field, deadline, diagnostics):
         config, started = self.config, self.clock()
+        self.report({"stage": "discovery", "done": 0, "total": 1, "fraction": 0.0})
         try:
             discovery = self.client.discover(field, deadline)
         except ArchiveError as exc:
+            if deadline.cancel.is_set():
+                deadline.check("discovery")
             if exc.code == "PROCESSING_LIMIT" or exc.http_status < 500:
                 raise
             diagnostics["incompleteStages"].append("discovery")
             return self._unavailable(diagnostics, exc.code, exc.message)
         observations = discovery.observations
+        deadline.check("discovery")
         self.last_timings["discoverySeconds"] = self.clock() - started
         diagnostics["discovery"] = summarize_discovery(discovery, self.client.discovery_scope)
         diagnostics["discoveredExposureCount"] = len(observations)
@@ -109,19 +118,9 @@ class Pipeline:
                                          "A release query failed and the others returned no exposures; absence of coverage is not established")
             diagnostics["complete"] = True
             return ComparisonResponse(status="no_coverage", diagnostics=diagnostics)
-        # Round-robin detector bands and alternate earliest/latest observations.
-        # Search a bounded sample first; never claim it is an exhaustive search.
-        groups = {}
-        for observation in observations:
-            groups.setdefault(observation.detector, []).append(observation)
-        ordered = []
-        while any(groups.values()):
-            for detector in sorted(groups):
-                group = groups[detector]
-                if group:
-                    ordered.append(group.pop(0))
-                if group:
-                    ordered.append(group.pop())
+        # Geometry is a download scheduling hint, never wavelength evidence.
+        ordered = order_candidates(observations, field, config)
+        diagnostics["candidateOrderPolicy"] = config.candidate_order_policy
         grid, wcs = make_grid(field, config)
         size_deg = cutout_size_deg(grid, wcs, config)
         prepared, rejected, failures, selected, alignment = [], [], [], [], {}
@@ -135,6 +134,8 @@ class Pipeline:
         downloading = self.clock()
         for offset in range(0, budget, config.batch_size):
             deadline.check("retrieval")
+            self.report({"stage": "retrieval", "done": requested, "total": budget,
+                         "fraction": 0.25 + 0.65 * requested / budget})
             batch = ordered[offset:min(offset + config.batch_size, budget)]
             result = self.client.retrieve(batch, field, size_deg, deadline)
             requested += len(batch)
@@ -171,7 +172,7 @@ class Pipeline:
         diagnostics["preparedExposureCount"] = len(prepared)
         diagnostics["complete"] = complete
         diagnostics["selectionScope"] = ("all_discovered_exposures" if complete else
-                                         "bounded_time_detector_sample" if requested < len(observations)
+                                         "bounded_footprint_time_detector_sample" if requested < len(observations)
                                          else "discovered_exposures_minus_failed_retrievals")
         diagnostics["sampledExposures"] = [{"observationId": f.observation.observation_id,
                                             "detector": f.observation.detector} for f in prepared]
@@ -189,6 +190,7 @@ class Pipeline:
         if not selected:
             return ComparisonResponse(status="no_comparable_pair", diagnostics=diagnostics)
         deadline.check("rendering")
+        self.report({"stage": "publication", "done": 0, "total": 1, "fraction": 0.95})
         stretch = shared_stretch(selected, config)
         provenance = {"schemaVersion": 2, "implementation": implementation_identity(),
                       "evidenceKind": self.client.evidence_kind,
@@ -213,7 +215,10 @@ class Pipeline:
         frames, assets = [], {}
         for frame in selected:
             observation = frame.observation
-            frame_id = digest(canonical({"source": frame.sha256, "observation": observation.model_dump()}))
+            # The footprint is a discovery scheduling hint, not part of the dated
+            # pixel asset. Preserve frame identities when replaying older sources.
+            frame_id = digest(canonical({"source": frame.sha256,
+                                         "observation": observation.model_dump(exclude={"footprint_icrs"})}))
             png_name = f"{frame_id}.png"
             assets[png_name] = render(frame, stretch)
             assets[f"{frame_id}.fits"] = frame.raw

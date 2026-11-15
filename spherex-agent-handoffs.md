@@ -165,3 +165,25 @@ probe. `/api/resolve` adds `not_found_in_mirror` (404) within the existing error
 The OpenAPI export, representative responses and generated inspector types were regenerated
 together. No archive, findings or saved-evidence contract change. See
 `services/catalogs/README.md` for failover, deadlines, cooldown and cache behaviour.
+
+## Additive blink reliability contract (2026-11-15)
+
+User-authorized coordinator work on `fix/archive-blink-latency` adds optional
+`progressId`/`refresh` parameters and typed progress/cancel routes to SPHEREx, and
+`mode=blink|timeline` (default blink) plus `refresh` to WISE. The ComparisonResponse
+and immutable replay contracts remain unchanged. `X-Comparison-Source` describes
+transport delivery separately from saved provenance. Shared schemas and viewer types
+are regenerated together; WISE now has its own schema export under `fixtures/wise`.
+Exact-field persistent result indexes never replace or migrate immutable evidence.
+SPHEREx uses footprint similarity to prioritize downloads, followed by the existing
+pixel-level compatibility checks. WISE defaults to two visits of up to three exposures,
+with the longer time-lapse explicit. DSS is reference-only. Current verification and
+remaining live-archive limitations are recorded in `docs/verification/blink-latency.md`.
+
+The demo-priority follow-up authorizes static unWISE neo11 metadata as a WISE discovery
+index, with direct original L1b cutouts and IBE fallback. This is a bounded exposure
+subset; metadata tables join source cutouts in the immutable evidence store. No
+coadd images replace dated exposures. WISE now serves a retained real W2 example by
+ID or its exact field/profile/band, labelled `saved-example`; explicit refresh bypasses
+it. Both default app factories and CLI startup include that store. Current-code offline
+reprocessing is available through `scripts/reproduce_wise_example.py`.

@@ -62,14 +62,16 @@ export function SkyMap({
   target,
   notice,
   dated, onInspectDated, slice,
-  survey = "spherex",
+  imagery,
   compareLimits,
   tiles,
-  onSurveyChange,
+  onSurveyChange, onImageryChange: setImagery,
   pinnedField = null,
   onStateChange, dock, onViewport, communityMarkers = [], onFindingMarker,
 }: {
   onSurveyChange?: (survey: SkyView) => void;
+  onImageryChange: (imagery: Imagery) => void;
+  imagery: Imagery;
   onViewport?: (viewport: FindingsViewport) => void;
   communityMarkers?: FindingMarker[];
   onFindingMarker?: (marker: FindingMarker) => void;
@@ -85,8 +87,6 @@ export function SkyMap({
   onInspectDated?: (position: SkyPosition) => void;
   /** Cube slice shown as the SPHEREx reference layer. */
   slice: number;
-  /** Survey the comparison view is on. "wise" starts the map on WISE imagery. */
-  survey?: SkyView;
   /** Field widths the current comparison service accepts, in arcmin. */
   compareLimits: FieldLimits;
   /** Set to a watcher of the map's tile requests, which a wavelength scan uses to load ahead. */
@@ -114,7 +114,6 @@ export function SkyMap({
   const [viewStatus, setViewStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [attempt, setAttempt] = useState(0);
   const [cube, setCube] = useState<SpherexCube | "unavailable" | null>(null);
-  const [imagery, setImagery] = useState<Imagery>(survey === "wise" ? "wise" : "spherex");
   const sliceRef = useRef(slice);
   sliceRef.current = slice;
   const [layerStatus, setLayerStatus] = useState<LayerStatus>("loading");
@@ -236,12 +235,6 @@ export function SkyMap({
   useEffect(() => {
     outline.current?.(pinnedField);
   }, [pinnedField, viewStatus]);
-
-  // Follow the comparison view's survey: WISE view shows WISE imagery, SPHEREx view shows
-  // SPHEREx. A manual imagery choice (e.g. DSS) within a view still stands until the view changes.
-  useEffect(() => {
-    setImagery(survey === "wise" ? "wise" : "spherex");
-  }, [survey]);
 
   // Aladin gives no "tiles loaded" signal, but it fetches them; watching those requests lets a
   // wavelength scan load ahead and move on only when the next wavelength can draw at once.
@@ -499,7 +492,7 @@ export function SkyMap({
     <section className="sky-section" aria-label="Reference sky map">
       <div className="sky-map">
         <div ref={container} className="aladin-host" data-hidden={!datedReady && (!mapShown || unavailable) || undefined} />
-        {dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
+        {imagery !== "dss" && dated && view.current && aladin.current && <DatedSkyOverlay key={`${dated.comparison.id}-${dated.attempt}`} sky={view.current} aladin={aladin.current} dated={dated} redraw={readout} />}
         <div className="community-map-markers" aria-label="Community finding markers">
           {viewStatus === "ready" && communityMarkers.map(marker => {
             const point = view.current?.world2pix(marker.ra, marker.dec);
@@ -539,10 +532,10 @@ export function SkyMap({
         <div className="controls">
           <button type="button" aria-label="Zoom in" onClick={() => zoom(0.5)} disabled={!mapUsable}>+</button>
           <button type="button" aria-label="Zoom out" onClick={() => zoom(2)} disabled={!mapUsable}>−</button>
-          <button type="button" className="compare-button" onClick={compareViewport} disabled={!mapUsable}
+          {imagery !== "dss" && <button type="button" className="compare-button" onClick={compareViewport} disabled={!mapUsable}
             data-ready={compareWidth !== null || undefined} aria-describedby="compare-hint">
             Compare this field
-          </button>
+          </button>}
           <span id="compare-hint" className="visually-hidden">
             {compareWidth !== null
               ? `Ready: compares ${boxPercent !== null ? "the central " : ""}${widthLabel} at the map centre.`
@@ -587,7 +580,7 @@ export function SkyMap({
           <small><a href={wiseMap.link}>{wiseMap.name}</a> · reference map, false colour · NASA/JPL-Caltech/UCLA · CDS HiPS</small>
         ))}
       </div>
-      {dock}
+      {imagery !== "dss" && dock}
       </div>
     </section>
   );

@@ -47,6 +47,13 @@ class IRSAClient:
         self.cache_dir = cache_dir
         self.transport = transport
         self.sleep, self.jitter = sleep, jitter
+        # HTTPX clients are thread-safe; reuse TLS connections across discovery and cutouts.
+        self.http = httpx.Client(transport=transport, follow_redirects=False,
+                                 limits=httpx.Limits(max_connections=config.concurrency + 4,
+                                                     max_keepalive_connections=config.concurrency + 4))
+
+    def close(self):
+        self.http.close()
 
     @staticmethod
     def _failure(code, message, category, attempts, status=None):
@@ -67,22 +74,20 @@ class IRSAClient:
                 timeout = max(0.001, min(timeout, deadline.remaining()))
             status = None
             try:
-                with httpx.Client(timeout=timeout, transport=self.transport,
-                                  follow_redirects=False) as client:
-                    with client.stream("GET", url, params=params) as response:
-                        status = response.status_code
-                        if status == 200:
-                            chunks, size = [], 0
-                            for chunk in response.iter_bytes():
-                                size += len(chunk)
-                                if size > self.config.max_download_bytes:
-                                    raise self._failure("PROCESSING_LIMIT", "Archive response exceeded byte limit",
-                                                        "byte_limit", attempt, status)
-                                if deadline is not None and deadline.expired():
-                                    raise self._failure("PROCESSING_LIMIT", "Build deadline reached during download",
-                                                        "deadline", attempt, status)
-                                chunks.append(chunk)
-                            return b"".join(chunks), attempt
+                with self.http.stream("GET", url, params=params, timeout=timeout) as response:
+                    status = response.status_code
+                    if status == 200:
+                        chunks, size = [], 0
+                        for chunk in response.iter_bytes():
+                            size += len(chunk)
+                            if size > self.config.max_download_bytes:
+                                raise self._failure("PROCESSING_LIMIT", "Archive response exceeded byte limit",
+                                                    "byte_limit", attempt, status)
+                            if deadline is not None and deadline.expired():
+                                raise self._failure("PROCESSING_LIMIT", "Build deadline reached during download",
+                                                    "deadline", attempt, status)
+                            chunks.append(chunk)
+                        return b"".join(chunks), attempt
                 if status not in TRANSIENT_STATUS:
                     raise self._failure("UPSTREAM_ERROR", f"IRSA answered HTTP {status}",
                                         "http_rejected" if status < 500 else "http_server_error", attempt, status)
@@ -102,13 +107,25 @@ class IRSAClient:
                 delay = min(delay, max(0.0, deadline.remaining()))
             self.sleep(delay)
 
-    def _discover_release(self, release, field, deadline):
+    def _discovery_request(self, release, field):
         radius_deg = field.fov_arcmin / 60 / 2 * 2**0.5
-        content, _ = self._get(self.endpoint, {
+        params = {
             "COLLECTION": f"spherex_{release}",
             "POS": f"CIRCLE {field.ra} {field.dec} {radius_deg}",
             "MAXREC": self.config.max_candidates + 1,
-        }, deadline, attempts=self.search_attempts)
+        }
+        path = self.cache_dir / "discovery" / f"{digest(urlencode(params).encode())}.xml"
+        return params, path
+
+    def refresh_discovery(self, field):
+        for release in self.releases:
+            self._discovery_request(release, field)[1].unlink(missing_ok=True)
+
+    def _discover_release(self, release, field, deadline):
+        params, path = self._discovery_request(release, field)
+        cached = path.exists() and time.time() - path.stat().st_mtime < 900
+        content = path.read_bytes() if cached else self._get(
+            self.endpoint, params, deadline, attempts=self.search_attempts)[0]
         observations = []
         try:
             document = parse(BytesIO(content))
@@ -131,12 +148,23 @@ class IRSAClient:
                 observations.append(Observation(
                     observation_id=str(row["obs_id"]), detector=int(detector[1]),
                     release=release, source_url=url,
-                    start_mjd=float(row["t_min"]), end_mjd=float(row["t_max"])))
+                    start_mjd=float(row["t_min"]), end_mjd=float(row["t_max"]),
+                    footprint_icrs=str(row["s_region"]) if "s_region" in table.colnames else None))
         except ArchiveError:
             raise
         except Exception as exc:
             raise ArchiveError("UPSTREAM_METADATA", "IRSA returned incomplete or unsupported SIA metadata",
                                details={"category": "invalid_metadata", "attempts": 1}) from exc
+        # Cache only completely parsed, non-overflowing discovery, for 15 minutes.
+        # A short retry after cancellation can reuse it; explicit refresh bypasses it.
+        if not cached:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temporary = path.with_name(f"{path.name}.{time.time_ns()}.tmp")
+            try:
+                temporary.write_bytes(content)
+                temporary.replace(path)
+            finally:
+                temporary.unlink(missing_ok=True)
         return observations
 
     def discover(self, field, deadline=None):

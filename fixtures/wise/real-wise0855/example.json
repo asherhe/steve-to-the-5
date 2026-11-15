@@ -1,0 +1,12 @@
+{
+  "name": "WISE 0855 field",
+  "comparisonId": "69b16206d33440bb0cda45fc473b46d926c7cddd0e586aea646a0059712eed9a",
+  "band": 2,
+  "field": {
+    "dec": -7.245147222222222,
+    "fovArcmin": 6.0,
+    "ra": 133.79512916666664
+  },
+  "kind": "saved_real_example",
+  "capturedAtUtc": "2026-11-15T15:58:22.519559+00:00"
+}

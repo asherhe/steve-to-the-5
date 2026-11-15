@@ -36,7 +36,11 @@ class ProcessingConfig(Model):
     max_frames: int = Field(default=12, ge=2, le=12)
     max_candidates: int = Field(default=1000, ge=1, le=10000)
     max_cutouts: int = Field(default=120, ge=2, le=1000)
-    batch_size: int = Field(default=24, ge=2, le=120)
+    # Check for a usable pair after two network waves, instead of waiting for 24 cutouts.
+    batch_size: int = Field(default=6, ge=2, le=120)
+    candidate_order_policy: Literal["footprint_similarity_then_time_detector"] = "footprint_similarity_then_time_detector"
+    footprint_priority_cutouts: int = Field(default=24, ge=2, le=120)
+    priority_min_baseline_days: float = Field(default=30, ge=0)
     max_download_bytes: int = Field(default=20_000_000, gt=0)
     timeout_seconds: float = Field(default=30, gt=0)
     attempts: int = Field(default=3, ge=1, le=5)
@@ -70,6 +74,8 @@ class Observation(Model):
     source_url: str
     start_mjd: float
     end_mjd: float
+    # SIA scheduling hint only. Compatibility is always checked on actual pixels.
+    footprint_icrs: str | None = None
 
 
     @model_validator(mode="after")
@@ -140,6 +146,18 @@ class ComparisonResponse(Model):
     status: Status
     comparison: Comparison | None = None
     diagnostics: dict = Field(default_factory=dict)
+
+
+class BuildProgressResponse(Model):
+    stage: Literal["discovery", "retrieval", "combination", "publication"]
+    done: int = Field(ge=0)
+    total: int = Field(ge=1)
+    fraction: float = Field(ge=0, le=1)
+    elapsed_seconds: float = Field(ge=0)
+
+
+class BuildCancelledResponse(Model):
+    cancelled: Literal[True] = True
 
 
 @dataclass

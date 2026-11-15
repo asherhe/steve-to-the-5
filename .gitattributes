@@ -1,3 +1,8 @@
 # Content-addressed FITS/PNG evidence has hash-only filenames.
 # Preserve bytes exactly and suppress meaningless text diffs/merges.
 fixtures/archive/**/evidence/blobs/* binary
+fixtures/wise/**/evidence/blobs/* binary
+# Historical records with recorded byte hashes must retain their original LF bytes.
+fixtures/archive/history/coverage-log-20261114T1932Z.json text eol=lf
+fixtures/archive/history/verification-20261114-v1.json text eol=lf
+fixtures/archive/history/openapi-v1.json text eol=lf

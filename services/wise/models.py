@@ -21,6 +21,8 @@ class WiseFieldRequest(Model):
 
 class WiseConfig(Model):
     """Resolved quick-look settings. Every value is serialized into the manifest."""
+    index_release: Literal["unwise-neo11"] = "unwise-neo11"
+    index_center_radius_deg: float = Field(default=0.25, gt=0, le=0.25)
     pixel_scale_arcsec: float = Field(default=2.75, gt=0)
     # A new epoch starts after this gap, or once an epoch would span more than the limit.
     epoch_gap_days: float = Field(default=10, gt=0)
@@ -39,7 +41,7 @@ class WiseConfig(Model):
     max_candidates: int = Field(default=20000, ge=1, le=100000)
     max_download_bytes: int = Field(default=20_000_000, gt=0)
     timeout_seconds: float = Field(default=30, gt=0)
-    # IRSA's image-metadata search routinely takes 30-50 s per mission phase.
+    # Healthy image-metadata searches can take 30–80 seconds. Do not cut them off early.
     search_timeout_seconds: float = Field(default=100, gt=0)
     attempts: int = Field(default=3, ge=1, le=5)
     backoff_base_seconds: float = Field(default=0.5, gt=0, le=10)
@@ -51,6 +53,7 @@ class WiseConfig(Model):
     asinh_softening: float = Field(default=0.25, gt=0)
     cutout_padding_arcsec: float = Field(default=20, ge=0, le=120)
     epoch_policy: Literal["split_on_gap_or_max_span"] = "split_on_gap_or_max_span"
+    epoch_eligibility_policy: Literal["at_least_min_exposures_per_epoch"] = "at_least_min_exposures_per_epoch"
     epoch_sampling_policy: Literal["evenly_spaced_including_first_and_last"] = "evenly_spaced_including_first_and_last"
     exposure_selection_policy: Literal["evenly_spaced_in_time_within_epoch"] = "evenly_spaced_in_time_within_epoch"
     combine_policy: Literal["per_pixel_median_of_background_subtracted_exposures"] = "per_pixel_median_of_background_subtracted_exposures"

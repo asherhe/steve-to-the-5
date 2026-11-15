@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import type { BuildProgress, Comparison, ComparisonResult, Field, ViewerDataSource } from "./comparison";
+import type { BuildProgress, Comparison, ComparisonResult, ComparisonSearchOptions, Field, ViewerDataSource } from "./comparison";
 import { CatalogApiError } from "../inspector";
 import { ArchiveRequestError } from "./archive";
 import { EvidenceReplayError, validateFinding, type SavedFinding } from "./evidence";
 
 export type Request =
-  | { kind: "field"; field: Field }
-  | { kind: "name"; name: string; fovArcmin: number }
+  | ({ kind: "field"; field: Field } & ComparisonSearchOptions)
+  | ({ kind: "name"; name: string; fovArcmin: number } & ComparisonSearchOptions)
   | { kind: "saved"; id: string; findingId?: string };
 
 export type Preview =
@@ -89,7 +89,7 @@ export function useComparisonLoader({ source, resolveName, loadFinding, onFocus,
 
         const result = await active.search(field, signal, (progress) => {
           if (!signal.aborted) setPreview((shown) => shown.kind === "loading" ? { ...shown, progress } : shown);
-        });
+        }, { mode: current.mode, refresh: current.refresh });
         if (!signal.aborted) setPreview({ kind: "search", result, field });
       } catch (error) {
         if (signal.aborted) return;

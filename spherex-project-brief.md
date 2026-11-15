@@ -258,3 +258,18 @@ checks require the team's hardware-GL Chrome. Treat every checked-in verificatio
 historical until rerun, and distinguish synthetic fixtures, saved real examples, live archive
 checks and deployed checks. No discovery, composition, temperature or significant variability
 is claimed from imagery alone.
+
+## Blink retrieval update (2026-11-15)
+
+The interactive map now requests at most six arcminutes unless the user explicitly
+sets a larger field in Advanced search. SPHEREx uses SIA footprint similarity to
+prioritize promising dated pairs and validates batches of six with the existing
+scientific checks. WISE starts with two visits, with a separate longer-time-lapse action.
+WISE discovery first reads unWISE neo11's static input-exposure tables, then fetches
+original WISE/NEOWISE cutouts directly. This conservative subset bypasses the failing
+database search; it uses no unWISE coadd pixels. Metadata hashes, original exposure
+dates and selection limits are retained. Both surveys now have saved real examples
+for archive-independent demo playback; WISE's two visits each require two exposures.
+Successful exact fields replay from a persistent, integrity-checked index; the viewer
+labels saved delivery and offers an explicit archive refresh. DSS has no dated playback.
+See `docs/verification/blink-latency.md` for measured timings and live limitations.

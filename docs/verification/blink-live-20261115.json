@@ -1,0 +1,1099 @@
+{
+  "kind": "live_local_route_check",
+  "deployed": false,
+  "startedAtUtc": "2026-11-15T15:14:36.282092+00:00",
+  "targets": [
+    {
+      "target": "Barnard's Star",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:15:16.751357+00:00",
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 40.068,
+      "comparisonId": "478b51ff9c9c2a9b6fa6193e59a25d4b2365d97c1c6aa75c938a90d6eafb3bf6",
+      "frames": [
+        {
+          "observedAtUtc": "2026-08-18T20:49:36.364800Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W34_1A/l2b-v27-2026-243/2/level2_2026W34_1A_0363_1D2_spx_l2b-v27-2026-243.fits",
+          "wavelengthUm": 1.4976988310965793
+        },
+        {
+          "observedAtUtc": "2026-09-22T15:05:18.556800Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/2/level2_2026W39_1A_0371_1D2_spx_l2b-v27-2026-268.fits",
+          "wavelengthUm": 1.4977315750876221
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "discovery",
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 128,
+          "byRelease": {
+            "qr3": 128
+          },
+          "byDetector": {
+            "D1": 19,
+            "D2": 26,
+            "D3": 19,
+            "D4": 19,
+            "D5": 26,
+            "D6": 19
+          },
+          "byReleaseDetector": {
+            "qr3:D1": 19,
+            "qr3:D2": 26,
+            "qr3:D3": 19,
+            "qr3:D4": 19,
+            "qr3:D5": 26,
+            "qr3:D6": 19
+          },
+          "observedTimeRangeUtc": {
+            "qr3": {
+              "start": "2026-08-16T15:08:22.156800Z",
+              "end": "2026-09-22T15:06:16.099200Z"
+            }
+          },
+          "failedReleaseQueries": [
+            {
+              "release": "dr1",
+              "category": "transient_http",
+              "code": "UPSTREAM_ERROR",
+              "attempts": 3,
+              "httpStatus": 502
+            }
+          ],
+          "complete": false
+        },
+        "discoveredExposureCount": 128,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 122
+        },
+        "invalidCutouts": [],
+        "rejectedObservations": [
+          {
+            "observationId": "2026W38_2A_0562_1",
+            "detector": 3,
+            "reason": "insufficient_valid_coverage",
+            "geometricFraction": 1.0,
+            "validFraction": 0.3803504740017236
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 8,
+          "compatible": 1,
+          "wavelength_mismatch": 1
+        },
+        "usableExposureCount": 5,
+        "alignmentFailures": [],
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 1,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2026W33_2A_0594_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W34_2A_0757_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W36_1A_0510_1",
+            "detector": 1
+          }
+        ],
+        "preparedExposureCount": 6,
+        "processedExposureCount": 6,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2026W34_2A_0757_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W36_1A_0510_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W34_1A_0363_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W39_1A_0371_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W33_2A_0594_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W38_2A_0562_1",
+            "detector": 3
+          }
+        ]
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "RW Aurigae",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:18:16.776836+00:00",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 503,
+      "status": null,
+      "code": "PROCESSING_LIMIT",
+      "message": "Build deadline of 180 s reached during preparation; nothing was published",
+      "elapsedSeconds": 180.023,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": null,
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "Epsilon Indi B",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:18:19.312353+00:00",
+      "field": {
+        "ra": 331.04375,
+        "dec": -56.782777777777774,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 2.533,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "WISE 0855",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:18:58.180281+00:00",
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Coordinates supplied by the NASA challenge; epoch unspecified; not propagated.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 38.866,
+      "comparisonId": "ccd3d143514736175069b66066ea10c79af34a36c90253a1bfd9d9ac8f74523b",
+      "frames": [
+        {
+          "observedAtUtc": "2025-05-05T16:49:00.004800Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W19_1B/l2b-v27-2026-197/3/level2_2025W19_1B_0116_1D3_spx_l2b-v27-2026-197.fits",
+          "wavelengthUm": 2.364953526020152
+        },
+        {
+          "observedAtUtc": "2026-05-11T02:19:42.225600Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W20_1A/l2b-v27-2026-246/3/level2_2026W20_1A_0033_1D3_spx_l2b-v27-2026-246.fits",
+          "wavelengthUm": 2.364839401327933
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "discovery",
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 297,
+          "byRelease": {
+            "dr1": 297
+          },
+          "byDetector": {
+            "D1": 51,
+            "D2": 50,
+            "D3": 46,
+            "D4": 53,
+            "D5": 51,
+            "D6": 46
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 51,
+            "dr1:D2": 50,
+            "dr1:D3": 46,
+            "dr1:D4": 53,
+            "dr1:D5": 51,
+            "dr1:D6": 46
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-05-05T16:48:02.419200Z",
+              "end": "2026-05-14T06:55:30.720000Z"
+            }
+          },
+          "failedReleaseQueries": [
+            {
+              "release": "qr3",
+              "category": "transient_http",
+              "code": "UPSTREAM_ERROR",
+              "attempts": 3,
+              "httpStatus": 502
+            }
+          ],
+          "complete": false
+        },
+        "discoveredExposureCount": 297,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 291
+        },
+        "invalidCutouts": [],
+        "rejectedObservations": [],
+        "pairChecks": {
+          "different_detector": 12,
+          "compatible": 1,
+          "wavelength_mismatch": 2
+        },
+        "usableExposureCount": 6,
+        "alignmentFailures": [],
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 1,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 2
+          }
+        ],
+        "preparedExposureCount": 6,
+        "processedExposureCount": 6,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W19_1B_0241_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W19_1A_0594_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W19_1B_0181_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W20_1A_1166_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W19_1B_0116_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W20_1A_0033_1",
+            "detector": 3
+          }
+        ]
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "R Draconis",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:21:42.323892+00:00",
+      "field": {
+        "ra": 248.16750000000002,
+        "dec": 66.75472222222223,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 164.142,
+      "comparisonId": "3cc560300f1e578c47421d6faef4bca5dc709407d8390ad8cb08c1bd219b21c6",
+      "frames": [
+        {
+          "observedAtUtc": "2025-06-06T11:25:30.374400Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/1/level2_2025W23_2B_0206_2D1_spx_l2b-v27-2026-201.fits",
+          "wavelengthUm": 0.9661540026861168
+        },
+        {
+          "observedAtUtc": "2026-07-14T21:41:40.934400Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W29_1A/l2b-v27-2026-276/1/level2_2026W29_1A_0364_1D1_spx_l2b-v27-2026-276.fits",
+          "wavelengthUm": 0.9635614832611326
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "retrieval",
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 586,
+          "byRelease": {
+            "dr1": 456,
+            "qr3": 130
+          },
+          "byDetector": {
+            "D1": 93,
+            "D2": 97,
+            "D3": 104,
+            "D4": 94,
+            "D5": 94,
+            "D6": 104
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 69,
+            "dr1:D2": 78,
+            "dr1:D3": 83,
+            "dr1:D4": 69,
+            "dr1:D5": 75,
+            "dr1:D6": 82,
+            "qr3:D1": 24,
+            "qr3:D2": 19,
+            "qr3:D3": 21,
+            "qr3:D4": 25,
+            "qr3:D5": 19,
+            "qr3:D6": 22
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-05-16T22:56:23.625600Z",
+              "end": "2026-05-13T05:57:52.041600Z"
+            },
+            "qr3": {
+              "start": "2026-05-16T08:41:38.572800Z",
+              "end": "2026-07-16T20:59:22.502400Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 586,
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 54,
+          "succeededCutouts": 53,
+          "failedCutouts": 1,
+          "failureCategories": {
+            "transient_http": 1
+          },
+          "failures": [
+            {
+              "observationId": "2025W23_2B_0206_3",
+              "detector": 4,
+              "release": "dr1",
+              "category": "transient_http",
+              "code": "UPSTREAM_ERROR",
+              "attempts": 3,
+              "httpStatus": 503
+            }
+          ],
+          "notRequestedExposureCount": 532
+        },
+        "invalidCutouts": [
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 4,
+            "release": "qr3",
+            "reason": "Cannot prepare 2026W29_2A_0079_3: ValueError"
+          }
+        ],
+        "rejectedObservations": [
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 1,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.5935076127549554,
+            "validFraction": 0.49583453030738295
+          },
+          {
+            "observationId": "2026W26_1A_0274_3",
+            "detector": 2,
+            "reason": "insufficient_geometric_coverage",
+            "geometricFraction": 0.9230106291295604,
+            "validFraction": 0.8629704108014938
+          }
+        ],
+        "pairChecks": {
+          "different_detector": 1037,
+          "wavelength_mismatch": 169,
+          "insufficient_common_coverage": 18,
+          "compatible": 1
+        },
+        "usableExposureCount": 50,
+        "alignmentFailures": [],
+        "preparedExposureCount": 52,
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 1,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 1
+          }
+        ],
+        "processedExposureCount": 53,
+        "selectionScope": "bounded_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_2A_0079_2",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_2",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_3",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W29_2A_0079_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_3",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0324_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_3",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W23_2B_0206_4",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W29_1A_0430_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W23_2B_0696_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W26_1A_0274_4",
+            "detector": 5
+          },
+          {
+            "observationId": "2025W20_2D_0243_4",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W24_2B_0242_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W27_2A_0243_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W29_1A_0364_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W24_1A_0123_1",
+            "detector": 2
+          },
+          {
+            "observationId": "2026W26_1A_0274_3",
+            "detector": 2
+          },
+          {
+            "observationId": "2025W21_1B_0329_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W24_1A_0125_4",
+            "detector": 3
+          }
+        ]
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "Barnard's Star",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:23:23.832118+00:00",
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 101.122,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "RW Aurigae",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:23:24.979006+00:00",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 1.147,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "Epsilon Indi B",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:23:26.195129+00:00",
+      "field": {
+        "ra": 331.04375,
+        "dec": -56.782777777777774,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 1.212,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "WISE 0855",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:23:27.497831+00:00",
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Coordinates supplied by the NASA challenge; epoch unspecified; not propagated.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 1.301,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "R Draconis",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:23:29.192213+00:00",
+      "field": {
+        "ra": 248.16750000000002,
+        "dec": 66.75472222222223,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "upstream_unavailable",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 1.691,
+      "comparisonId": null,
+      "frames": [],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "discovery"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "code": "UPSTREAM_ERROR",
+        "message": "IRSA request failed after bounded retries"
+      },
+      "visibleChange": "not_assessed"
+    }
+  ]
+}

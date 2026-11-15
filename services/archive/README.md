@@ -201,7 +201,7 @@ calibrated spectroscopy.
 
 **Search and selection**
 
-- Up to 1000 discovered candidates. Cutouts are requested in batches of 24, round-robin
+- Up to 1000 discovered candidates. Cutouts are requested in batches of 6, round-robin
   by detector and alternating earliest/latest dates, at most 120 per build, 3 at a time.
 - The search stops at the first batch that yields an acceptable pair, then adds frames
   from the sample that are compatible with every chosen frame, up to 12. Pairs are
@@ -317,3 +317,36 @@ behaviour with more than one worker, and bitwise reprocessing on another platfor
 
 DR1 spectral-image DOI: 10.26131/IRSA678. The full SPHEREx acknowledgement is preserved
 in comparison provenance. Use the appropriate QR3 citation for QR3 observations.
+
+## Interactive blink retrieval (2026-11-15)
+
+The initial comparison now tests six cutouts at a time. Before downloading, it ranks
+pairs from the same detector by the target's fractional position inside the SIA
+footprints, preferring candidate pairs separated by at least 30 days. Up to 24
+exposures receive this priority; all remaining candidates retain the chronological
+round-robin fallback. Unsupported footprints fall back automatically. This is a
+scheduling hint only: the existing per-pixel wavelength, coverage, flags and alignment
+checks still decide whether the images are comparable. The ordering settings and
+original footprints are retained in the evidence identity and provenance.
+
+`GET /api/comparisons` additionally accepts `progressId` and `refresh=true`.
+`GET /api/comparisons/progress/{id}` reports measured build progress;
+`DELETE` on that route requests cooperative cancellation. A pending network operation
+can take its timeout to settle before cancellation releases the build slot.
+
+Successful pairs get an exact-request index under the evidence store's `requests/`
+directory. The key includes field, processing policy, implementation and data source.
+A repeated request replays the integrity-checked saved result, including after a server
+restart, without discovery or rendering. Only `ready` results are indexed. This is a
+saved result, not an automatic check for new observations: `refresh=true` bypasses
+both the result index and the 15-minute SIA metadata cache. It never mutates an old
+comparison. Failed refreshes leave the previous saved result available.
+
+The `X-Comparison-Source` response header is `archive`, `saved-cache`, or
+`saved-example`; this delivery information is separate from immutable provenance.
+PNG requests verify their own blob and the manifest rather than rereading every
+retained source FITS. Loading a comparison still verifies the entire evidence set.
+HTTP connections are reused, and served builds use the declared retry policy.
+
+See `docs/verification/blink-latency.md` for the current checks. The earlier timings
+above are historical and use the older sampler.

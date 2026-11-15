@@ -259,7 +259,7 @@ def test_bounded_sample_is_labelled_and_no_pair_is_not_false_absence(tmp_path,fi
     response=make_pipeline(tmp_path,limited,cutouts).build(field)
     assert response.status=='ready'
     assert response.diagnostics['complete'] is False
-    assert response.diagnostics['selectionScope']=='bounded_time_detector_sample'
+    assert response.diagnostics['selectionScope']=='bounded_footprint_time_detector_sample'
     assert response.diagnostics['processedExposureCount']==2
     cutouts=[synthetic_cutout(wavelength=w) for w in (1,2,3)]
     with pytest.raises(ArchiveError) as exc:make_pipeline(tmp_path,limited,cutouts).build(field)
@@ -318,7 +318,7 @@ def test_roundtrip_ra_wrap_and_polar_grid(config):
 
 def test_explicit_defaults_and_omitted_defaults_have_identical_identity(tmp_path):
     omitted=ProcessingConfig()
-    explicit=ProcessingConfig(maxCandidates=1000,timeoutSeconds=30,attempts=3)
+    explicit=ProcessingConfig(maxCandidates=1000,timeoutSeconds=30,attempts=3,batchSize=6)
     assert canonical(omitted.model_dump())==canonical(explicit.model_dump())
     first=make_pipeline(tmp_path,omitted).build(FieldRequest(ra=10,dec=20))
     second=make_pipeline(tmp_path,explicit).build(FieldRequest(ra=10.,dec=20.,fovArcmin=6.))

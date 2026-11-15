@@ -43,20 +43,21 @@ export type ComparisonResult = (
       status: "no_coverage" | "no_comparable_pair" | "upstream_unavailable";
       comparison: null;
     }
-) & { diagnostics?: Record<string, unknown> };
+) & { diagnostics?: Record<string, unknown>; servedFrom?: "archive" | "saved-cache" | "saved-example" };
+
+export interface ComparisonSearchOptions {
+  mode?: "blink" | "timeline";
+  refresh?: boolean;
+}
 
 /** Progress of a running build, as its service reports it. For display only. */
-export interface BuildProgress {
-  stage: string;
-  done: number;
-  total: number;
-  /** Share of the whole build finished, 0 to 1. */
-  fraction: number;
-}
+export type BuildProgress = Pick<components["schemas"]["BuildProgressResponse"],
+  "stage" | "done" | "total" | "fraction">;
 
 export interface ViewerDataSource {
   /** `onProgress` is called only by services that report build progress. */
-  search(field: Field, signal?: AbortSignal, onProgress?: (progress: BuildProgress) => void): Promise<ComparisonResult>;
+  search(field: Field, signal?: AbortSignal, onProgress?: (progress: BuildProgress) => void,
+         options?: ComparisonSearchOptions): Promise<ComparisonResult>;
   loadSaved(id: string, signal?: AbortSignal): Promise<Comparison | null>;
   resolveName(
     name: string,

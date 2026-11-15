@@ -3,10 +3,9 @@ import json
 from pathlib import Path
 
 from services.archive.models import ArchiveError
-from services.archive.storage import LocalStore
 
-from .api import create_app
-from .client import WiseClient
+from .api import create_app, create_store
+from .indexed import IndexedWiseClient
 from .models import WiseConfig, WiseFieldRequest
 from .pipeline import WisePipeline
 
@@ -34,8 +33,8 @@ def main():
     config = WiseConfig(maxEpochs=args.max_epochs, exposuresPerEpoch=args.exposures_per_epoch,
                         minExposuresPerEpoch=min(defaults.min_exposures_per_epoch, args.exposures_per_epoch),
                         buildDeadlineSeconds=args.deadline)
-    store = LocalStore(args.storage / "evidence")
-    pipeline = WisePipeline(WiseClient(config, args.storage / "cache"), store, config)
+    store = create_store(args.storage)
+    pipeline = WisePipeline(IndexedWiseClient(config, args.storage / "cache"), store, config)
     if args.command == "serve":
         import uvicorn
         # Single process on purpose: the one-build admission limit is process-local.

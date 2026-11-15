@@ -37,7 +37,7 @@ export function BuildProgressBar({ startedAt, progress, waitingLabel }: {
     : waitingLabel;
   // The archive search reports only when a whole query answers, so the bar can sit still.
   const waiting = percent === null || progress?.stage === "discovery";
-  // A healthy search takes 30-80 s; past that the archive is the likely cause, not the build.
+  // Some WISE metadata searches take 30–80 s; report the delay without promising a completion time.
   const slowSearch = progress?.stage === "discovery" && now - startedAt > 90_000;
 
   return (
@@ -53,7 +53,7 @@ export function BuildProgressBar({ startedAt, progress, waitingLabel }: {
       </p>
       {slowSearch && (
         <p className="build-progress-label">
-          <span>IRSA's exposure search is slow or not answering right now. It is retried once, then reported as offline; a field already built is not affected.</span>
+          <span>IRSA's exposure search is slow or not answering right now. You can cancel and retry; finished downloads are retained. Previously built fields can replay without an archive search.</span>
         </p>
       )}
     </div>

@@ -1,134 +1,97 @@
-# WISE time-lapse service
+# WISE blink and time-lapse service
 
-Builds dated WISE/NEOWISE frames for the viewer's **WISE view**. For a sky position it
-finds every W1 or W2 single exposure (Level 1b) that covers the field, groups them into
-visits, and combines each visit into one frame on a shared grid with one stretch. The
-result uses the SPHEREx archive's comparison shape, so the viewer plays it with the same
-controls.
+The viewer uses real W1/W2 single-exposure images from WISE/NEOWISE, combined by
+visit on a shared sky grid and display stretch. This work is authorized by the
+archive-blink task; WISE and SPHEREx images are never mixed in one comparison.
 
-This is deferred scope in `spherex-project-brief.md` ("WISE historical imagery"), built at
-the user's request on the `implement-wise` branch. It adds a route beside the shared
-contract; it does not change `/api/comparisons` or its OpenAPI schema. The coordinator
-has not yet adopted it into the brief or the handoff contract.
+## Run and demonstrate
 
-## Run
+From the repository root, `npm run dev` starts the viewer and both image services.
+Restart it after Python changes. In the viewer choose **WISE → Time → Open saved
+real example → Blink A ↔ B**. The retained W2 example of the WISE 0855 field has
+visits in May 2010 and April 2024. It needs no archive access and is explicitly
+labelled saved. SPHEREx has its own saved real example using the same controls.
+DSS is a reference map and has no blink controls.
 
-The service reuses the archive's Python environment (same dependencies). From the
-repository root:
+The standalone service is `npm run dev:wise` (port 8020). Runtime data goes to
+`services/wise/.local-data`, or `WISE_STORAGE_DIR` with the app factory, or `--storage`
+with the CLI. Both startup paths include the retained real example store.
 
-```sh
-services/archive/.venv/bin/python -m pytest services/wise/tests -q
-services/archive/.venv/bin/python -m services.wise serve            # port 8020
-services/archive/.venv/bin/python -m services.wise compare --ra 133.79512916666664 --dec -7.245147222222222 --fov 6 --band 2 --summary
-services/archive/.venv/bin/python -m services.wise replay <comparison id>
+```powershell
+services/archive/.venv/Scripts/python.exe -m services.wise serve
+services/archive/.venv/Scripts/python.exe -m pytest services/wise/tests -q
+services/archive/.venv/Scripts/python.exe -m scripts.reproduce_wise_example
 ```
 
-`npm run dev` starts it with the rest of the stack, and `npm run dev:wise` starts it
-alone. Vite proxies `/api/wise` to port 8020; set `WISE_API_TARGET` to change that.
-Runtime data goes to `services/wise/.local-data` (ignored by Git); set `WISE_STORAGE_DIR`
-or `--storage` to move it.
+On Unix use `.venv/bin/python` in place of `.venv/Scripts/python.exe`.
 
-## Routes
+## Fast discovery without a database query
 
-| Route | Result |
-|---|---|
-| `GET /api/wise/comparisons?ra&dec&fovArcmin&band` | `{status, comparison, diagnostics}` in the archive's shape. `fovArcmin` is 1–12, `band` is 1 (W1) or 2 (W2, default). |
-| `GET /api/wise/comparisons/{id}` | The saved manifest, exactly as written. Never rebuilt. |
-| `GET /api/wise/comparisons/progress/{progressId}` | `{stage, done, total, fraction, elapsedSeconds}` for a running build started with that `progressId` query parameter (8–64 letters, digits or hyphens). 404 once it ends. Display only; it never changes the result. |
-| `GET /api/wise/comparisons/{id}/assets/{name}` | A rendered PNG, a combined-frame FITS, or a retained source cutout. |
+`IndexedWiseClient` first downloads the 590 KB [unWISE tile index](https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits)
+and the nearest tile's per-band `-frames.fits` table in the
+[neo11 release](https://unwise.me/data/neo11/unwise-coadds/fulldepth/).
+These are static metadata files, not images or synthesized observation dates.
+The table supplies original WISE scan/frame identities, dataset paths, observation
+MJDs and quality values. Selection requires `included > 0`, `use > 0`, acceptable
+`qual_frame`, and an exposure centre within 0.25 degrees of the requested position.
+It is a conservative subset, not an exhaustive coverage search.
 
-Statuses are the archive's: `ready` (two or more visits), `single_epoch`, `no_coverage`,
-`no_comparable_pair` (exposures exist but no visit passed the coverage or alignment
-checks) and `upstream_unavailable`. A failed query is never reported as absence.
-Errors use `{code, message}`. IDs belong to this service's own evidence store; a SPHEREx
-comparison ID does not resolve here, and the reverse. The viewer marks WISE links with
-`view=wise`.
+Only recognized WISE dataset paths are used to construct direct IRSA L1b cutout
+URLs. No unWISE coadd pixels enter playback. The downloaded FITS header's band,
+scan, frame number and MJD are checked against metadata when present. WCS coverage
+and background-source alignment checks still decide which frames can be shown.
+Both metadata FITS files and every contributing original cutout are retained and
+hashed in the immutable evidence store. If the index is unavailable or has no
+supported candidates, the service falls back to the four-phase IBE search.
 
-## How a frame is made
+This bypass fixed the observed WISE discovery outage: all five challenge targets
+returned real W2 pairs, and a separate W1 check succeeded. See
+[measurements and verification](../../docs/verification/blink-latency.md).
 
-Every setting below is in `WiseConfig` (`models.py`) and is saved in each manifest.
+## API and processing
 
-1. **Discovery.** IRSA's image search is queried for four single-exposure sets: All-Sky
-   4-band, 3-band cryo, post-cryo 2-band and NEOWISE-R. Only frames that cover the whole
-   requested field are returned. Frames with `qual_frame` 0 are dropped.
-2. **Visits.** Exposures are ordered by time. A new visit starts after a 10-day gap, when
-   a visit would exceed 15 days, or when the mission phase changes. WISE returns to most
-   of the sky every six months, so a field usually has about 23 visits from 2010 to 2024.
-3. **Sampling.** Six visits are used (`maxEpochs`), evenly spaced and always including
-   the first and last, so the frames span the full baseline. A few frames are enough to
-   see motion, and each visit costs several downloads. Within a visit, up to 5 exposures
-   are used, evenly spaced in time. The manifest records how many visits were found and
-   how many were used; the rest are not downloaded.
-4. **Preparation.** Each cutout has the median of its finite pixels subtracted, then is
-   resampled (bilinear) onto a north-up TAN grid at 2.75 arcsec per pixel.
-5. **Combination.** A frame is the per-pixel median of its exposures. A pixel is valid
-   when at least two exposures cover it. A visit needs two usable exposures and 80% valid
-   pixels.
-6. **Time.** The displayed time is the midpoint of the first and last exposure used. The
-   frame also records that interval and every contributing exposure with its own
-   mid-exposure time (IRSA `mjd_obs`).
-7. **Alignment.** Registration is WCS reprojection only. Each frame is checked against the
-   earliest one using background sources, with the central target excluded. A measured
-   failure removes that frame and is recorded; nothing is shifted to fit.
-8. **Stretch.** One asinh stretch for all frames, from the 3rd and 99.7th percentiles of
-   all valid pixels. Units are DN.
+| Route | Behavior |
+| --- | --- |
+| `GET /api/wise/comparisons?ra&dec&fovArcmin&band` | Default `mode=blink`: two separated eligible visits, up to three exposures each. Field width 1–12 arcmin; band 1 or 2, default 2. |
+| Same route with `mode=timeline` | Up to six visits, five exposures per visit. Explicit longer build; reuses source downloads. |
+| Same route with `refresh=true` | Bypasses saved-result and retained-example lookup. Valid static metadata and source downloads remain reusable. |
+| `GET /api/wise/comparisons/{id}` | Integrity-checked immutable replay; never rebuilds. |
+| `GET /api/wise/comparisons/{id}/assets/{name}` | Immutable PNG or FITS asset. |
+| `GET /api/wise/comparisons/progress/{progressId}` | Display-only build progress. |
+| `DELETE /api/wise/comparisons/progress/{progressId}` | Cooperative cancellation; an in-flight network read may finish first. |
 
-## Evidence
+`progressId` is 8–64 letters, digits or hyphens. One build is admitted per process;
+other builds receive 429, while replay remains available. `X-Comparison-Source`
+is `archive`, `saved-cache` or `saved-example` and is outside evidence identity.
+Schemas and synthetic examples live in `fixtures/wise/openapi.json` and
+`fixtures/wise/responses/`. The original real demo is in `fixtures/wise/real-wise0855/`.
 
-A manifest holds the field, grid, stretch, resolved settings, every source exposure with
-its URL, observation time and SHA-256, the implementation fingerprint, and the search
-record. The comparison ID is the SHA-256 of that record, so the same inputs and settings
-give the same ID and a changed input gives a new one. The manifest, PNGs, combined FITS
-frames and all source cutouts are written before a `ready` response is returned, using
-the archive's `LocalStore` (immutable blobs, conflict detection, integrity check on
-load). A 6 arcmin comparison stores about 20 MB.
+Visits split on a 10-day gap, a span over 15 days, or a mission-phase change. Visits
+must contain at least two exposures by default. The first and last eligible visits
+are included. Each exposure has its finite-pixel median subtracted and is
+reprojected onto a north-up TAN grid at 2.75 arcsec/pixel. Each visit uses the
+per-pixel median, requires two supporting exposures per valid pixel and 80% valid
+coverage. All displayed frames share one asinh stretch in native DN. The displayed
+time is the midpoint of the first and last contributing exposure times; the full
+interval and each contributing exposure remain in the manifest.
 
-## Limits to keep in mind
+Exact requests are indexed persistently after successful builds, separated by
+band, field, profile, settings and implementation fingerprint. Only ready results
+are cached. A failed refresh does not erase prior evidence. Old IDs retain their
+original bytes after policy changes. The CLI retains its configured timeline mode.
 
-- This is a quick look. It does not measure motion or variability, and a visible change
-  is an observation to check, not a result.
-- Subtracting each exposure's median removes real differences in background between
-  visits and any uniform extended emission. No zero-point scaling is applied, so
-  brightness is not photometric.
-- No bad-pixel mask or uncertainty image is used. The median removes isolated artefacts,
-  but diffraction spikes, latent images, scattered moonlight and saturated cores remain.
-- Changes within one visit (up to 15 days) are averaged away, and anything that happens
-  between the six chosen visits is not shown.
-- W1 and W2 are broad filters. A WISE frame is not comparable with a SPHEREx spectral
-  channel, and the two are never mixed in one comparison.
-- IRSA's image search takes 30–80 s when it is healthy and dominates a first build: a
-  6 arcmin field then needs 30 cutouts (about 5 MB), a 12 arcmin field about 18 MB. A
-  hanging search is tried twice, then reported as `upstream_unavailable`. A build stops
-  at a 360 s deadline and publishes nothing. Search results and finished cutouts are cached
-  on disk (the survey's image sets are final), so a retry resumes from them. IRSA
-  sometimes answers 503 when requests arrive quickly; those downloads are retried one
-  at a time.
+## Scientific limits and attribution
 
-## Checks run
+This is a quick-look visualization, not a motion or variability measurement.
+Median background subtraction removes uniform extended emission. No zero-point
+scaling, uncertainty image or bad-pixel bitmask is applied. Three-exposure visits
+can be noisy; artefacts and saturation remain. Changes within a visit are combined,
+and unselected visits are not shown. Alignment is WCS reprojection only; insufficient
+stationary background sources are labelled `wcs_only_not_empirically_verified`.
+A ready pair is not a confirmed object identification or discovery.
 
-On November 14, 2026, on macOS with the archive environment:
-
-- `pytest services/wise/tests services/archive/tests -q`: 92 passed. The WISE tests use
-  synthetic exposures only.
-- Live builds against IRSA for WISE 0855 (W2, 6 arcmin), under the earlier setting of 24
-  visits: 233 exposures found, 23 visits, 115 cutouts retrieved, `ready` with 23 frames
-  from 2010-05-04 to 2024-04-16. A cold build took 131 s.
-- The same field with the current six-visit setting, using the cached search result and
-  30 fresh cutout downloads: `ready` with 6 frames from 2010-05-04 to 2024-04-16 in about
-  35 s, with progress reported through the browser. No claim is made about what the
-  frames show.
-- Later the same evening IRSA's image search and TAP both answered 502 or hung. A build
-  of a new field then returned `upstream_unavailable`, as intended. A fully cold build
-  under the six-visit setting has therefore not been timed.
-
-Not yet done: the other four challenge targets, a retained real fixture under
-`fixtures/`, an OpenAPI file for this route, and any deployed check.
-
-## Acknowledgement
-
-This service uses data products from the Wide-field Infrared Survey Explorer, a joint
-project of the University of California, Los Angeles, and the Jet Propulsion
-Laboratory/California Institute of Technology, and from NEOWISE, a project of the Jet
-Propulsion Laboratory/California Institute of Technology. Both are funded by the
-National Aeronautics and Space Administration. Images are served by the NASA/IPAC
-Infrared Science Archive.
+The metadata index credits [unWISE](https://unwise.me/): Lang (2014) and Meisner,
+Lang & Schlegel (2017a,b). Images use data products from the Wide-field Infrared
+Survey Explorer, a joint project of UCLA and JPL/Caltech, and NEOWISE, a project of
+JPL/Caltech, funded by NASA. Images are served by the NASA/IPAC Infrared Science
+Archive. Full acknowledgement and source URLs are retained with each comparison.

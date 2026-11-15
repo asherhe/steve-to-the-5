@@ -1,0 +1,99 @@
+{
+  "kind": "live_local_route_check",
+  "deployed": false,
+  "startedAtUtc": "2026-11-15T16:04:07.252317+00:00",
+  "targets": [
+    {
+      "target": "RW Aurigae",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T16:04:16.010722+00:00",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 8.254,
+      "comparisonId": "fbcaaf087be64205cc765cfb52e9c6ae04f7adf3a54f4d01bac0048757fc9b21",
+      "frames": [
+        {
+          "observedAtUtc": "2010-09-11T19:16:09.020352Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/cryo_3band/3band_p1bm_frm/3b/08193b/139/08193b139-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-02-14T18:38:02.113872Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/1r/59011r/148/59011r148-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 79,
+          "byDataset": {
+            "allsky_4band": 1,
+            "cryo_3band": 3,
+            "neowiser": 75
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-03-04T10:20:13.466688Z",
+            "end": "2024-02-14T21:43:36.148800Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/076/0765p302/unwise-0765p302-w2-frames.fits",
+              "sha256": "6b283f3ec2597acf74beaaa670aef469d2ec0e5965ab904725112d82e03c4dc1",
+              "asset": "6b283f3ec2597acf74beaaa670aef469d2ec0e5965ab904725112d82e03c4dc1.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 22,
+          "sampled": 2,
+          "tooFewExposures": 2,
+          "exposuresRequested": 6,
+          "exposuresNotRequested": 73
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    }
+  ]
+}

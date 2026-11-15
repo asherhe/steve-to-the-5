@@ -16,7 +16,7 @@ def flaky(failures):
 
 
 def test_search_retries_through_intermittent_502s_with_a_higher_attempt_limit(tmp_path):
-    # Default policy: three attempts, so four 502s in a row end as an upstream error.
+    # The interactive service uses the default; explicit patient clients can opt in to more.
     transport, calls = flaky(4)
     plain = IRSAClient(ProcessingConfig(), tmp_path, transport=transport, sleep=lambda s: None)
     with pytest.raises(ArchiveError) as error:

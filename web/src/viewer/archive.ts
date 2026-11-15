@@ -1,5 +1,5 @@
 import type { components } from "./archive.generated";
-import type { BuildProgress, Comparison, ComparisonResult, Field, ViewerDataSource } from "./comparison";
+import type { BuildProgress, Comparison, ComparisonResult, ComparisonSearchOptions, Field, ViewerDataSource } from "./comparison";
 
 type ArchiveResponse = components["schemas"]["ComparisonResponse"];
 type ArchiveManifest = components["schemas"]["Comparison"];
@@ -27,7 +27,8 @@ interface ComparisonRoute {
   progressPath?: string;
   progressIntervalMs?: number;
 }
-const spherexRoute: ComparisonRoute = { basePath: "/api/comparisons", limits: archiveFieldLimits };
+const spherexRoute: ComparisonRoute = { basePath: "/api/comparisons", limits: archiveFieldLimits,
+  progressPath: "/api/comparisons/progress" };
 
 function toComparison(manifest: ArchiveManifest): Comparison {
   return {
@@ -63,7 +64,7 @@ export function createArchiveDataSource(
   fetchImpl: typeof fetch = fetch, route: ComparisonRoute = spherexRoute,
 ): Pick<ViewerDataSource, "search" | "loadSaved"> {
   const { basePath, limits, params, progressPath, progressIntervalMs = 1000 } = route;
-  async function request(path: string, signal?: AbortSignal): Promise<ArchiveResponse> {
+  async function request(path: string, signal?: AbortSignal): Promise<ComparisonResult> {
     const response = await fetchImpl(path, { signal });
     const body = await response.json().catch(() => null);
     if (!response.ok) {
@@ -79,10 +80,17 @@ export function createArchiveDataSource(
     if (!body || typeof body !== "object" || !["ready", "single_epoch", "no_coverage", "no_comparable_pair", "upstream_unavailable"].includes(body.status)) {
       throw new ArchiveRequestError("INVALID_RESPONSE", "The archive returned unreadable comparison data.");
     }
-    return body;
+    const result = toResult(body);
+    const servedFrom = response.headers.get("X-Comparison-Source");
+    if (servedFrom === "archive" || servedFrom === "saved-cache" || servedFrom === "saved-example") {
+      result.servedFrom = servedFrom;
+    }
+    return result;
   }
   return {
-    async search(field: Field, signal?: AbortSignal, onProgress?: (progress: BuildProgress) => void) {
+    async search(field: Field, signal?: AbortSignal, onProgress?: (progress: BuildProgress) => void,
+                 options: ComparisonSearchOptions = {}) {
+      signal?.throwIfAborted();
       if (!Number.isFinite(field.ra) || field.ra < 0 || field.ra >= 360 ||
           !Number.isFinite(field.dec) || Math.abs(field.dec) > 90 ||
           !Number.isFinite(field.fovArcmin) || field.fovArcmin < limits.min || field.fovArcmin > limits.max) {
@@ -91,33 +99,40 @@ export function createArchiveDataSource(
       const query = new URLSearchParams({
         ra: String(field.ra), dec: String(field.dec), fovArcmin: String(field.fovArcmin), ...params,
       });
-      if (!progressPath || !onProgress) return toResult(await request(`${basePath}?${query}`, signal));
+      if (options.mode && params?.band) query.set("mode", options.mode);
+      if (options.refresh) query.set("refresh", "true");
+      if (!progressPath || (!onProgress && !signal)) return request(`${basePath}?${query}`, signal);
       // The build is one long request, so its progress is read from a second route.
       const id = crypto.randomUUID();
       query.set("progressId", id);
-      const timer = setInterval(async () => {
+      let polling = false;
+      let settled = false;
+      const timer = onProgress ? setInterval(async () => {
+        if (polling || settled || signal?.aborted) return;
+        polling = true;
         try {
           const response = await fetchImpl(`${progressPath}/${id}`, { signal });
           const state = response.ok ? await response.json() : null;
-          if (state && typeof state.stage === "string" && Number.isFinite(state.fraction) &&
+          if (!settled && !signal?.aborted && state && typeof state.stage === "string" && Number.isFinite(state.fraction) &&
               Number.isFinite(state.done) && Number.isFinite(state.total)) onProgress(state);
         } catch {
           // Progress is optional; the build request reports any real failure.
-        }
-      }, progressIntervalMs);
+        } finally { polling = false; }
+      }, progressIntervalMs) : undefined;
       // Aborting the request alone would leave the service building (and busy) for minutes.
       const stop = () => { void fetchImpl(`${progressPath}/${id}`, { method: "DELETE" }).catch(() => {}); };
       signal?.addEventListener("abort", stop, { once: true });
       try {
-        return toResult(await request(`${basePath}?${query}`, signal));
+        return await request(`${basePath}?${query}`, signal);
       } finally {
+        settled = true;
         clearInterval(timer);
         signal?.removeEventListener("abort", stop);
       }
     },
     async loadSaved(id, signal) {
       try {
-        const result = toResult(await request(`${basePath}/${encodeURIComponent(id)}`, signal));
+        const result = await request(`${basePath}/${encodeURIComponent(id)}`, signal);
         if (result.comparison?.id !== id) {
           throw new ArchiveRequestError("INVALID_RESPONSE", "The archive returned different saved evidence.");
         }

@@ -95,5 +95,35 @@ test("all three operations forward cancellation; saved IDs are path-encoded", as
   await assert.rejects(source.search(field,signal), {name:"AbortError"});
   await assert.rejects(source.loadSaved("id/with space",signal), {name:"AbortError"});
   await assert.rejects(source.resolveName("name",signal), {name:"AbortError"});
-  assert.equal(seen[1],"/api/comparisons/id%2Fwith%20space");
+  // An already-cancelled search must not start a backend build.
+  assert.deepEqual(seen,["/api/comparisons/id%2Fwith%20space"]);
+});
+
+test("cached-delivery labels stay outside immutable evidence and refresh is explicit", async () => {
+  const calls=[];
+  const source=createViewerDataSource(async path => {
+    calls.push(path);
+    return Response.json(ready,{headers:{"X-Comparison-Source":"saved-cache"}});
+  });
+  const result=await source.search(field);
+  assert.equal(result.servedFrom,"saved-cache");
+  assert.deepEqual(result.comparison.provenance,ready.comparison.provenance);
+  await source.search(field,undefined,undefined,{refresh:true});
+  assert.equal(new URL(calls[1],"http://test").searchParams.get("refresh"),"true");
+});
+
+test("SPHEREx cancellation reaches the server even without a progress listener", async () => {
+  const calls=[];
+  const controller=new AbortController();
+  const source=createViewerDataSource(async (path,options={}) => {
+    calls.push({path,method:options.method??"GET"});
+    if(options.method==="DELETE")return Response.json({cancelled:true});
+    return new Promise((_,reject)=>options.signal.addEventListener("abort",()=>reject(new DOMException("Aborted","AbortError"))));
+  });
+  const pending=source.search(field,controller.signal);
+  controller.abort();
+  await assert.rejects(pending,{name:"AbortError"});
+  const id=new URL(calls[0].path,"http://test").searchParams.get("progressId");
+  assert.ok(id);
+  assert.ok(calls.some(call=>call.method==="DELETE"&&call.path===`/api/comparisons/progress/${id}`));
 });

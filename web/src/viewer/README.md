@@ -35,7 +35,7 @@ Aladin Lite 3.8's `setSliceNumber` maps a slice to the wrong cube frame for this
 
 To make that instant, the ruler **preloads ten wavelengths**, evenly spaced from the shortest up to band 5, once the map has been still for about 1.5 s, and shows "Preloading wavelengths n/10" until "10 wavelengths ready". It fetches each one's tiles for the current view into the browser cache (`tileWatch.ts` records which tiles Aladin asked for, since Aladin reports no loaded signal, and fetches the same tiles for the other wavelengths). The scan cycles through those ten (`scanSampleCount` in `spherexSurvey.ts`), not all 99, and stops at the end of band 5 (4.405 µm): the map drew white for band 6 even with every tile cached, so the scan leaves it out. The ruler still sets any wavelength. The **Speed** control beside the button sets how long each wavelength stays up: 0.5× to 8× of a 250 ms base step (500 ms down to about 31 ms), 2× at first; changing it does not restart a running scan. The scan only steps through wavelengths that are already loaded, so it never waits and never shows an unloaded tile; pressing it early scans what is ready so far. Panning or zooming restarts the preload for the new view (tiles already fetched stay cached). IRSA's tile server serves roughly one wavelength a second, so a first preload takes about ten seconds and about 12 MB at the full-globe view (about 11 tiles of 100 KB per wavelength; zoomed-in views need fewer tiles). Slices 0, 50 and 51 have no tiles and are skipped. A background tab pauses the preload and scan.
 
-Pan and zoom, then select **Compare this field**. The button turns amber once the map is under 10° wide. If the view fits the service's limits (1–30 arcmin for SPHEREx, 1–12 for WISE) that view is compared; from a wider view the largest allowed field at the map centre is compared, and a dashed box marks it. Once a comparison is requested, its field stays outlined at its sky position while it builds, however you move the map, and **Cancel build** in the panel stops it (the service stops too). While a comparison builds, the panel shows a progress bar: measured steps for WISE, elapsed time for SPHEREx, whose archive does not report progress. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
+Pan and zoom, then select **Compare this field**. The button turns amber once the map is under 10° wide. Views up to six arcminutes are compared directly; wider views use the central six arcminutes, marked by a dashed box. Advanced search retains the larger service limits. Once a comparison is requested, its field stays outlined at its sky position while it builds, however you move the map, and **Cancel build** in the panel stops it (the service stops too). While a comparison builds, the panel shows a progress bar: measured service steps and elapsed time for both surveys. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
 The ☰ **More map options** menu holds **All-sky view** / **Globe view** (360° Hammer–Aitoff overview), **Inspect map center**, and **Advanced search**.
 
@@ -439,3 +439,29 @@ services/catalogs/.venv/bin/python -m pytest services/catalogs/tests/test_neossa
 node --experimental-strip-types --test web/src/viewer/neossat.test.mjs
 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node web/src/viewer/neossat.browser.mjs
 ```
+
+## Faster blink and DSS reference mode (2026-11-15)
+
+**Compare this field** now outlines and requests at most the central six arcminutes;
+Advanced search still supports the full service limits. SPHEREx requests use measured
+progress and server cancellation. WISE initially builds two endpoint visits and offers
+**Load longer time-lapse** as a separate action. Previously built fields are labelled
+as saved results, with **Check archive again** to request a fresh build.
+
+DSS is reference-only. It hides Time, comparison controls, dated overlays and the
+spectral/WISE dock, and pauses playback. Coordinate/name searches in DSS navigate the
+map without starting an archive build. Switching back restores a previous comparison
+paused; opening saved evidence selects its survey. Pending builds are cancelled when
+DSS is selected.
+
+`blink.browser.mjs` checks this workflow with synthetic HTTP responses; it is not a
+live archive test. `scripts/verify_blink_live.py` checks the real archive routes and
+records each target, including outages. See `docs/verification/blink-latency.md`.
+
+Both survey views offer **Time → Open saved real example**. The WISE example uses
+real W2 visits in 2010 and 2024 and is included with its original cutouts and metadata.
+Its replay works without archive discovery, as does the existing SPHEREx example.
+`blink-demo.browser.mjs` verifies those flows through actual local HTTP backends with
+external imagery blocked; it uses no mocked comparison responses. Fresh WISE fields
+now use a compact unWISE input-exposure index to locate original single exposures,
+with the original database query as fallback. Details are in `services/wise/README.md`.

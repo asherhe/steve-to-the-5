@@ -1,0 +1,462 @@
+{
+  "kind": "live_local_route_check",
+  "deployed": false,
+  "startedAtUtc": "2026-11-15T15:57:52.681764+00:00",
+  "targets": [
+    {
+      "target": "Barnard's Star",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:58:01.863166+00:00",
+      "field": {
+        "ra": 269.4520833333333,
+        "dec": 4.693333333333333,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; high proper motion means this is not the predicted SPHEREx-epoch position. Six-arcminute inspection field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 8.685,
+      "comparisonId": "84c0b32485f082f63140c71589aa87b2a73df673faad095cc1e1c369cb28ec50",
+      "frames": [
+        {
+          "observedAtUtc": "2010-03-20T13:37:42.120336Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/allsky/4band_p1bm_frm/3b/02893b/107/02893b107-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-03-19T15:11:53.212128Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/8r/60058r/092/60058r092-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 111,
+          "byDataset": {
+            "allsky_4band": 5,
+            "cryo_3band": 4,
+            "neowiser": 102
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-03-20T06:28:59.462688Z",
+            "end": "2024-03-19T22:09:08.273088Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/268/2688p045/unwise-2688p045-w2-frames.fits",
+              "sha256": "0cf72de73ab0bb27416aab9b5d729498a30af546da17fa511de3b889e5eaca44",
+              "asset": "0cf72de73ab0bb27416aab9b5d729498a30af546da17fa511de3b889e5eaca44.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 23,
+          "sampled": 2,
+          "exposuresRequested": 6,
+          "exposuresNotRequested": 105
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "RW Aurigae",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:58:08.480102+00:00",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 6.615,
+      "comparisonId": "a9e70d5ed72065dea9eaa2ab89f8752c0b15d6561298b3492c63273158f4972e",
+      "frames": [
+        {
+          "observedAtUtc": "2010-03-04T10:20:13.466688Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/allsky/4band_p1bm_frm/5a/02415a/097/02415a097-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-02-14T18:38:02.113872Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/1r/59011r/148/59011r148-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 79,
+          "byDataset": {
+            "allsky_4band": 1,
+            "cryo_3band": 3,
+            "neowiser": 75
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-03-04T10:20:13.466688Z",
+            "end": "2024-02-14T21:43:36.148800Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/076/0765p302/unwise-0765p302-w2-frames.fits",
+              "sha256": "6b283f3ec2597acf74beaaa670aef469d2ec0e5965ab904725112d82e03c4dc1",
+              "asset": "6b283f3ec2597acf74beaaa670aef469d2ec0e5965ab904725112d82e03c4dc1.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 22,
+          "sampled": 2,
+          "exposuresRequested": 4,
+          "exposuresNotRequested": 75
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 4,
+          "succeededCutouts": 4,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "Epsilon Indi B",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:58:15.285731+00:00",
+      "field": {
+        "ra": 331.04375,
+        "dec": -56.782777777777774,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 brown-dwarf finding position; not the primary star position or epoch-propagated astrometry.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 6.805,
+      "comparisonId": "c276df9e432274666430595d59ca6fd7e2646b387d82dda201d518dd05869de6",
+      "frames": [
+        {
+          "observedAtUtc": "2010-04-29T20:05:57.763968Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/allsky/4band_p1bm_frm/2a/04112a/194/04112a194-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-04-28T16:18:48.106944Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/2r/61302r/201/61302r201-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 91,
+          "byDataset": {
+            "allsky_4band": 4,
+            "neowiser": 82,
+            "postcryo_2band": 5
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-04-29T13:44:55.582656Z",
+            "end": "2024-04-29T00:47:16.654560Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/330/3306m561/unwise-3306m561-w2-frames.fits",
+              "sha256": "f253f803fdce8c585b1a4ea85197c878b9257a5e98790c4163fd8bd2a030328f",
+              "asset": "f253f803fdce8c585b1a4ea85197c878b9257a5e98790c4163fd8bd2a030328f.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 23,
+          "sampled": 2,
+          "exposuresRequested": 6,
+          "exposuresNotRequested": 85
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "WISE 0855",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:58:22.519559+00:00",
+      "field": {
+        "ra": 133.79512916666664,
+        "dec": -7.245147222222222,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Coordinates supplied by the NASA challenge; epoch unspecified; not propagated.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 7.231,
+      "comparisonId": "69b16206d33440bb0cda45fc473b46d926c7cddd0e586aea646a0059712eed9a",
+      "frames": [
+        {
+          "observedAtUtc": "2010-05-04T05:23:46.501728Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/allsky/4band_p1bm_frm/6a/04246a/115/04246a115-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-04-16T13:34:28.515648Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/9r/60879r/099/60879r099-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 119,
+          "byDataset": {
+            "allsky_4band": 4,
+            "neowiser": 110,
+            "postcryo_2band": 5
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-05-04T00:37:59.877408Z",
+            "end": "2024-04-18T09:30:49.753152Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/134/1342m076/unwise-1342m076-w2-frames.fits",
+              "sha256": "02c38e49a1e7e28a457607f0c7e7c8b4546e470a67dd056abbcafb9bacac5445",
+              "asset": "02c38e49a1e7e28a457607f0c7e7c8b4546e470a67dd056abbcafb9bacac5445.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 23,
+          "sampled": 2,
+          "exposuresRequested": 6,
+          "exposuresNotRequested": 113
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "R Draconis",
+      "survey": "wise",
+      "checkedAtUtc": "2026-11-15T15:58:35.655972+00:00",
+      "field": {
+        "ra": 248.16750000000002,
+        "dec": 66.75472222222223,
+        "fovArcmin": 6,
+        "refresh": true,
+        "band": 2,
+        "mode": "blink"
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 13.139,
+      "comparisonId": "fdaf0aa93b6e56e07ee5b0d4eddd9c5454643511e102c463657512514e61adb7",
+      "frames": [
+        {
+          "observedAtUtc": "2010-06-03T09:49:07.224096Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/allsky/4band_p1bm_frm/2a/05142a/281/05142a281-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        },
+        {
+          "observedAtUtc": "2024-05-17T03:47:02.864688Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/wise/neowiser/p1bm_frm/9r/61799r/264/61799r264-w2-int-1b.fits",
+          "wavelengthUm": 4.6028
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 1,
+        "complete": false,
+        "incompleteStages": [
+          "index_candidate_subset"
+        ],
+        "coverageThresholds": {
+          "minValidCoverage": 0.8,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "unwise_neo11_nearest_tile_central_exposure_subset",
+          "band": "W2",
+          "totalExposures": 306,
+          "byDataset": {
+            "allsky_4band": 12,
+            "neowiser": 290,
+            "postcryo_2band": 4
+          },
+          "rejectedByFrameQuality": 0,
+          "observedTimeRangeUtc": {
+            "start": "2010-06-02T16:21:16.540416Z",
+            "end": "2024-05-20T00:59:28.980960Z"
+          },
+          "failedDatasetQueries": [],
+          "complete": false,
+          "metadataSources": [
+            {
+              "url": "https://unwise.me/data/allwise/unwise-coadds/fulldepth/tiles.fits",
+              "sha256": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f",
+              "asset": "dcc8d57d9f40ff27ce141e101631b19c9870c694ce1e816e9edc1059e66d089f.fits"
+            },
+            {
+              "url": "https://unwise.me/data/neo11/unwise-coadds/fulldepth/248/2486p666/unwise-2486p666-w2-frames.fits",
+              "sha256": "435818235fe3d383f8d4092d43ed8498693a84ac9dc33ce10d4bd5cb42d2366b",
+              "asset": "435818235fe3d383f8d4092d43ed8498693a84ac9dc33ce10d4bd5cb42d2366b.fits"
+            }
+          ]
+        },
+        "epochs": {
+          "discovered": 23,
+          "sampled": 2,
+          "exposuresRequested": 6,
+          "exposuresNotRequested": 300
+        },
+        "selectionScope": "bounded_visit_sample",
+        "retrieval": {
+          "cutoutSizeDeg": 0.152631,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": []
+        },
+        "invalidCutouts": [],
+        "rejectedEpochs": [],
+        "usableEpochCount": 2
+      },
+      "visibleChange": "not_assessed"
+    }
+  ]
+}

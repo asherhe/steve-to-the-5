@@ -200,10 +200,10 @@ def test_only_a_few_evenly_spaced_visits_are_built(tmp_path):
     assert frames[0].observation_id.startswith(items[0][0].exposure_id)
     assert frames[-1].observation_id.endswith(items[-1][0].exposure_id)
     assert response.diagnostics["epochs"] == {"discovered": 10, "sampled": 6, "exposuresRequested": 18,
-                                              "exposuresNotRequested": 12}
+                                              "exposuresNotRequested": 12, "tooFewExposures": 0}
     # Choosing a few visits is the design, not a failed search.
     assert response.diagnostics["complete"] is True
-    assert any(text.startswith("6 of the 10 visits found are used") for text in response.comparison.limitations)
+    assert any(text.startswith("6 of the 10 visits found are sampled") for text in response.comparison.limitations)
 
 
 def test_progress_runs_through_every_stage_and_never_goes_back(tmp_path):
@@ -281,7 +281,7 @@ def test_progress_route_reports_a_running_build_only(tmp_path):
     body = client.get("/api/wise/comparisons", params={**params, "progressId": "progress-test-1"}).json()
     assert body["status"] == "ready"
     state = polled[0].json()
-    assert polled[0].status_code == 200 and state["stage"] == "retrieval" and state["done"] == state["total"] == 9
+    assert polled[0].status_code == 200 and state["stage"] == "retrieval" and state["done"] == state["total"] == 6
     assert 0.45 < state["fraction"] <= 0.85 and state["elapsedSeconds"] >= 0
     # Finished builds leave nothing behind.
     assert client.get("/api/wise/comparisons/progress/progress-test-1").status_code == 404

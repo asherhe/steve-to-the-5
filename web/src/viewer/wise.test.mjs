@@ -35,6 +35,16 @@ test("saved replay uses the WISE evidence store, never the SPHEREx one", async (
   assert.equal(await client(2, { code: "NOT_FOUND", message: "Unknown comparison ID" }, 404).source.loadSaved("missing"), null);
 });
 
+test("a longer time-lapse is an explicit search and never changes saved replay", async () => {
+  const {source,calls}=client(2);
+  await source.search(field,undefined,undefined,{mode:"timeline",refresh:true});
+  const url=new URL(calls[0].path,"http://viewer.test");
+  assert.equal(url.searchParams.get("mode"),"timeline");
+  assert.equal(url.searchParams.get("refresh"),"true");
+  await source.loadSaved(ready.comparison.id);
+  assert.equal(calls[1].path,`/api/wise/comparisons/${ready.comparison.id}`);
+});
+
 test("fields wider than the WISE limit never issue a request", async () => {
   const { source, calls } = client(2);
   assert.deepEqual(wiseFieldLimits, { min: 1, max: 12 });
@@ -84,10 +94,10 @@ test("a compare from the map uses the view when it fits and its centre when it i
   assert.equal(fieldWidthFromView(0.5 / 60, wiseFieldLimits), 1);
   // Inside the limits the view itself is the field.
   assert.equal(fieldWidthFromView(6 / 60, wiseFieldLimits), 6);
-  // Wider views compare the largest allowed field at the same centre.
-  assert.equal(fieldWidthFromView(2, wiseFieldLimits), 12);
-  assert.equal(fieldWidthFromView(2, archiveFieldLimits), 30);
-  assert.equal(fieldWidthFromView(compareReachDeg, wiseFieldLimits), 12);
+  // Wider views use the central six arcminutes; larger fields are an explicit advanced request.
+  assert.equal(fieldWidthFromView(2, wiseFieldLimits), 6);
+  assert.equal(fieldWidthFromView(2, archiveFieldLimits), 6);
+  assert.equal(fieldWidthFromView(compareReachDeg, wiseFieldLimits), 6);
   // Beyond the reach, and for unusable values, no compare is offered.
   for (const width of [compareReachDeg + 0.01, 180, 360, 0, -1, NaN]) {
     assert.equal(fieldWidthFromView(width, wiseFieldLimits), null);

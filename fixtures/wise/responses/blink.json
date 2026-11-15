@@ -1,0 +1,367 @@
+{
+  "status": "ready",
+  "comparison": {
+    "id": "b7f7697bfd0a179aad6c076ef00e19d4af1b2772c79cd680ca1c3fd3ec38e6a8",
+    "field": {
+      "ra": 150.0,
+      "dec": 20.0,
+      "fovArcmin": 4.0
+    },
+    "wavelengthRangeUm": [
+      4.08165,
+      5.123950000000001
+    ],
+    "stretch": {
+      "type": "asinh",
+      "lower": -0.7946116768961007,
+      "upper": 179.80819505060003,
+      "softening": 0.25,
+      "unit": "DN"
+    },
+    "grid": {
+      "width": 88,
+      "height": 88,
+      "pixelScaleArcsec": 2.75,
+      "projection": "TAN",
+      "coordinateFrame": "ICRS",
+      "rowOrigin": "top",
+      "fitsHeader": {
+        "WCSAXES": 2,
+        "CRPIX1": 44.5,
+        "CRPIX2": 44.5,
+        "CDELT1": -0.00076388888888889,
+        "CDELT2": 0.00076388888888889,
+        "CUNIT1": "deg",
+        "CUNIT2": "deg",
+        "CTYPE1": "RA---TAN",
+        "CTYPE2": "DEC--TAN",
+        "CRVAL1": 150.0,
+        "CRVAL2": 20.0,
+        "LONPOLE": 180.0,
+        "LATPOLE": 20.0,
+        "MJDREF": 0.0,
+        "RADESYS": "ICRS"
+      }
+    },
+    "frames": [
+      {
+        "id": "5fe1c859feaa15070e57f345af6991e24aa4916cda02e852f85bb541b3c32a42",
+        "observationId": "10000r000-w2..10004r004-w2",
+        "observedAtUtc": "2014-12-09T04:00:00Z",
+        "observationStartUtc": "2014-12-09T00:00:00Z",
+        "observationEndUtc": "2014-12-09T08:00:00Z",
+        "wavelengthUm": 4.6028,
+        "bandwidthUm": 1.0423,
+        "release": "neowise-r",
+        "imageUrl": "/api/wise/comparisons/b7f7697bfd0a179aad6c076ef00e19d4af1b2772c79cd680ca1c3fd3ec38e6a8/assets/5fe1c859feaa15070e57f345af6991e24aa4916cda02e852f85bb541b3c32a42.png",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10000r000-w2-int-1b.fits",
+        "sourceSha256": "4e087c2e4001815c61d4c0afdb901fa36368644e5b6ecc75956a20a57a7aff5a",
+        "processingVersion": "synthetic-v1",
+        "validFraction": 1.0,
+        "qualityFlags": {
+          "combinedExposures": 3,
+          "exposuresAvailableInEpoch": 5,
+          "invalidOutputPixels": 0
+        },
+        "alignment": "reference_frame",
+        "detector": null,
+        "coverage": {
+          "outputPixels": 7744,
+          "geometricFraction": 1.0,
+          "validFraction": 1.0,
+          "minExposuresPerValidPixel": 3,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionPixels": 80,
+          "targetRegionValidFraction": 1.0
+        }
+      },
+      {
+        "id": "3e12a0156a28f92af0368213ab495bb6372fc31621ae26d8b0005a375611539f",
+        "observationId": "10100r100-w2..10104r104-w2",
+        "observedAtUtc": "2017-06-09T04:00:00Z",
+        "observationStartUtc": "2017-06-09T00:00:00Z",
+        "observationEndUtc": "2017-06-09T08:00:00Z",
+        "wavelengthUm": 4.6028,
+        "bandwidthUm": 1.0423,
+        "release": "neowise-r",
+        "imageUrl": "/api/wise/comparisons/b7f7697bfd0a179aad6c076ef00e19d4af1b2772c79cd680ca1c3fd3ec38e6a8/assets/3e12a0156a28f92af0368213ab495bb6372fc31621ae26d8b0005a375611539f.png",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10100r100-w2-int-1b.fits",
+        "sourceSha256": "c3562a1494aff680d4c5cc47ccc3eadfce1a9d7ff2150d6e217f0e1a40398ffa",
+        "processingVersion": "synthetic-v1",
+        "validFraction": 1.0,
+        "qualityFlags": {
+          "combinedExposures": 3,
+          "exposuresAvailableInEpoch": 5,
+          "invalidOutputPixels": 0
+        },
+        "alignment": "verified",
+        "detector": null,
+        "coverage": {
+          "outputPixels": 7744,
+          "geometricFraction": 1.0,
+          "validFraction": 1.0,
+          "minExposuresPerValidPixel": 3,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionPixels": 80,
+          "targetRegionValidFraction": 1.0
+        }
+      }
+    ],
+    "config": {
+      "indexRelease": "unwise-neo11",
+      "indexCenterRadiusDeg": 0.25,
+      "pixelScaleArcsec": 2.75,
+      "epochGapDays": 10.0,
+      "maxEpochSpanDays": 15.0,
+      "maxEpochs": 2,
+      "exposuresPerEpoch": 3,
+      "minExposuresPerEpoch": 2,
+      "minPixelExposures": 2,
+      "minQualFrame": 1,
+      "minValidCoverage": 0.8,
+      "targetRegionRadiusPixels": 5.0,
+      "maxCandidates": 20000,
+      "maxDownloadBytes": 20000000,
+      "timeoutSeconds": 30.0,
+      "searchTimeoutSeconds": 100.0,
+      "attempts": 3,
+      "backoffBaseSeconds": 0.5,
+      "backoffMaxSeconds": 8.0,
+      "buildDeadlineSeconds": 360.0,
+      "concurrency": 3,
+      "lowerPercentile": 3.0,
+      "upperPercentile": 99.7,
+      "asinhSoftening": 0.25,
+      "cutoutPaddingArcsec": 20.0,
+      "epochPolicy": "split_on_gap_or_max_span",
+      "epochEligibilityPolicy": "at_least_min_exposures_per_epoch",
+      "epochSamplingPolicy": "evenly_spaced_including_first_and_last",
+      "exposureSelectionPolicy": "evenly_spaced_in_time_within_epoch",
+      "combinePolicy": "per_pixel_median_of_background_subtracted_exposures",
+      "backgroundPolicy": "subtract_per_exposure_median_of_finite_cutout_pixels",
+      "maskPolicy": "finite_pixels_only_no_bitmask_no_uncertainty",
+      "photometricPolicy": "native_dn_no_zero_point_scaling",
+      "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+      "timestampPolicy": "midpoint_of_first_and_last_contributing_mid_exposure_times",
+      "resampling": "bilinear_with_full_geometric_support",
+      "band": "W2"
+    },
+    "provenance": {
+      "schemaVersion": 1,
+      "survey": "WISE/NEOWISE single-exposure (Level 1b) images",
+      "implementation": {
+        "sourceSha256": "22eb03d14bd937e7e2c8999731680f9d8150bd005dce2f612fd7dee15b77823e",
+        "python": "3.12.10",
+        "packages": {
+          "numpy": "2.5.4",
+          "astropy": "8.0.2",
+          "reproject": "0.21.0",
+          "pillow": "13.0.0"
+        }
+      },
+      "evidenceKind": "synthetic_fixture",
+      "discoveryScope": "synthetic_exposures",
+      "inputs": [
+        {
+          "frameSourceSha256": "4e087c2e4001815c61d4c0afdb901fa36368644e5b6ecc75956a20a57a7aff5a",
+          "exposures": [
+            {
+              "exposure": {
+                "exposureId": "10000r000-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10000r",
+                "scangrp": "0r",
+                "frameNum": 0,
+                "mjdObs": 57000.0,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10000r000-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "656164cbd95b03bd9953ad55e29c669bd94d47f6ef882cb74aae334d35998b5a",
+              "observedAtUtc": "2014-12-09T00:00:00Z",
+              "backgroundDn": 40.020233154296875,
+              "processingVersion": "synthetic-v1"
+            },
+            {
+              "exposure": {
+                "exposureId": "10002r002-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10002r",
+                "scangrp": "0r",
+                "frameNum": 2,
+                "mjdObs": 57000.166666666664,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10002r002-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "53786b48de4e99f18750f681edda9ead654f109eafd3921216275928b445f20d",
+              "observedAtUtc": "2014-12-09T04:00:00Z",
+              "backgroundDn": 40.035709381103516,
+              "processingVersion": "synthetic-v1"
+            },
+            {
+              "exposure": {
+                "exposureId": "10004r004-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10004r",
+                "scangrp": "0r",
+                "frameNum": 4,
+                "mjdObs": 57000.333333333336,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10004r004-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "06fd4c44ffb560095a7d5e1b22d922969fcc617660501d3dcd8890983c590544",
+              "observedAtUtc": "2014-12-09T08:00:00Z",
+              "backgroundDn": 40.034236907958984,
+              "processingVersion": "synthetic-v1"
+            }
+          ]
+        },
+        {
+          "frameSourceSha256": "c3562a1494aff680d4c5cc47ccc3eadfce1a9d7ff2150d6e217f0e1a40398ffa",
+          "exposures": [
+            {
+              "exposure": {
+                "exposureId": "10100r100-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10100r",
+                "scangrp": "0r",
+                "frameNum": 100,
+                "mjdObs": 57913.0,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10100r100-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "72a88e0668c67ce9a8885ede81a354b0efc3f2dabcbcd59c13c9e990168b1c75",
+              "observedAtUtc": "2017-06-09T00:00:00Z",
+              "backgroundDn": 40.0357780456543,
+              "processingVersion": "synthetic-v1"
+            },
+            {
+              "exposure": {
+                "exposureId": "10102r102-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10102r",
+                "scangrp": "0r",
+                "frameNum": 102,
+                "mjdObs": 57913.166666666664,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10102r102-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "6814a2eb17e44e426dc7bed2326862bd6566d8c9256ff82bcabc55d0f957ed00",
+              "observedAtUtc": "2017-06-09T04:00:00Z",
+              "backgroundDn": 40.00351333618164,
+              "processingVersion": "synthetic-v1"
+            },
+            {
+              "exposure": {
+                "exposureId": "10104r104-w2",
+                "dataset": "neowiser",
+                "release": "neowise-r",
+                "band": 2,
+                "scanId": "10104r",
+                "scangrp": "0r",
+                "frameNum": 104,
+                "mjdObs": 57913.333333333336,
+                "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/synthetic/10104r104-w2-int-1b.fits",
+                "magzp": 19.6,
+                "qualFrame": 10
+              },
+              "sourceSha256": "21e54d1569001877fd2a25ed1f95fe5527a847d80133de31e92f56e055c686dc",
+              "observedAtUtc": "2017-06-09T08:00:00Z",
+              "backgroundDn": 40.0165901184082,
+              "processingVersion": "synthetic-v1"
+            }
+          ]
+        }
+      ],
+      "acknowledgement": "This publication makes use of data products from the Wide-field Infrared Survey Explorer, which is a joint project of the University of California, Los Angeles, and the Jet Propulsion Laboratory/California Institute of Technology, funded by the National Aeronautics and Space Administration, and from NEOWISE, which is a project of the Jet Propulsion Laboratory/California Institute of Technology, funded by the Planetary Science Division of the National Aeronautics and Space Administration.",
+      "releaseDocumentation": "https://irsa.ipac.caltech.edu/Missions/wise.html",
+      "timestampPolicy": "midpoint_of_first_and_last_contributing_mid_exposure_times",
+      "alignmentChecks": {
+        "4e087c2e4001815c61d4c0afdb901fa36368644e5b6ecc75956a20a57a7aff5a": {
+          "status": "reference_frame"
+        },
+        "c3562a1494aff680d4c5cc47ccc3eadfce1a9d7ff2150d6e217f0e1a40398ffa": {
+          "status": "verified",
+          "matchedSources": 4,
+          "medianResidualPixels": 0.001674001418716816,
+          "acceptancePixels": 0.5
+        }
+      }
+    },
+    "limitations": [
+      "Quick-look visualization, not a significant motion or variability measurement.",
+      "Each frame is the per-pixel median of up to 3 single exposures from one visit; the displayed time is the midpoint of the first and last exposure used. Changes within a visit are averaged away.",
+      "Each exposure has its own median level subtracted, which removes background differences between visits and also any uniform extended emission. Values are raw DN without zero-point scaling; this is not photometry.",
+      "No bad-pixel bitmask or uncertainty image is applied. The median rejects isolated artefacts, but diffraction spikes, latents, scattered moonlight and saturated cores remain.",
+      "2 of the 6 visits found are sampled, evenly spaced through the eligible visits and including their first and last. Each requires the configured minimum exposure count. The others were not downloaded, so short-lived changes between frames are not shown.",
+      "Alignment is WCS reprojection only; the stationary-source check labels frames and applies no correction.",
+      "W2 is a broad filter (4.60 \u00b5m, 1.04 \u00b5m wide). It is not comparable with a SPHEREx spectral channel.",
+      "PNG rows are flipped relative to FITS: fitsY=height-1-pngY (zero-based)."
+    ],
+    "coverage": {
+      "outputPixels": 7744,
+      "allFramesCommonValidFraction": 1.0,
+      "minPairwiseCommonValidFraction": 1.0,
+      "targetRegionRadiusPixels": 5.0,
+      "targetRegionPixels": 80,
+      "targetRegionCommonValidFraction": 1.0
+    }
+  },
+  "diagnostics": {
+    "schemaVersion": 1,
+    "complete": true,
+    "incompleteStages": [],
+    "coverageThresholds": {
+      "minValidCoverage": 0.8,
+      "denominator": "all_output_grid_pixels"
+    },
+    "discovery": {
+      "scope": "synthetic_exposures",
+      "band": "W2",
+      "totalExposures": 30,
+      "byDataset": {
+        "neowiser": 30
+      },
+      "rejectedByFrameQuality": 0,
+      "observedTimeRangeUtc": {
+        "start": "2014-12-09T00:00:00Z",
+        "end": "2017-06-09T08:00:00Z"
+      },
+      "failedDatasetQueries": [],
+      "complete": true
+    },
+    "epochs": {
+      "discovered": 6,
+      "sampled": 2,
+      "tooFewExposures": 0,
+      "exposuresRequested": 6,
+      "exposuresNotRequested": 24
+    },
+    "selectionScope": "bounded_visit_sample",
+    "retrieval": {
+      "cutoutSizeDeg": 0.106178,
+      "requestedCutouts": 6,
+      "succeededCutouts": 6,
+      "failedCutouts": 0,
+      "failureCategories": {},
+      "failures": []
+    },
+    "invalidCutouts": [],
+    "rejectedEpochs": [],
+    "usableEpochCount": 2
+  }
+}

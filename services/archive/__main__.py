@@ -157,7 +157,7 @@ def main():
     store = LocalStore(args.storage / "evidence", examples=examples)
     if args.synthetic and args.recorded:
         parser.error("Choose either synthetic or recorded inputs")
-    client = RecordedClient(args.recorded) if args.recorded else (FixtureClient() if args.synthetic else IRSAClient(config, args.storage / "cache", search_attempts=6, cutout_attempts=5))
+    client = RecordedClient(args.recorded) if args.recorded else (FixtureClient() if args.synthetic else IRSAClient(config, args.storage / "cache"))
     pipeline = Pipeline(client, store, config)
     if args.command == "serve":
         import uvicorn

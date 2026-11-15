@@ -1,0 +1,318 @@
+{
+  "kind": "live_local_route_check",
+  "deployed": false,
+  "startedAtUtc": "2026-11-15T15:45:48.403716+00:00",
+  "targets": [
+    {
+      "target": "RW Aurigae",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:46:23.783738+00:00",
+      "field": {
+        "ra": 76.95666666666665,
+        "dec": 30.40138888888889,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 35.048,
+      "comparisonId": "68aad03046be9ce761a3a71ecb6dcc946d3edbd1ec5f69b6f170b8d3cded6aab",
+      "frames": [
+        {
+          "observedAtUtc": "2025-09-03T23:54:29.520000Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W36_1A/l2b-v27-2026-232/4/level2_2025W36_1A_0663_1D4_spx_l2b-v27-2026-232.fits",
+          "wavelengthUm": 3.2818464517665333
+        },
+        {
+          "observedAtUtc": "2026-09-09T21:43:11.438399Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W37_1A/l2b-v27-2026-255/4/level2_2026W37_1A_0524_1D4_spx_l2b-v27-2026-255.fits",
+          "wavelengthUm": 3.289245161714508
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 357,
+          "byRelease": {
+            "dr1": 237,
+            "qr3": 120
+          },
+          "byDetector": {
+            "D1": 63,
+            "D2": 57,
+            "D3": 57,
+            "D4": 61,
+            "D5": 61,
+            "D6": 58
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 43,
+            "dr1:D2": 38,
+            "dr1:D3": 38,
+            "dr1:D4": 42,
+            "dr1:D5": 38,
+            "dr1:D6": 38,
+            "qr3:D1": 20,
+            "qr3:D2": 19,
+            "qr3:D3": 19,
+            "qr3:D4": 19,
+            "qr3:D5": 23,
+            "qr3:D6": 20
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-09-01T10:04:17.500800Z",
+              "end": "2026-03-12T00:04:55.401600Z"
+            },
+            "qr3": {
+              "start": "2026-09-02T02:19:55.401600Z",
+              "end": "2026-09-16T21:32:00.585600Z"
+            }
+          },
+          "failedReleaseQueries": [],
+          "complete": true
+        },
+        "discoveredExposureCount": 357,
+        "candidateOrderPolicy": "footprint_similarity_then_time_detector",
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 351
+        },
+        "invalidCutouts": [],
+        "rejectedObservations": [],
+        "pairChecks": {
+          "different_detector": 12,
+          "compatible": 1,
+          "insufficient_common_coverage": 1,
+          "wavelength_mismatch": 1
+        },
+        "usableExposureCount": 6,
+        "alignmentFailures": [],
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 1,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W36_1A_0663_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W37_1A_0524_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W38_1A_0254_3",
+            "detector": 5
+          }
+        ],
+        "preparedExposureCount": 6,
+        "processedExposureCount": 6,
+        "selectionScope": "bounded_footprint_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W36_1A_0663_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2026W37_1A_0524_1",
+            "detector": 4
+          },
+          {
+            "observationId": "2025W36_1A_0663_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2026W37_1A_0524_1",
+            "detector": 1
+          },
+          {
+            "observationId": "2025W37_1A_0068_1",
+            "detector": 5
+          },
+          {
+            "observationId": "2026W38_1A_0254_3",
+            "detector": 5
+          }
+        ]
+      },
+      "visibleChange": "not_assessed"
+    },
+    {
+      "target": "R Draconis",
+      "survey": "spherex",
+      "checkedAtUtc": "2026-11-15T15:47:01.603196+00:00",
+      "field": {
+        "ra": 248.16750000000002,
+        "dec": 66.75472222222223,
+        "fovArcmin": 6,
+        "refresh": true
+      },
+      "coordinateProvenance": "Approximate J2000 finding position; verify source identification in the displayed field.",
+      "httpStatus": 200,
+      "status": "ready",
+      "code": null,
+      "message": null,
+      "elapsedSeconds": 37.818,
+      "comparisonId": "2e5318723d6b167c47e58cf552bf3abbe035c44cc553cbbea1d8191453f639af",
+      "frames": [
+        {
+          "observedAtUtc": "2025-05-20T16:40:34.089600Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W21_1B/l2b-v27-2026-199/3/level2_2025W21_1B_0329_2D3_spx_l2b-v27-2026-199.fits",
+          "wavelengthUm": 1.8549326853476424
+        },
+        {
+          "observedAtUtc": "2026-05-10T19:13:47.827200Z",
+          "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2026W19_2A/l2b-v27-2026-245/3/level2_2026W19_2A_1286_1D3_spx_l2b-v27-2026-245.fits",
+          "wavelengthUm": 1.854716116667407
+        }
+      ],
+      "diagnostics": {
+        "schemaVersion": 2,
+        "complete": false,
+        "incompleteStages": [
+          "discovery",
+          "sampling"
+        ],
+        "coverageThresholds": {
+          "minGeometricCoverage": 0.98,
+          "minValidCoverage": 0.8,
+          "minCommonValidCoverage": 0.75,
+          "denominator": "all_output_grid_pixels"
+        },
+        "discovery": {
+          "scope": "wide_survey_dr1_qr3",
+          "totalExposures": 456,
+          "byRelease": {
+            "dr1": 456
+          },
+          "byDetector": {
+            "D1": 69,
+            "D2": 78,
+            "D3": 83,
+            "D4": 69,
+            "D5": 75,
+            "D6": 82
+          },
+          "byReleaseDetector": {
+            "dr1:D1": 69,
+            "dr1:D2": 78,
+            "dr1:D3": 83,
+            "dr1:D4": 69,
+            "dr1:D5": 75,
+            "dr1:D6": 82
+          },
+          "observedTimeRangeUtc": {
+            "dr1": {
+              "start": "2025-05-16T22:56:23.625600Z",
+              "end": "2026-05-13T05:57:52.041600Z"
+            }
+          },
+          "failedReleaseQueries": [
+            {
+              "release": "qr3",
+              "category": "transient_http",
+              "code": "UPSTREAM_ERROR",
+              "attempts": 3,
+              "httpStatus": 502
+            }
+          ],
+          "complete": false
+        },
+        "discoveredExposureCount": 456,
+        "candidateOrderPolicy": "footprint_similarity_then_time_detector",
+        "retrieval": {
+          "cutoutSizeDeg": 0.154811,
+          "requestedCutouts": 6,
+          "succeededCutouts": 6,
+          "failedCutouts": 0,
+          "failureCategories": {},
+          "failures": [],
+          "notRequestedExposureCount": 450
+        },
+        "invalidCutouts": [],
+        "rejectedObservations": [],
+        "pairChecks": {
+          "wavelength_mismatch": 4,
+          "different_detector": 8,
+          "compatible": 3
+        },
+        "usableExposureCount": 6,
+        "alignmentFailures": [],
+        "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+        "candidatePairCount": 3,
+        "candidatePairsTried": 1,
+        "notSelectedExposures": [
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W19_1A_0842_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W19_2A_1286_1",
+            "detector": 6
+          }
+        ],
+        "preparedExposureCount": 6,
+        "processedExposureCount": 6,
+        "selectionScope": "bounded_footprint_time_detector_sample",
+        "sampledExposures": [
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W19_2A_1286_1",
+            "detector": 3
+          },
+          {
+            "observationId": "2025W21_1B_0329_2",
+            "detector": 6
+          },
+          {
+            "observationId": "2026W19_2A_1286_1",
+            "detector": 6
+          },
+          {
+            "observationId": "2025W20_2D_0243_2",
+            "detector": 3
+          },
+          {
+            "observationId": "2026W19_1A_0842_2",
+            "detector": 3
+          }
+        ]
+      },
+      "visibleChange": "not_assessed"
+    }
+  ]
+}
