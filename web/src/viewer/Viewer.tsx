@@ -41,7 +41,7 @@ import { FloatingPane } from "./FloatingPane";
 import { NeossatPanel, useNeossat } from "./NeossatPanel";
 import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
-import { ComparisonPlayback } from "./ComparisonPlayback";
+import { FrameDetails } from "./FrameDetails";
 import { cutoutWcs } from "./cutoutWcs";
 import { SpectralRuler, bandColors } from "./SpectralRuler";
 import {
@@ -85,12 +85,12 @@ const badges: Record<ComparisonResult["status"], string> = {
 /** Wording that differs between the two survey views. */
 const surveys = {
   spherex: {
-    name: "SPHEREx", limits: archiveFieldLimits, panel: "Comparison", panelHeading: "Comparison",
+    name: "SPHEREx", limits: archiveFieldLimits,
     ready: "Matched pair", noCoverage: "No SPHEREx coverage",
     observations: "SPHEREx archive observations",
   },
   wise: {
-    name: "WISE", limits: wiseFieldLimits, panel: "Time-lapse", panelHeading: "WISE time-lapse",
+    name: "WISE", limits: wiseFieldLimits,
     ready: "Time-lapse", noCoverage: "No WISE coverage",
     observations: "WISE/NEOWISE single exposures from IRSA, combined per visit",
   },
@@ -175,7 +175,7 @@ export interface ViewerProps {
   synthetic?: boolean;
 }
 
-type Panel = "search" | "comparison";
+type Panel = "search";
 
 const narrowScreen = "(max-width: 42rem)";
 
@@ -226,7 +226,6 @@ export function Viewer({
 
   const [panels, setPanels] = useState<Record<Panel, boolean>>({
     search: false,
-    comparison: new URLSearchParams(location.search).has("finding"),
   });
   const [timeOpen, setTimeOpen] = useState(
     () =>
@@ -245,7 +244,6 @@ export function Viewer({
   const [reviewOpen, setReviewOpen] = useState(() => !!pointReviewFromUrl());
   const [reviewTarget, setReviewTarget] = useState<PointReviewInput | null>(pointReviewFromUrl);
   const [shownCheckSource, setShownCheckSource] = useState<CatalogSource | null>(null);
-  const [comparisonLarge, setComparisonLarge] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
   const [discussionOpen, setDiscussionOpen] = useState(true);
   const [layoutReset, setLayoutReset] = useState(0);
@@ -384,7 +382,6 @@ export function Viewer({
     setSkyView(view);
     loaders[view].setRequest({ kind: "saved", id: comparisonId ?? "", findingId });
     setTimeOpen(true); setDiscussionOpen(true);
-    openPanel("comparison");
     const url = new URL(evidenceLink(location.href, comparisonId, findingId));
     if (view === "wise") url.searchParams.set("view", "wise");
     else url.searchParams.delete("view");
@@ -459,7 +456,6 @@ export function Viewer({
     setCrossReferencePosition({ ra: view.ra, dec: view.dec });
     setRequest({ kind: "field", field: { ra: view.ra, dec: view.dec, fovArcmin } });
     setTimeOpen(true);
-    openPanel("comparison");
   }
 
   const comparison =
@@ -475,7 +471,7 @@ export function Viewer({
   }, [preview, savedExampleId]);
   const playback = usePlayback(
     comparison,
-    (timeOpen || panels.comparison) && preview.kind !== "loading",
+    timeOpen && preview.kind !== "loading",
   );
   const selection =
     frameSelection?.comparisonId === comparison?.id && frameSelection?.survey === skyView ? frameSelection : null;
@@ -609,8 +605,6 @@ export function Viewer({
     setMapNotice("Saved Barnard’s Star field: blink the two dates to see the star shift north against the fixed background stars.");
     setTimeOpen(true);
     setRequest({ kind: "saved", id: savedExampleId });
-    setComparisonLarge(false);
-    openPanel("comparison");
   }
 
   function comparisonLink(id: string | null | undefined, findingId?: string) {
@@ -637,7 +631,7 @@ export function Viewer({
   const finding = preview.kind === "saved" || preview.kind === "point" ? preview.finding : undefined;
   useEffect(() => {
     if (preview.kind !== "point") return;
-    setTimeOpen(false); setPanels(old => ({ ...old, comparison: false }));
+    setTimeOpen(false);
     setMarkedPoint(null); setDiscussionOpen(true);
   }, [preview]);
 
@@ -853,12 +847,11 @@ export function Viewer({
               aria-controls="time-window"
               onClick={() => setTimeOpen(!timeOpen)}
             >
-              Time
+              Blink
             </button>
             {(
               [
                 ["search", "Advanced"],
-                ["comparison", survey.panel],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -974,7 +967,7 @@ export function Viewer({
       </FloatingPane>
       <FloatingPane
         id="time-window"
-        title="Time"
+        title="Blink"
         anchor="time"
         badge={
           comparison
@@ -1013,6 +1006,38 @@ export function Viewer({
             <small>
               Requested target · name resolved, image detection not established.
             </small>
+            {target.identity && (
+              <small>
+                {target.identity.canonicalDesignation} · {target.identity.component}
+              </small>
+            )}
+            <small>
+              {target.positionProvenance?.source ?? "Resolver reference position"}
+              {target.positionProvenance?.refEpochJulianYear != null
+                ? ` · position epoch ${target.positionProvenance.refEpochJulianYear.toFixed(3)}`
+                : " · position epoch unspecified"}
+            </small>
+            {target.identity && (
+              <details>
+                <summary>Name references and aliases</summary>
+                <p>{target.identity.aliases.join(" · ")}</p>
+                {target.identity.relatedDesignations.length > 0 && (
+                  <p>
+                    Distinct related objects:{" "}
+                    {target.identity.relatedDesignations.join(" · ")}
+                  </p>
+                )}
+                {target.identity.provenance.map((item) => (
+                  <p key={item.url}>
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      {item.source}
+                    </a>{" "}
+                    · snapshot {item.retrievedAtUtc.slice(0, 10)} ·{" "}
+                    {item.kind.replaceAll("_", " ")}
+                  </p>
+                ))}
+              </details>
+            )}
           </section>
         )}
         {!comparison && <p role="status">{status}</p>}
@@ -1103,94 +1128,41 @@ export function Viewer({
         )}
         {comparison && (
           <>
-            <TimeControls
-              comparison={comparison}
-              playback={playback}
-              onDetails={() => openPanel("comparison")}
-            />
-          </>
-        )}
-      </FloatingPane>
-      <FloatingPane
-        id="comparison-panel"
-        title="Compare details"
-        size={comparisonLarge ? "large" : "wide"}
-        open={panels.comparison}
-        reset={layoutReset}
-        onClose={() => closePanel("comparison")}
-      >
-        <button type="button" aria-pressed={comparisonLarge} onClick={() => setComparisonLarge(!comparisonLarge)}>{comparisonLarge ? "Standard image view" : "Enlarge image view"}</button>
-        {target && (
-          <section className="target-context" aria-label="Target details">
-            <strong>{targetLabel}</strong>
-            {target.identity && (
-              <p>
-                {target.identity.canonicalDesignation} ·{" "}
-                {target.identity.component}
-              </p>
-            )}
-            <p>
-              Name resolved. Identification of an image source and visible
-              target detection are not established by this lookup.
+            <p className="pane-intro">
+              Blink comparison{" "}
+              <InfoTip term="Blink comparison">
+                The dated images are stacked on the same grid and brightness scale, then shown one
+                after another. Objects that moved or changed brightness between the dates appear to
+                jump or flicker; the steady background stays put. This is how moving objects are
+                spotted.
+              </InfoTip>
             </p>
-            <small>
-              {target.positionProvenance?.source ?? "Resolver reference position"}
-              {target.positionProvenance?.refEpochJulianYear != null
-                ? ` · position epoch ${target.positionProvenance.refEpochJulianYear.toFixed(3)}`
-                : " · position epoch unspecified"}
-            </small>
-            {target.identity && (
-              <details>
-                <summary>Name references and aliases</summary>
-                <p>{target.identity.aliases.join(" · ")}</p>
-                {target.identity.relatedDesignations.length > 0 && (
-                  <p>
-                    Distinct related objects:{" "}
-                    {target.identity.relatedDesignations.join(" · ")}
-                  </p>
-                )}
-                {target.identity.provenance.map((item) => (
-                  <p key={item.url}>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      {item.source}
-                    </a>{" "}
-                    · snapshot {item.retrievedAtUtc.slice(0, 10)} ·{" "}
-                    {item.kind.replaceAll("_", " ")}
-                  </p>
-                ))}
-              </details>
-            )}
-          </section>
-        )}
-        <p className="pane-intro">
-          Blink comparison{" "}
-          <InfoTip term="Blink comparison">
-            The dated images are stacked on the same grid and brightness scale, then shown one
-            after another. Objects that moved or changed brightness between the dates appear to
-            jump or flicker; the steady background stays put. This is how moving objects are
-            spotted.
-          </InfoTip>
-        </p>
-        {!comparison && <p>Load dated images using the Time window.</p>}
-        {comparison && (
-          <>
+            <TimeControls comparison={comparison} playback={playback} />
             {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">Barnard’s Star field: 6 arcminutes across, centred on the star’s Gaia DR3 position propagated to late 2025. Both frames are at 4.29 µm, 393 days apart. The star is saturated, so its core is masked and shows as a hole; blink the dates and the whole bright patch shifts about 2 pixels (≈11″) north while the field stars stay put. That matches its known proper motion of about 10.4″ per year. This is a visual quick-look, not a measured motion.</p>}
-            <p>
-              {synthetic || kind === "synthetic_fixture"
-                ? "Synthetic comparison"
-                : kind === "saved_real_example"
-                  ? "Saved real SPHEREx example"
-                  : survey.observations}
-            </p>
-            <ComparisonPlayback
+            <FrameDetails
               key={comparison.id}
               comparison={comparison}
               playback={playback}
               survey={skyView}
+              label={synthetic || kind === "synthetic_fixture"
+                ? "Synthetic comparison"
+                : kind === "saved_real_example"
+                  ? "Saved real SPHEREx example"
+                  : survey.observations}
               selectedPosition={selection?.position ?? null}
               frameMark={frameMark}
               savedMarks={finding?.marks}
             />
+            <div className="controls share-links">
+              <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
+              <button type="button" onClick={() => void copyLink(comparison.id)}>
+                Copy comparison link
+              </button>
+              {finding && (
+                <a href={comparisonLink(comparison.id, finding.id)}>Saved evidence link</a>
+              )}
+            </div>
+            {copyStatus && <p role="status">{copyStatus}</p>}
             {finding && Discussion && discussionOpen && !leaderboardOpen && (
               <Discussion
                 finding={finding}
@@ -1201,23 +1173,6 @@ export function Viewer({
                 }
               />
             )}
-            {finding && (
-              <p>
-                <a href={comparisonLink(comparison.id, finding.id)}>
-                  Saved evidence link
-                </a>
-              </p>
-            )}
-            <div className="controls">
-              <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
-              <button
-                type="button"
-                onClick={() => void copyLink(comparison.id)}
-              >
-                Copy comparison link
-              </button>
-            </div>
-            {copyStatus && <p role="status">{copyStatus}</p>}
           </>
         )}
       </FloatingPane>

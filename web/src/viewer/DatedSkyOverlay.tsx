@@ -97,7 +97,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
     <canvas ref={canvas} className="dated-footprint"
       aria-label={predictedMark ? "Dated-image footprint, frame marks and predicted Gaia position" : "Dated-image footprint and frame marks"} />
     {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated {dated.survey === "wise" ? "WISE" : "SPHEREx"} · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
-    {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Compare details to inspect the saved image.</p>}
+    {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Frame image in the Blink window to see the saved image.</p>}
     {wcs && !ready[dated.frame.id] && dated.assets[dated.frame.id]?.state==="ready" && <p className="dated-overlay-status" role="status">Placing dated image on the sky…</p>}
   </>;
 }

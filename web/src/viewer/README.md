@@ -1,6 +1,6 @@
 # Current local demo
 
-Open `http://localhost:5173/` after `npm run dev`. The map controls switch SPHEREx, DSS and WISE. **Time → Open saved real example** loads the recorded six-arcminute Barnard’s Star field (`fixtures/archive/real-barnard/`): two 4.29 µm frames 393 days apart in which the saturated star visibly shifts about 2 pixels north. The earlier WISE 0855 pair stays retained by ID, but WISE 0855 is far too faint at 1.55 µm to appear in it. Candidate review, posts, rankings and replies use a clearly labeled browser-only simulation; no sign-in is needed. Set `VITE_LIVE_FINDINGS=1` only when the real backend is configured. See `docs/verification/local-demo-update.md` for coordinates, limitations and checks.
+Open `http://localhost:5173/` after `npm run dev`. The map controls switch SPHEREx, DSS and WISE. **Blink → Open saved real example** loads the recorded six-arcminute Barnard’s Star field (`fixtures/archive/real-barnard/`): two 4.29 µm frames 393 days apart in which the saturated star visibly shifts about 2 pixels north. The earlier WISE 0855 pair stays retained by ID, but WISE 0855 is far too faint at 1.55 µm to appear in it. Candidate review, posts, rankings and replies use a clearly labeled browser-only simulation; no sign-in is needed. Set `VITE_LIVE_FINDINGS=1` only when the real backend is configured. See `docs/verification/local-demo-update.md` for coordinates, limitations and checks.
 
 # SPHEREx viewer
 
@@ -37,15 +37,33 @@ To make that instant, the ruler **preloads ten wavelengths**, evenly spaced from
 
 Pan and zoom, then select **Compare this field**. The button turns amber once the map is under 10° wide. If the view is 1–10 arcmin wide that view is compared; from a wider view a 10 arcmin field at the map centre is compared (the services themselves accept up to 30 arcmin for SPHEREx and 12 for WISE, which the search form can still request), and a dashed box marks it. Once a comparison is requested, its field stays outlined at its sky position while it builds, however you move the map, and **Cancel build** in the panel stops it (the service stops too). While a comparison builds, the panel shows a progress bar: measured steps for WISE, elapsed time for SPHEREx, whose archive does not report progress. You can also submit RA/Dec in decimal degrees or sexagesimal form or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
-The ☰ **More map options** menu holds **All-sky view** / **Globe view** (360° Hammer–Aitoff overview), **Inspect map center**, and **Advanced search**.
+The ☰ **More map options** menu holds **All-sky view** / **Globe view** (360° Hammer–Aitoff overview) and **Advanced search**.
 
-The sky fills the viewport. Type an object name, a challenge target, or coordinates (`269.4521, 4.6934`, `17:57:48.5 +04:41:36`) in the top-left search box and press Enter to center the map and compare a 6 arcmin field. Names go to the catalog resolver. **Advanced search** opens the full form with separate RA/Dec, field width, and preset buttons. Loading images opens the compact **Time** window and a dated image overlay on the sky. The earliest observation starts paused. Use the snapping timeline, previous/next buttons, or **Blink A ↔ B** to change dates. Choose A and B from their date selectors; the timeline preserves actual gaps between observations. **Compare details** opens the larger cutout, metadata and sharing pane when needed. **Inspect** opens the source inspector. These panes can remain open together. Drag a pane by its heading, or focus the heading and use arrow keys. Each pane can collapse; use its close button or Escape to close it. **Reset layout** restores default positions. Closing Time pauses playback and preserves the active date; reopening it does not resume automatically.
+The sky fills the viewport. Type an object name, a challenge target, or coordinates (`269.4521, 4.6934`, `17:57:48.5 +04:41:36`) in the top-left search box and press Enter to center the map and compare a 6 arcmin field. Names go to the catalog resolver. **Advanced search** opens the full form with separate RA/Dec, field width, and preset buttons. Loading images opens the compact **Blink** window and a dated image overlay on the sky. The earliest observation starts paused. Use the snapping timeline, previous/next buttons, or **Blink A ↔ B** to change dates. Choose A and B from their date selectors; the timeline preserves actual gaps between observations. **Compare details** opens the larger cutout, metadata and sharing pane when needed. **Inspect** opens the source inspector. These panes can remain open together. Drag a pane by its heading, or focus the heading and use arrow keys. Each pane can collapse; use its close button or Escape to close it. **Reset layout** restores default positions. Closing Time pauses playback and preserves the active date; reopening it does not resume automatically.
 
-Click a dated image to open Gaia at the selected sky coordinate. Keyboard users can focus the image and press Enter to inspect its center. The selection stays at the same sky position across frames. A Gaia source marked from the inspector shows its proper-motion prediction at each displayed frame's observation time. These marks are local to the current viewer session.
+Double-click a point, on a dated image or anywhere on the map, to check it against the catalogs. A Gaia source shown from that check carries its proper-motion prediction to each displayed frame's observation time. These marks are local to the current viewer session.
 
 Pan and zoom, then select **Compare this field** once the map width is within the archive's 1–30 arcmin range. You can also submit RA/Dec in decimal degrees or sexagesimal form in the search box or **Advanced search**, or select any of the five target presets. Presets are field centers from the project brief, [SIMBAD](https://simbad.u-strasbg.fr/simbad/sim-basic?Ident=Barnard%27s+star), [SIMPLE](https://simple-bd-archive.org/load_solo/epsilon%20IndiB), [Chandra](https://cxc.cfa.harvard.edu/target_lists/cycle21/cycle21_approved_peer_targets_by_radec.html), and [AAVSO](https://archive.aavso.org/index.php/aavso-bulletin-coordinates).
 
-Open `/?fixtures=1` in development, open **Time**, and expand **Development fixtures** to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.
+Open `/?fixtures=1` in development, open **Blink**, and expand **Development fixtures** to exercise the browser-only fixture controls. Choose **Archive unavailable** to exercise the outage state, **Open saved fixture** to load the synthetic pair, and **Try missing ID** to check the missing-evidence state. Run `npm.cmd run build` from the repository root to type-check and build the viewer.
+
+## Blink window
+
+**Blink** (formerly **Time**) holds everything about the loaded dated images. The separate
+comparison panel was merged into it:
+
+- Date scrubber, **Blink A ↔ B**, previous/next, play and speed settings.
+- The frame's source observation, data release and the SPHEREx DR1 dataset link, plus any
+  coverage caveats, comparison limitations and data acknowledgement. These stay visible.
+- **Frame image**: the saved image with its marks. The map normally draws the dated frame on
+  the sky; this section opens by itself when the image grid cannot be placed on the map.
+- **Frame details**: observation and exposure times, wavelength, shared stretch, valid
+  pixels, alignment and quality flags.
+- **Saved comparison link**, **Copy comparison link** and, for an opened finding, the
+  **Saved evidence link** and its discussion thread.
+
+The Gaia source inspector was removed. Double-click a point to check it against the catalogs.
+Earlier checkpoint sections below describe the interface as it was when they were recorded.
 
 ## WISE view
 
@@ -61,9 +79,9 @@ In WISE view:
   measure temperature or composition.
 - The dock under the map lists those channels and picks the time-lapse band (W1 or W2)
   in place of the SPHEREx wavelength ruler.
-- **Time-lapse** replaces **Comparison**. It plays dated frames from the
+- The **Blink** window plays dated frames from the
   [WISE time-lapse service](../../../services/wise/README.md): six visits spread evenly
-  from 2010 to 2024, with the same playback, timeline, Gaia inspection and limitations list. Fields
+  from 2010 to 2024, with the same playback, timeline and limitations list. Fields
   are 1–12 arcmin here, against 1–30 for SPHEREx.
 
 Each view keeps its own request and result. Switching away and back shows what was
@@ -92,7 +110,7 @@ Vite proxies `/api/resolve` and `/api/catalogs` to the [catalog service](../../.
 
 Check `http://127.0.0.1:8010/api/health` for the catalog service and `/api/catalogs/nearby?ra=269.4521&dec=4.6933&radiusArcsec=30` on the viewer origin for the proxy. Both should return JSON. When serving the built viewer on another host, route `/api/catalogs/*` and `/api/resolve` to the catalog service before applying the frontend's HTML fallback.
 
-Choose **Inspect map center** or click a sky position to query Gaia. On the SPHEREx mosaic, the inspector checks a wider catalog cone and keeps sources whose predicted positions are close to the clicked sky position. Near Barnard's Star, it also fetches the exact Gaia source ID because the catalog cone can omit fast-moving stars. **Mark approximate mosaic position** uses the DR1 survey midpoint as a guide and keeps Gaia's catalog position visible in the inspector. The Barnard's Star preset is centered on this same prediction. Dated frames use their own timestamps. The mosaic combines observations from different dates. [IRSA DR1 release notes](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/)
+The Gaia source inspector described in earlier checkpoints has been removed. Double-click a point to run the catalog point check instead; on the SPHEREx mosaic its Gaia positions use the DR1 survey midpoint as a guide time, and dated frames use their own timestamps. The mosaic combines observations from different dates. [IRSA DR1 release notes](https://irsa.ipac.caltech.edu/spherex-archive-documentation/spherex-data-releases/)
 
 The npm launcher enables live Gaia by default. Set `CATALOGS_LIVE=0` to run the standalone catalog fixtures. The real viewer requires live catalog data for source markers.
 

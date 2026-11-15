@@ -130,9 +130,10 @@ try {
   await page.locator('.aladin-host:not([data-hidden])').waitFor();
   assert.equal(await page.getByRole('button', { name: 'Gaia', exact: true }).count(), 0);
   assert.equal(await page.getByRole('button', { name: 'Review candidate', exact: true }).count(), 0);
-  await page.mouse.click(700, 400); await page.locator('#gaia-panel').waitFor();
+  // A single click does nothing now that the source inspector is removed.
+  await page.mouse.click(700, 400); await page.waitForTimeout(500);
+  assert.equal(await page.locator('#gaia-panel').count(), 0);
   assert.equal(await page.locator('#point-check-panel').isVisible(), false);
-  await press(page, 'Close Source inspector');
   await page.mouse.dblclick(700, 400); await page.locator('#point-check-panel').waitFor();
   await page.getByRole('img', { name: /^Marked point RA/ }).waitFor();
   const sources = page.locator('.point-check__gaia details');

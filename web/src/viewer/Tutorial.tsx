@@ -27,9 +27,9 @@ const steps: Step[] = [
     <p>Display brightness cannot establish molecules, elements or physical temperature.</p>
   </> },
   { title: "3. Blink actual dates", body: <>
-    <p>After images load, use <strong>Time</strong> to scrub observations or <strong>Blink A ↔ B</strong>. The dated overlay covers only its outlined footprint. Surrounding reference imagery stays unchanged.</p>
-    <p><strong>Compare details</strong> opens an enlargable view with actual dates, shared brightness scale, wavelength and quality flags. A visual change needs further checking; artifacts can also flicker.</p>
-    <p>A saved real example is a labelled teaching field. Enlarging it cannot add detail to its original pixels.</p>
+    <p>After images load, use <strong>Blink</strong> to scrub observations or <strong>Blink A ↔ B</strong>. The dated overlay covers only its outlined footprint. Surrounding reference imagery stays unchanged.</p>
+    <p>The same window lists each frame's source observation and release. <strong>Frame details</strong> holds the actual dates, shared brightness scale, wavelength and quality flags, and <strong>Frame image</strong> shows the saved image itself. A visual change needs further checking; artifacts can also flicker.</p>
+    <p>A saved real example is a labelled teaching field. Zooming in cannot add detail to its original pixels.</p>
   </> },
   { title: "4. Review a point", body: <>
     <p><strong>Double-click</strong> a point, on a dated image or anywhere on the map. A box with an X marks it and six catalogs are checked at once, no sign-in needed. Use <strong>Show on map</strong> for sources from any catalog. Gaia can be predicted for the displayed date; other positions stay at their published epoch. A single click opens the full Gaia source inspector.</p>

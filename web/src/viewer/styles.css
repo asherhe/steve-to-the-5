@@ -510,7 +510,7 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
   }
 }
 
-/* Draggable windows (Time, Compare details, Source inspector, Leaderboard, Advanced search). */
+/* Draggable windows (Blink, Leaderboard, Advanced search, review and discussion). */
 .floating-pane {
   position: absolute;
   display: flex;
@@ -794,11 +794,10 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .review-report, .findings-thread, .candidate-review { overflow-wrap: anywhere; }
 .review-report code { word-break: break-all; }
 .example-notice { border-left: 3px solid var(--amber); padding: .65rem; }
-.pane-size-large .cutout { max-width: 44rem; margin: auto; }
 @media (max-width: 42rem) {
   .pane-size-large, .pane-size-wide { width: calc(100vw - 16px); }
   .review-report dl > div { grid-template-columns: 1fr; }
-  #review-panel, #comparison-panel, #leaderboard-panel { max-height: calc(100dvh - var(--header-height) - 2rem); }
+  #review-panel, #time-window, #leaderboard-panel { max-height: calc(100dvh - var(--header-height) - 2rem); }
 }
 .community-map-markers { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 /* Point marked for a catalog check: a box with an X, pinned to its sky position. */
@@ -880,3 +879,8 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .review-brightness { overflow-wrap: anywhere; table-layout: fixed; }
 
 .review-measurement-note { display: block; color: var(--muted); margin-top: .25rem; }
+
+/* Blink window: evidence, sharing and discussion merged from the former comparison panel. */
+.frame-details { margin-top: 0.75rem; }
+.frame-source { overflow-wrap: anywhere; color: var(--muted); font-size: 0.85rem; }
+.share-links { margin: 0.5rem 0; }

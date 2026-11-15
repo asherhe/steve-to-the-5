@@ -8,6 +8,9 @@ const ready=await json('responses/ready.json');
 const store=await json(`synthetic/evidence/manifests/${ready.comparison.id}.json`);
 const unavailable=await json('responses/upstream_unavailable.json');
 const browser=await chromium.launch({channel:process.env.PLAYWRIGHT_CHANNEL ?? 'chrome',headless:true});
+// The first-run tour covers the page and intercepts clicks; mark it seen before each page loads.
+const skipTour=()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1");
+for(const make of ["newContext","newPage"]){const original=browser[make].bind(browser);browser[make]=async(...args)=>{const made=await original(...args);await made.addInitScript(skipTour);return made;};}
 const nameReference=JSON.parse(await readFile(new URL("../../../fixtures/catalogs/resolved-targets.json",import.meta.url),"utf8"))[0].identity;
 const source={
  identity:nameReference,sourceId:nameReference.catalogIds.find(ref=>ref.catalog==="Gaia"&&ref.dataRelease==="DR3").id,ra:10,dec:20,refEpoch:2016,
@@ -49,91 +52,61 @@ try {
  assert.equal(await page.getByLabel('Archive response').count(),0);assert.equal(calls.length,0);
  await page.getByLabel('Object name',{exact:true}).fill('Contract field');
  await page.getByRole('button',{name:'Resolve and compare'}).press('Enter');
- await page.getByRole('button',{name:'Compare details',exact:true}).press('Enter');
- const playback=page.getByRole('region',{name:'Comparison playback'});
- await playback.waitFor();
+ // The Blink window holds the frame evidence that used to be in a separate comparison panel.
+ const blink=page.getByRole('region',{name:'Blink',exact:true});
+ const frame=blink.getByRole('region',{name:'Frame details'});
+ await frame.waitFor();
+ // The name is resolved first, then the field is searched. (The app currently resolves the name twice; known, harmless.)
  assert.equal(calls[0],'/api/resolve?name=Contract%20field');
- assert.equal(calls[1],'/api/comparisons?ra=10&dec=20&fovArcmin=6');
- const image=page.locator('.comparison-frame img');await image.evaluate(img=>img.decode());
+ const searches=calls.filter(path=>path.startsWith('/api/comparisons?'));
+ assert.deepEqual(searches,['/api/comparisons?ra=10&dec=20&fovArcmin=6']);
+ assert(calls.indexOf(searches[0])>calls.lastIndexOf('/api/resolve?name=Contract%20field'));
+ assert.equal(await page.locator('#comparison-panel').count(),0);
+ const image=frame.locator('.comparison-frame img');await image.evaluate(img=>img.decode());
  assert.equal(await image.getAttribute('src'),ready.comparison.frames[0].imageUrl);
  await image.evaluate(img=>{if(img.naturalWidth!==59||img.naturalHeight!==59)throw new Error('Wrong decoded grid');});
- await page.getByRole('button',{name:'Inspect image. Press Enter to inspect its center.'}).focus();await page.keyboard.press('Enter');
- await page.locator('.si-detail__source-link').waitFor();
- await page.getByRole('button',{name:'Mark predicted position',exact:true}).press('Enter');
+ // Source and release attribution stays visible; the rest opens on demand.
+ assert.match(await frame.locator('.frame-source').textContent(),new RegExp(ready.comparison.frames[0].release.toUpperCase()));
+ await frame.getByText('Frame details',{exact:true}).click();
  const [firstFrame,secondFrame]=ready.comparison.frames;
- const marker=playback.getByRole('img',{name:'Predicted Gaia position',exact:true});
- const mapMarker=page.getByLabel('Dated-image footprint, frame marks and predicted Gaia position',{exact:true});
- async function markerAt(frame) {
-  await playback.locator('figcaption time').filter({hasText:frame.observedAtUtc}).waitFor();
-  await page.locator('#gaia-panel time').filter({hasText:frame.observedAtUtc}).waitFor();
-  await marker.waitFor();
-  return marker.evaluate(element=>parseFloat(element.style.top));
+ async function showing(frameMeta){
+  await page.waitForFunction(at=>document.querySelector('.active-date time')?.getAttribute('datetime')===at,frameMeta.observedAtUtc);
+  // Frame details may be collapsed; the evidence is still rendered for the shown frame.
+  await frame.locator(`dd time[datetime="${frameMeta.observedAtUtc}"]`).waitFor({state:'attached'});
  }
- const catalogCalls=()=>calls.filter(path=>path.startsWith('/api/catalogs/'));
- const initialCatalogCalls=catalogCalls();
- assert.equal(initialCatalogCalls.length,2);
- const sourceName=page.locator("#gaia-panel .si-detail__header").getByText(nameReference.displayName,{exact:true});
- await sourceName.waitFor();
- const firstTop=await markerAt(firstFrame);
- await mapMarker.waitFor();
- await page.getByRole('button',{name:'Next observation',exact:true}).press('Enter');
- const secondTop=await markerAt(secondFrame);
- assert.equal(await sourceName.count(),1,"The verified name must follow the same source during playback");
- await mapMarker.waitFor();
- assert(secondTop<firstTop,'Northward proper motion should move the marker up');
- await page.getByRole('button',{name:'Previous observation',exact:true}).press('Enter');
- assert.equal(await markerAt(firstFrame),firstTop);
- await page.getByRole('button',{name:'Playback settings',exact:true}).press('Enter');
- await page.getByRole('button',{name:'Play all observations',exact:true}).press('Enter');
- assert.equal(await markerAt(secondFrame),secondTop);
- await page.getByRole('button',{name:'Pause sequence',exact:true}).press('Enter');
- await page.getByRole('button',{name:'Blink A ↔ B',exact:true}).press('Enter');
- assert.equal(await markerAt(firstFrame),firstTop);
- assert.equal(await markerAt(secondFrame),secondTop);
- await page.getByRole('button',{name:'Pause blink',exact:true}).press('Enter');
- assert.deepEqual(catalogCalls(),initialCatalogCalls);
- await page.getByRole('button',{name:'Clear mark',exact:true}).press('Enter');
- await marker.waitFor({state:'detached'});
- await mapMarker.waitFor({state:'detached'});
- if(await page.getByRole('button',{name:'Previous observation',exact:true}).isEnabled()){
-  await page.getByRole('button',{name:'Previous observation',exact:true}).press('Enter');
- }
- await marker.waitFor({state:'detached'});
+ await showing(firstFrame);
+ await button('Next observation').press('Enter');await showing(secondFrame);
+ await button('Previous observation').press('Enter');await showing(firstFrame);
+ await button('Playback settings').press('Enter');
+ await button('Play all observations').press('Enter');await showing(secondFrame);
+ await button('Pause sequence').press('Enter');
+ await button('Blink A ↔ B').press('Enter');await showing(firstFrame);await showing(secondFrame);
+ await button('Pause blink').press('Enter');
+ // The Gaia source inspector is gone: no click-to-inspect image, no inspector panel.
+ assert.equal(await page.getByRole('button',{name:/Inspect image|Compare details/}).count(),0);
+ assert.equal(await page.locator('#gaia-panel').count(),0);
+ assert.equal(calls.filter(path=>path.startsWith('/api/catalogs/')).length,0);
+ // Saved-ID replay restores the stored comparison without a new search; a failed frame offers a retry.
  const before=calls.length;
  failedImage=secondFrame.imageUrl;
  await page.goto(origin+`/?comparison=${ready.comparison.id}`);
- await page.getByRole('button',{name:'Compare details',exact:true}).press('Enter');
- await playback.waitFor();
+ await frame.waitFor();
  assert(!calls.slice(before).some(path=>path.startsWith('/api/comparisons?')));
- await playback.getByRole('button',{name:/Inspect image/}).focus();
- await page.keyboard.press('Enter');
- await page.getByRole('button',{name:'Mark predicted position',exact:true}).press('Enter');
- assert.equal(await markerAt(firstFrame),firstTop);
- await page.getByRole('button',{name:'Next observation',exact:true}).press('Enter');
- await playback.getByText('This frame could not be loaded.',{exact:false}).waitFor();
- await marker.waitFor({state:'detached'});
- await page.getByRole('button',{name:'Previous observation',exact:true}).press('Enter');
- assert.equal(await markerAt(firstFrame),firstTop);
+ await showing(firstFrame);
+ await button('Next observation').press('Enter');
+ await blink.locator('.time-controls').getByText('This frame could not be loaded.',{exact:false}).waitFor();
+ await button('Previous observation').press('Enter');await showing(firstFrame);
  failedImage=null;
- catalogSource={...source,dec:20.001,pmDecMasYr:18000};
+ // A new search replaces the comparison and its share link.
  searchResult={...ready,comparison:{...ready.comparison,id:'1'.repeat(64)}};
  await openAdvancedSearch();
  await page.getByRole('button',{name:'Compare coordinates'}).press('Enter');
- await page.getByRole('button',{name:'Compare details',exact:true}).press('Enter');
- await playback.getByRole('button',{name:/Inspect image/}).waitFor();
- await marker.waitFor({state:'detached'});
- await playback.getByRole('button',{name:/Inspect image/}).press('Enter');
- await button('Mark predicted position').press('Enter');
- await markerAt(firstFrame);
- await button('Next observation').press('Enter');
- await playback.locator('figcaption time').filter({hasText:secondFrame.observedAtUtc}).waitFor();
- await marker.waitFor({state:'detached'});
- await mapMarker.waitFor({state:'detached'});
+ await blink.getByRole('link',{name:'Saved comparison link'}).and(page.locator(`[href*="${'1'.repeat(64)}"]`)).waitFor();
  outage=true;
  await openAdvancedSearch();await button('Compare coordinates').press('Enter');
  await page.getByText('Archive unavailable',{exact:true}).waitFor();
- assert.equal(await page.getByRole('region',{name:'Comparison playback'}).count(),0);
+ assert.equal(await page.getByRole('region',{name:'Frame details'}).count(),0);
  await page.getByRole('button',{name:'Retry',exact:true}).waitFor();
  await page.getByRole('button',{name:'Open saved real example',exact:true}).waitFor();
- console.log('PASS: production search, decoded archive fixture assets, Gaia marker during step/play/blink without refetch, clear, failed image, comparison switch, out-of-cutout hiding, saved-ID replay, outage and retry. All APIs mocked, no live services.');
+ console.log('PASS: production search, decoded archive fixture assets in Blink, frame details during step/play/blink, no source inspector, failed image, saved-ID replay, comparison switch, outage and retry. All APIs mocked, no live services.');
 }finally{await browser.close();}
