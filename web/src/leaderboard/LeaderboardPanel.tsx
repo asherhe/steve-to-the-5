@@ -52,7 +52,7 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence, ref
         <p className="leaderboard-notice">Development fixture data. These entries are invented and do not appear on the public board.</p>
       )}
       <p className="leaderboard-caption">
-        Ranked by documented review effort, not rarity or discovery. Today uses UTC. Each entry links to saved images and a public discussion.
+        Ranked by points: 10 for a known object, 20 for a point no catalog lists that is bright in any two of SPHEREx, WISE, DSS and NEOSSat, otherwise 0. Points are not a discovery. Today uses UTC. Each entry opens its sky position and public discussion; saved images are shown when attached.
       </p>
 
       {state.kind === "loading" && <p role="status">Loading leaderboard…</p>}
@@ -88,11 +88,11 @@ export function LeaderboardPanel({ dataSource, open, onGoTo, onShowEvidence, ref
                   )}
                 </span>
               </button>
-              {entry.comparisonId && (
+              {(entry.comparisonId || entry.findingId) && (
                 <button type="button" className="leaderboard-evidence" onClick={() => {
                   setSelectedId(entry.id);
                   onShowEvidence(entry);
-                }}>Evidence & discussion</button>
+                }}>{entry.comparisonId ? 'Evidence & discussion' : 'Point & discussion'}</button>
               )}
             </li>
           ))}

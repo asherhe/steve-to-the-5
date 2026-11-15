@@ -1,6 +1,6 @@
 # Local demo follow-up — 2026-11-15
 
-See `docs/verification/local-demo-update.md` for the current map controls, larger WISE 0855 field, fast recorded-field replay, and browser-only findings simulation. The archive service must restart to serve additional retained fields. Sign-in is disabled by default; `VITE_LIVE_FINDINGS=1` explicitly activates the real adapter once configured.
+See `docs/verification/local-demo-update.md` for the current map controls, browser-only findings simulation, and (per its superseding note) the Barnard's Star saved example and removal of exact-field replay. The archive service must restart to serve additional retained fields. Sign-in is disabled by default; `VITE_LIVE_FINDINGS=1` explicitly activates the real adapter once configured.
 
 ---
 

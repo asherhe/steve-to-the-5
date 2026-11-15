@@ -1,5 +1,12 @@
 # Local viewer update — 2026-11-15
 
+> **Superseded later on 2026-11-15.** **Open saved real example** now loads the
+> Barnard's Star pair in `fixtures/archive/real-barnard/` (4.29 µm, 2025-08-25 and
+> 2026-09-22), in which the saturated star visibly shifts about 2 pixels north. The
+> exact-field replay described below was removed: a field or name search always queries
+> IRSA, and saved examples (including WISE 0855) open only by ID. Nothing loads by default.
+> The rest of this record is kept as written.
+
 The map's SPHEREx / DSS / WISE controls now select the survey view; the duplicate
 SPHEREx/WISE switch beside Leaderboard was removed. DSS remains a reference layer in
 the current survey view. The full-screen map and floating panes remain.

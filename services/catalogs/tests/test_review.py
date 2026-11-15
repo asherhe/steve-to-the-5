@@ -76,3 +76,20 @@ def test_route_requires_observation_timezone(client):
     result = client.get("/api/catalogs/review", params={"ra": 0, "dec": 0, "observedAtUtc": "2026-01-01T00:00:00Z"})
     assert result.status_code == 200 and result.json()["mode"] == "offline"
     assert client.get("/api/catalogs/review", params={"ra": 360, "dec": 0, "observedAtUtc": "2026-01-01T00:00:00Z"}).status_code == 422
+
+
+def test_undated_point_skips_skybot_without_guessing_a_time(monkeypatch):
+    monkeypatch.setattr(review, "get_provider", lambda *_: SimpleNamespace(nearby=lambda *args: []))
+    monkeypatch.setattr(review, "tap_check", lambda name, scope, endpoints, *args: review.CatalogCheck(catalog=name, status="no_candidates", scope=scope, sourceUrl=""))
+    monkeypatch.setattr(review, "ultracool", lambda *args: review.CatalogCheck(catalog="UltracoolSheet", status="no_candidates", scope="", sourceUrl=""))
+    monkeypatch.setattr(review, "skybot", lambda *args: pytest.fail("SkyBoT needs an observation time"))
+    result = review.run_review(10, 10, 30, None, replace(get_settings(), live=True))
+    assert result.observedAtUtc is None
+    skybot = next(c for c in result.checks if c.catalog == "SkyBoT")
+    assert skybot.status == "skipped" and "observation time" in skybot.scope
+
+
+def test_route_accepts_a_point_without_observation_time(client):
+    result = client.get("/api/catalogs/review", params={"ra": 10, "dec": 10, "radiusArcsec": 30})
+    assert result.status_code == 200
+    assert result.json()["observedAtUtc"] is None

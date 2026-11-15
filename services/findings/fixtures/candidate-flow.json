@@ -1,7 +1,7 @@
 {
   "_meta": {
     "kind": "synthetic_catalog_and_ranking_fixture",
-    "note": "Saved real example geometry with invented catalog responses; never proof of live review."
+    "note": "Saved real example geometry with invented catalog responses; never proof of live review. Brightness measurements and the WISE comparison are invented too."
   },
   "request": {
     "ra": 304.693508808,
@@ -18,20 +18,20 @@
     "frameId": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
     "survey": "spherex",
     "radiusArcsec": 120.0,
+    "brightnessEvidence": [
+      {
+        "survey": "wise",
+        "comparisonId": "synthetic-wise-comparison"
+      }
+    ],
     "id": "66666666-6666-4666-8666-666666666666",
     "observedAtUtc": "2025-10-30T17:30:35.064000Z",
     "reviewedAtUtc": "2026-11-15T00:00:00Z",
-    "scoreVersion": "review-effort-v1",
-    "score": 50,
+    "scoreVersion": "point-check-v2",
+    "score": 20,
+    "classification": "uncatalogued",
     "reasons": [
-      "+10: saved real dated image with a marked sky position",
-      "+10: saved comparison contains at least two observation dates",
-      "+5: completed Gaia DR3 cone search (regardless of match count)",
-      "+5: completed SIMBAD cone search (regardless of match count)",
-      "+5: completed CatWISE2020 cone search (regardless of match count)",
-      "+5: completed UltracoolSheet cone search (regardless of match count)",
-      "+5: completed SkyBoT cone search (regardless of match count)",
-      "+5: completed VizieR cone search (regardless of match count)"
+      "+20: no catalog lists a source within 120″, and the point is bright (at least 5σ above its surroundings) in SPHEREx and WISE."
     ],
     "catalogReview": {
       "mode": "live",
@@ -131,10 +131,31 @@
         "DSS and Gaia detections are not required for a cold-object candidate. WISE catalog presence is not an image detection."
       ]
     },
+    "brightness": [
+      {
+        "survey": "spherex",
+        "comparisonId": "c7c23ac6da7f3025e4f514f95004a979106846c62577096da1cc95a63b115f31",
+        "frameId": "87a19f408ebf8ef9324b8b06eace35b77d934aa6ef63d2f73487902683685f7d",
+        "observedAtUtc": "2025-10-30T17:30:35.064000Z",
+        "status": "measured",
+        "snr": 12.4,
+        "bright": true
+      },
+      {
+        "survey": "wise",
+        "comparisonId": "synthetic-wise-comparison",
+        "frameId": "synthetic-wise-frame",
+        "observedAtUtc": "2014-05-01T00:00:00Z",
+        "status": "measured",
+        "snr": 8.1,
+        "bright": true
+      }
+    ],
     "limitations": [
-      "Points reward documented review effort, not rarity, scientific significance or a discovery.",
-      "No element, molecule, physical temperature or novelty is inferred from image pixels.",
-      "No DSS, WISE or Gaia detection is required. An unavailable or partial catalog earns no points."
+      "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
+      "Uncatalogued means none of six cone searches listed a source; catalogs have depth, epoch and coverage limits.",
+      "Bright means a local peak at least 5σ above the surrounding pixels in a saved frame's FITS. It is not a photometric detection, a flux, a temperature or evidence of variability.",
+      "NEOSSat previews cannot be measured yet, so only SPHEREx and WISE count toward brightness."
     ]
   },
   "leaderboard": {
@@ -149,17 +170,10 @@
         "rank": 1,
         "displayName": "Fixture observer",
         "title": "Synthetic review example",
-        "rarityScore": 50,
+        "rarityScore": 20,
         "tier": null,
         "reasons": [
-          "+10: saved real dated image with a marked sky position",
-          "+10: saved comparison contains at least two observation dates",
-          "+5: completed Gaia DR3 cone search (regardless of match count)",
-          "+5: completed SIMBAD cone search (regardless of match count)",
-          "+5: completed CatWISE2020 cone search (regardless of match count)",
-          "+5: completed UltracoolSheet cone search (regardless of match count)",
-          "+5: completed SkyBoT cone search (regardless of match count)",
-          "+5: completed VizieR cone search (regardless of match count)"
+          "+20: no catalog lists a source within 120″, and the point is bright (at least 5σ above its surroundings) in SPHEREx and WISE."
         ],
         "ra": 304.693508808,
         "dec": 42.4436872991,

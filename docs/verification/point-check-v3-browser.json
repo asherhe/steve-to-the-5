@@ -1,0 +1,29 @@
+{
+  "dateUtc": "2026-11-15",
+  "verificationKind": "real Chromium UI/map interactions with synthetic HiPS and intercepted catalog/auth/findings services; not hosted end-to-end verification",
+  "runs": [
+    {
+      "mode": "intercepted-live-ui",
+      "checks": [
+        "single-click inspection, double-click point mark, all six catalog map markers",
+        "no-frame submit, known-object brightness bypass, public discussion, refreshed ranking and finding-only link",
+        "fresh anonymous mobile finding-only replay, second-session sign-in/reply and no horizontal overflow",
+        "20/0-point server reports without frames, racing 409 draft retention, duplicate discussion recovery"
+      ],
+      "pageErrors": [],
+      "comparisonRequests": 0,
+      "findingsRequests": 24
+    },
+    {
+      "mode": "local-demo",
+      "checks": [
+        "single-click inspection, double-click point mark, all six catalog map markers",
+        "no-frame submit, known-object brightness bypass, public discussion, refreshed ranking and finding-only link",
+        "demo local persistence/reply and same-object/nearby duplicate block, no findings requests"
+      ],
+      "pageErrors": [],
+      "comparisonRequests": 0,
+      "findingsRequests": 0
+    }
+  ]
+}

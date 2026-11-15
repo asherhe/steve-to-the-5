@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 const origin = process.env.VIEWER_TEST_URL ?? "http://127.0.0.1:5173";
 const browser = await chromium.launch({channel:"chrome",headless:true});
+// The first-run tour covers the page and intercepts clicks; mark it seen before each page loads.
+const skipTour=()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1");
+for(const make of ["newContext","newPage"]){const original=browser[make].bind(browser);browser[make]=async(...args)=>{const made=await original(...args);await made.addInitScript(skipTour);return made;};}
 const targets = ["Barnard’s Star", "Epsilon Indi B", "WISE 0855", "RW Aurigae", "R Draconis"];
 try {
  for (const mobile of [false,true]) {
@@ -25,7 +28,7 @@ try {
   };
   const compact=page.getByRole("combobox",{name:"Object name or coordinates"});
   const combo=page.getByRole("combobox",{name:"Object name",exact:true});
-  const time=page.getByRole("region",{name:"Time",exact:true});
+  const time=page.getByRole("region",{name:"Blink",exact:true});
   const targetContext=page.getByRole("region",{name:"Requested target",exact:true});
   const tools=async()=>{
     await time.locator(".pane-drag").focus();
@@ -33,13 +36,13 @@ try {
       await time.getByText("Development fixtures",{exact:true}).press("Enter");
   };
   await compact.fill("HIP879");
-  assert.equal(await page.getByRole("option").count(),1);
-  await compact.press("Escape"); assert.equal(await page.getByRole("option").count(),0);
+  assert.equal(await page.getByRole("listbox",{name:"Matching challenge targets"}).getByRole("option").count(),1);
+  await compact.press("Escape"); assert.equal(await page.getByRole("listbox",{name:"Matching challenge targets"}).getByRole("option").count(),0);
   await compact.fill("HIP879"); await compact.press("Enter");
   await page.getByRole("alert").getByText(/choose a matching target/i).waitFor();
   await compact.press("ArrowDown"); await compact.press("Enter");
   await targetContext.getByText("Barnard’s Star",{exact:true}).waitFor();
-  assert.equal(await page.getByRole("region",{name:"Compare details",exact:true}).isVisible(),false);
+  assert.equal(await page.locator("#comparison-panel").count(),0); // merged into Blink
   for(const name of targets) {
    await compact.fill(name);await compact.press("Enter");
    await targetContext.getByText(name,{exact:true}).waitFor();
@@ -71,20 +74,19 @@ try {
   assert.equal(await targetContext.getByText("R Draconis",{exact:true}).count(),1);
   await compact.fill("42, -20");await compact.press("Enter");
   assert.equal(await targetContext.count(),0);
-  await search();await page.getByLabel("Right ascension").fill("400");
+  await search();await page.getByRole("textbox",{name:/^Right ascension/}).fill("400");
   await page.getByRole("button",{name:"Compare coordinates",exact:true}).press("Enter");
   await page.getByText(/enter ra from 0/i).waitFor();
-  await page.getByLabel("Right ascension").fill("42");await page.getByLabel("Declination",{exact:true}).fill("-20");
+  await page.getByRole("textbox",{name:/^Right ascension/}).fill("42");await page.getByRole("textbox",{name:/^Declination/}).fill("-20");
   await page.getByRole("button",{name:"Compare coordinates",exact:true}).press("Enter");
   assert.equal(await targetContext.count(),0);
   await tools();await page.getByLabel("Archive response").selectOption("upstream_unavailable");
   await compact.fill("WISE 0855");await compact.press("Enter");
   await targetContext.getByText("WISE 0855",{exact:true}).waitFor();
   await time.getByRole("status").filter({hasText:/^Archive unavailable$/}).waitFor();
-  assert.equal(await page.getByRole("region",{name:"Comparison playback"}).count(),0);
+  assert.equal(await page.getByRole("region",{name:"Frame details"}).count(),0);
   await time.getByRole("button",{name:"Open saved fixture",exact:true}).first().press("Enter");
-  await time.getByRole("button",{name:"Compare details",exact:true}).press("Enter");
-  await page.getByRole("region",{name:"Comparison playback"}).waitFor();
+  await time.getByRole("region",{name:"Frame details"}).waitFor();
   assert.equal(await targetContext.count(),0);
   assert.equal(await page.locator(".target-readout").count(),0);
   assert.equal(await page.locator(".map-name-legend").count(),0);
@@ -130,18 +132,13 @@ try {
  assert.equal(fieldLabel.options.shape,"cross");
  assert.equal(fieldLabel.sources[0].ra,resolved[0].ra);
  assert.match(fieldLabel.sources[0].data.label,/Barnard’s Star \(field center\)/);
+ // The Gaia source inspector was removed: no "Inspect map center", and switching reference
+ // imagery still never requests a comparison.
  await page.getByRole("button",{name:"More map options",exact:true}).press("Enter");
- await page.getByRole("button",{name:"Inspect map center",exact:true}).press("Enter");
- await page.getByRole("button",{name:"Mark approximate mosaic position",exact:true}).click();
- const marked=await page.evaluate(()=>window.__nameCatalogs.find(c=>c.options.name==="Marked Gaia position"));
- assert.equal(marked.options.shape,"circle");
- assert.match(marked.sources[0].data.label,/Barnard’s Star \(predicted\)/);
- assert.equal(await page.locator("#gaia-panel .source-inspector").getByText(source.sourceId,{exact:true}).count(),1);
+ assert.equal(await page.getByRole("button",{name:"Inspect map center",exact:true}).count(),0);
+ await page.keyboard.press("Escape");
  await page.getByRole("button",{name:"DSS",exact:true}).click();
- await page.waitForFunction(()=>window.__nameCatalogs.find(c=>c.options.name==="Marked Gaia position").sources.length===0);
- assert.doesNotMatch(await page.locator(".map-name-legend").innerText(),/Marked source:/);
  await page.getByRole("button",{name:"SPHEREx",exact:true}).click();
- await page.waitForFunction(()=>window.__nameCatalogs.find(c=>c.options.name==="Marked Gaia position").sources.length===1);
  assert.equal(comparisons,1,"Switching reference imagery must not request a comparison");
- console.log("PASS: offline desktop/mobile compact and advanced names, aliases, keyboard/touch selection, component ambiguity, failures, stale responses, coordinate fallback, saved replay context reset, production local lookup and Aladin label payloads.");
+ console.log("PASS: offline desktop/mobile compact and advanced names, aliases, keyboard/touch selection, component ambiguity, failures, stale responses, coordinate fallback, saved replay context reset, production local lookup, Aladin label payloads and no source inspector.");
 } finally {await browser.close();}

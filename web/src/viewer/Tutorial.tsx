@@ -27,19 +27,19 @@ const steps: Step[] = [
     <p>Display brightness cannot establish molecules, elements or physical temperature.</p>
   </> },
   { title: "3. Blink actual dates", body: <>
-    <p>After images load, use <strong>Time</strong> to scrub observations or <strong>Blink A ↔ B</strong>. The dated overlay covers only its outlined footprint. Surrounding reference imagery stays unchanged.</p>
-    <p><strong>Compare details</strong> opens an enlargable view with actual dates, shared brightness scale, wavelength and quality flags. A visual change needs further checking; artifacts can also flicker.</p>
-    <p>A saved real example is a labelled teaching field. Enlarging it cannot add detail to its original pixels.</p>
+    <p>After images load, use <strong>Blink</strong> to scrub observations or <strong>Blink A ↔ B</strong>. The dated overlay covers only its outlined footprint. Surrounding reference imagery stays unchanged.</p>
+    <p>The same window lists each frame's source observation and release. <strong>Frame details</strong> holds the actual dates, shared brightness scale, wavelength and quality flags, and <strong>Frame image</strong> shows the saved image itself. A visual change needs further checking; artifacts can also flicker.</p>
+    <p>A saved real example is a labelled teaching field. Zooming in cannot add detail to its original pixels.</p>
   </> },
   { title: "4. Review a point", body: <>
-    <p>Click inside a dated image, or focus its inspect button and press Enter to select the center. Gaia provides catalog measurements and labelled position predictions.</p>
-    <p>Choose <strong>Review this point</strong>. In the local demo, checks are skipped and posts are simulated in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
+    <p><strong>Double-click</strong> a point, on a dated image or anywhere on the map. A box with an X marks it and six catalogs are checked at once, no sign-in needed. Use <strong>Show on map</strong> for sources from any catalog. Gaia can be predicted for the displayed date; other positions stay at their published epoch. A single click opens the full Gaia source inspector.</p>
+    <p>Choose <strong>Submit to leaderboard</strong> for any marked point, including the plain map. Sign in, score the point, then add a title and note. No loaded images are needed. The local demo checks catalogs when available, skips brightness measurements and stores posts only in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
     <p>These are independent cone searches, not identity verdicts. Different epochs, motion and sensitivity matter. No result does not mean a new object; an unavailable catalog stays unavailable.</p>
   </> },
   { title: "5. Share and discuss", body: <>
-    <p>Add a title and a question or observation. The reviewed point stays marked on its original frame. Posting puts the review on the <strong>Participation leaderboard</strong> with an evidence link and public discussion.</p>
-    <p>Points reward documented review effort, regardless of match count: 10 for saved real evidence, 10 for multiple dates and 5 per completed catalog search, up to 50. Partial or failed searches earn no catalog points. This is not rarity or a verified discovery.</p>
-    <p>Saved evidence reopens with the same frames, dates, wavelength, stretch and marks. Local demo replies stay in this browser.</p>
+    <p>Add a title and a question or observation. Posting puts the sky point on the <strong>Participation leaderboard</strong> with a public discussion. If the same catalog object or a point within 15″ is already listed, open its discussion instead.</p>
+    <p>Points: 10 if a catalog already lists a source at the point. 20 if none of the six catalogs lists one and the server measures the point at least 5σ above its surroundings in any two of SPHEREx, WISE, DSS and NEOSSat; the server fetches these images itself. Otherwise 0, and you can still post it. Points are not a discovery.</p>
+    <p>Point-only entries reopen the map without fetching a comparison. Saved image evidence still reopens with the same frames, dates, wavelength, stretch and marks. Local demo replies stay in this browser.</p>
   </> },
   { title: "Gaps stay visible", body: <>
     <p>Single epochs, missing coverage, incompatible images and archive outages have separate states. A failed catalog check never becomes “no object.” All five challenge targets have recorded outcomes; a lookup or a pair of images alone does not prove a visible target or observed change.</p>

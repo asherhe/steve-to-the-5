@@ -45,51 +45,54 @@ class ReviewDatabaseFlow(unittest.IsolatedAsyncioTestCase):
             saved = copy.deepcopy(SAVED)
             async def load(identifier):
                 return saved if identifier == saved['id'] else None
+            point = {'ra': SAVED['field']['ra'], 'dec': SAVED['field']['dec']}
             async def catalogs(ra, dec, radius, observed):
                 report = copy.deepcopy(FIXTURE['review']['catalogReview'])
                 report.update(ra=ra, dec=dec, radiusArcsec=radius, observedAtUtc=observed)
-                # Unavailability stays explicit in the saved snapshot and earns no catalog points.
-                report['checks'][0]['status'] = 'unavailable'
+                # A synthetic Gaia row at the first point: every nearby point is the same known object.
+                report['checks'][0].update(status='candidates', rows=[{'sourceId': '42', **point}])
                 return report
+            async def cutouts(ra, dec):
+                raise AssertionError('A known object needs no brightness measurement')
             async with httpx.AsyncClient(transport=httpx.MockTransport(upstream)) as proxy:
                 app = FastAPI()
-                app.include_router(create_router(Supabase(proxy, 'https://supabase.test', 'public', 'server-only'), load, load_wise_comparison=load, load_catalog_review=catalogs))
+                app.include_router(create_router(Supabase(proxy, 'https://supabase.test', 'public', 'server-only'), load,
+                                                 load_wise_comparison=load, load_catalog_review=catalogs, load_cutouts=cutouts))
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as api:
-                    headers = {'Authorization': 'Bearer one'}
-                    request = {**FIXTURE['request'], 'survey': 'wise'}
-                    self.assertEqual((await api.post('/api/findings/reviews', json=request)).status_code, 401)
-                    reviewed = await api.post('/api/findings/reviews', json=request, headers=headers)
+                    one, two = {'Authorization': 'Bearer one'}, {'Authorization': 'Bearer two'}
+                    request = {**point, 'radiusArcsec': 30}
+                    self.assertEqual((await api.post('/api/findings/points/review', json=request)).status_code, 401)
+                    reviewed = await api.post('/api/findings/points/review', json=request, headers=one)
                     self.assertEqual(reviewed.status_code, 201, reviewed.text)
                     report = reviewed.json()
-                    self.assertEqual(report['score'], 45)
-                    body = {key: request[key] for key in ('ra', 'dec', 'comparisonId', 'survey')}
-                    body.update(title='Review the dated point', note='Could this be an artifact?', reviewId=report['id'], marks=[{key: request[key] for key in ('frameId', 'ra', 'dec')}])
+                    self.assertEqual((report['score'], report['classification'], report['identity']['name'], report['duplicate']),
+                                     (10, 'known', '42', None))
+                    body = {**point, 'title': 'Known star in SPHEREx', 'note': 'Is this the Gaia source?', 'reviewId': report['id']}
                     self.assertEqual((await api.post('/api/findings', json=body)).status_code, 401)
-                    self.assertEqual((await api.post('/api/findings', json=body, headers={'Authorization': 'Bearer two'})).json()['code'], 'invalid_review')
-                    created = await api.post('/api/findings', json=body, headers=headers)
+                    self.assertEqual((await api.post('/api/findings', json=body, headers=two)).status_code, 422)
+                    created = await api.post('/api/findings', json=body, headers=one)
                     self.assertEqual(created.status_code, 201, created.text)
                     identifier = created.json()['id']
-                    duplicate = await api.post('/api/findings', json=body, headers=headers)
-                    self.assertEqual(duplicate.status_code, 409)
                     board = (await api.get('/api/findings/leaderboard?board=allTime')).json()
-                    self.assertEqual(len(board['entries']), 1)
-                    self.assertEqual(board['entries'][0]['rarityScore'], 45)
-                    self.assertEqual(board['entries'][0]['survey'], 'wise')
-                    self.assertEqual(board['entries'][0]['rank'], 1)
+                    self.assertEqual([(e['rarityScore'], e['rank'], e['comparisonId']) for e in board['entries']], [(10, 1, None)])
+                    # A second user 20 arcsec away (outside the 15 arcsec radius) matches the same Gaia source.
+                    other = {'ra': point['ra'], 'dec': point['dec'] + 20 / 3600, 'radiusArcsec': 30}
+                    second = (await api.post('/api/findings/points/review', json=other, headers=two)).json()
+                    self.assertTrue(second['duplicate']['sameObject'])
+                    second_body = {'ra': other['ra'], 'dec': other['dec'], 'title': 'Same star', 'note': 'Again', 'reviewId': second['id']}
+                    blocked = await api.post('/api/findings', json=second_body, headers=two)
+                    self.assertEqual((blocked.status_code, blocked.json()['code']), (409, 'already_on_leaderboard'))
                     thread = (await api.get('/api/findings/' + identifier)).json()
-                    self.assertEqual(thread['candidateReview'], report)
-                    self.assertEqual(thread['marks'], body['marks'])
-                    self.assertEqual(thread['comparisonId'], SAVED['id'])
+                    self.assertEqual((thread['comparisonId'], thread['marks'], thread['candidateReview']['score']), (None, [], 10))
                     self.assertNotIn('email', json.dumps(thread))
-                    self.assertEqual((await api.post(f'/api/findings/{identifier}/replies', json={'text': 'Anonymous'})).status_code, 401)
-                    reply = await api.post(f'/api/findings/{identifier}/replies', json={'text': 'The saved dates agree.'}, headers={'Authorization': 'Bearer two'})
+                    reply = await api.post(f'/api/findings/{identifier}/replies', json={'text': 'Matches Gaia.'}, headers=two)
                     self.assertEqual(reply.status_code, 201)
-                    thread = (await api.get('/api/findings/' + identifier)).json()
-                    self.assertEqual(thread['replies'][0]['authorDisplayName'], 'Observer Two')
-                    self.assertEqual(saved, SAVED, 'Review/discussion must not mutate image evidence')
                     await asyncio.to_thread(command, 'hide', {'id': identifier})
-                    self.assertEqual((await api.get('/api/findings/' + identifier)).status_code, 404)
                     self.assertEqual((await api.get('/api/findings/leaderboard?board=allTime')).json()['entries'], [])
+                    # A hidden entry no longer holds the object.
+                    retry = await api.post('/api/findings', json=second_body, headers=two)
+                    self.assertEqual(retry.status_code, 201, retry.text)
+                    self.assertEqual(saved, SAVED, 'Review/discussion must not mutate image evidence')
         finally:
             db.stdin.close()
             try:

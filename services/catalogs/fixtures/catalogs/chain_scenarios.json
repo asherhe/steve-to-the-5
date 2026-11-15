@@ -1,0 +1,71 @@
+{
+  "_description": "Synthetic check-chain rows for offline review and tests. Every name and value is invented for UI and logic testing; none is a real catalog entry or a dated live query. Gaia DR3 rows come from the existing nearby_*.json fixtures. A query selects the scenario with the nearest anchor; rows then match by their own coordinates.",
+  "scenarios": [
+    {
+      "name": "high_proper_motion",
+      "_note": "Anchor at the Barnard's Star preset. Rows share one fast proper motion at different reference epochs, so they only match after propagation to a recent epoch. The 2MASS row has no proper motion and stays ~85 arcsec away.",
+      "ra": 269.4521,
+      "dec": 4.6933,
+      "catalogs": {
+        "simbad": [
+          {"name": "Synthetic SIMBAD star A", "ra": 269.45565, "dec": 4.62223, "refEpoch": 2000.0, "pmRaCosDecMasYr": -802.803, "pmDecMasYr": 10362.542, "detail": "type PM* (synthetic)"}
+        ],
+        "catwise2020": [
+          {"name": "Synthetic CatWISE A", "ra": 269.4522, "dec": 4.66656, "refEpoch": 2015.4, "pmRaCosDecMasYr": -802.803, "pmDecMasYr": 10362.542, "detail": "W1−W2 0.21 mag (synthetic)"}
+        ],
+        "ultracoolsheet": [],
+        "skybot": [],
+        "vizier": [
+          {"name": "Synthetic 2MASS A", "ra": 269.45565, "dec": 4.62223, "detail": "2MASS (synthetic)"}
+        ]
+      }
+    },
+    {
+      "name": "cold_brown_dwarf",
+      "_note": "Anchor at the WISE 0855 preset. Listed by the cold-object catalogs.",
+      "ra": 133.7951,
+      "dec": -7.2451,
+      "catalogs": {
+        "simbad": [
+          {"name": "Synthetic SIMBAD brown dwarf B", "ra": 133.79512, "dec": -7.24515, "refEpoch": 2000.0, "pmRaCosDecMasYr": null, "pmDecMasYr": null, "detail": "type BD* (synthetic)"}
+        ],
+        "catwise2020": [
+          {"name": "Synthetic CatWISE B", "ra": 133.79505, "dec": -7.24508, "refEpoch": 2015.4, "pmRaCosDecMasYr": null, "pmDecMasYr": null, "detail": "W1−W2 3.50 mag (synthetic)"}
+        ],
+        "ultracoolsheet": [
+          {"name": "Synthetic ultracool B", "ra": 133.7951, "dec": -7.2451, "detail": "SpT Y4 (synthetic)"}
+        ],
+        "skybot": [],
+        "vizier": []
+      }
+    },
+    {
+      "name": "empty_field",
+      "_note": "Anchor at the sparse-field Gaia fixture. No catalog lists anything here.",
+      "ra": 83.8221,
+      "dec": 9.9357,
+      "catalogs": {
+        "simbad": [],
+        "catwise2020": [],
+        "ultracoolsheet": [],
+        "skybot": [],
+        "vizier": []
+      }
+    },
+    {
+      "name": "known_asteroid",
+      "_note": "Only the solar-system step lists an object, so the point is explained only when a dated frame supplies the observation time.",
+      "ra": 10.0,
+      "dec": 5.0,
+      "catalogs": {
+        "simbad": [],
+        "catwise2020": [],
+        "ultracoolsheet": [],
+        "skybot": [
+          {"name": "Synthetic asteroid C", "ra": 10.0004, "dec": 5.0003, "detail": "MB>Middle, V 21.3 mag (synthetic)"}
+        ],
+        "vizier": []
+      }
+    }
+  ]
+}

@@ -22,6 +22,16 @@ DATASETS = (
     ("neowiser", "wise/neowiser/p1bm_frm", "neowise-r"),
 )
 
+# Failure categories that may clear on a later try: 502/503/504, a timeout, a dropped connection.
+RETRYABLE = frozenset({"transient_http", "timeout", "transport"})
+# Retry limits live here, not in WiseConfig, so they do not change saved comparison identities.
+SEARCH_ATTEMPTS = 8
+SEARCH_TIMEOUT_ATTEMPTS = 2
+SEARCH_BACKOFF_BASE_SECONDS = 1.0
+SEARCH_BACKOFF_MAX_SECONDS = 20.0
+CUTOUT_ATTEMPTS = 5
+SECOND_ROUND_PAUSE_SECONDS = 5.0
+
 
 def exposure_ref(exposure):
     return {"exposureId": exposure.exposure_id, "dataset": exposure.dataset}
@@ -68,12 +78,37 @@ class WiseClient:
         self.config, self.cache_dir = config, cache_dir
         # The archive client supplies bounded streaming, retries, backoff and deadlines.
         self.http = IRSAClient(config, cache_dir, transport, sleep, **kwargs)
-        # A search that hangs is tried twice at most, so an archive outage is reported
-        # well inside the build deadline instead of using all of it.
+        # Searches make one request per call; `_search` decides when to try again.
         self.search_http = IRSAClient(
-            config.model_copy(update={"timeout_seconds": config.search_timeout_seconds,
-                                      "attempts": min(2, config.attempts)}),
+            config.model_copy(update={"timeout_seconds": config.search_timeout_seconds, "attempts": 1}),
             cache_dir, transport, sleep, **kwargs)
+        self.sleep = sleep
+
+    def _search(self, url, deadline):
+        """One mission-phase search, retried patiently. IRSA's IBE search often answers
+        with an instant 502 or 503, or drops the connection, for a while and then
+        recovers, so those are retried with growing backoff for about a minute. A search
+        that hangs costs `search_timeout_seconds` per try and is tried twice at most, so
+        a stalled archive is still reported inside the build deadline."""
+        attempts = timeouts = 0
+        while True:
+            try:
+                data, _ = self.search_http._get(url, deadline=deadline)
+                return data, attempts + 1
+            except ArchiveError as exc:
+                details = exc.details or {}
+                category = details.get("category")
+                attempts += 1
+                timeouts += category == "timeout"
+                if (category not in RETRYABLE or attempts >= SEARCH_ATTEMPTS
+                        or timeouts >= SEARCH_TIMEOUT_ATTEMPTS):
+                    exc.details = {**details, "attempts": attempts}
+                    raise
+            delay = min(SEARCH_BACKOFF_MAX_SECONDS, SEARCH_BACKOFF_BASE_SECONDS * 2 ** (attempts - 1))
+            delay *= 0.5 + 0.5 * self.search_http.jitter()
+            if deadline is not None:
+                delay = min(delay, max(0.0, deadline.remaining()))
+            self.sleep(delay)
 
     def close(self):
         self.http.close()
@@ -115,7 +150,7 @@ class WiseClient:
 
         content, _ = self._cached(
             "search", f"{IBE}/search/{path}?{query}", "tbl",
-            lambda url: self.search_http._get(url, deadline=deadline),
+            lambda url: self._search(url, deadline),
             valid)
         try:
             return parse_search(content.decode("utf-8", "replace"), dataset, path, release, field.band)
@@ -155,7 +190,7 @@ class WiseClient:
     def cutout(self, exposure, field, size_deg, deadline=None):
         query = urlencode({"center": f"{field.ra},{field.dec}", "size": f"{size_deg}deg", "gzip": "false"})
         return self._cached("cutouts", f"{exposure.source_url}?{query}", "fits",
-                            lambda url: self.http._get(url, deadline=deadline),
+                            lambda url: self.http._get(url, deadline=deadline, attempts=CUTOUT_ATTEMPTS),
                             lambda data: data.startswith(b"SIMPLE"))
 
     def retrieve(self, exposures, field, size_deg, deadline=None, on_done=None):
@@ -167,20 +202,27 @@ class WiseClient:
             except ArchiveError as exc:
                 return exposure, None, {**exposure_ref(exposure), **failure_record(exc)}
 
+        def retryable(result):
+            return result[2] is not None and result[2]["category"] in RETRYABLE
+
         def first_round(exposure):
             result = one(exposure)
-            # A rate-limited download is settled by the second round below.
-            if on_done is not None and (result[2] is None or result[2]["category"] != "transient_http"):
+            # A download that may succeed later is settled by the second round below.
+            if on_done is not None and not retryable(result):
                 on_done()
             return result
         with ThreadPoolExecutor(max_workers=self.config.concurrency) as pool:
             results = list(pool.map(first_round, exposures))
-        # IRSA answers 503 when requests arrive too quickly. Those downloads get one
-        # more round, one at a time, so a build does not depend on the rate limiter.
-        for index, (exposure, _, failure) in enumerate(results):
-            if failure is not None and failure["category"] == "transient_http":
+        # IRSA answers 503 when requests arrive too quickly, and sometimes stalls or drops
+        # connections. After a pause, those downloads get one more round, one at a time,
+        # so a build does not depend on the rate limiter or a brief outage.
+        if any(retryable(result) for result in results) and (deadline is None or not deadline.expired()):
+            pause = SECOND_ROUND_PAUSE_SECONDS
+            self.sleep(pause if deadline is None else min(pause, max(0.0, deadline.remaining())))
+        for index, result in enumerate(results):
+            if retryable(result):
                 if deadline is None or not deadline.expired():
-                    results[index] = one(exposure)
+                    results[index] = one(result[0])
                 if on_done is not None:
                     on_done()
         return Retrieval([(e, data) for e, data, failure in results if failure is None],

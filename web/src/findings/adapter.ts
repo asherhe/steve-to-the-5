@@ -2,7 +2,11 @@ import type { FindingListItem } from './types.ts';
 import { LIMITS, isFiniteNumber, isValidSkyPosition, normalizeRa } from './validation.ts';
 
 /** Marker data handed to the viewer's marker primitives (same sky coordinates as image positions). */
-export type PinMarker = { kind: 'pin'; key: string; findingId: string; ra: number; dec: number; title: string };
+export type PinMarker = {
+  kind: 'pin'; key: string; findingId: string; ra: number; dec: number; title: string;
+  /** Optional summary shown in the Community findings list; absent from older servers. */
+  author?: string; createdAtUtc?: string; replyCount?: number; survey?: 'spherex' | 'wise';
+};
 export type ClusterMarker = { kind: 'cluster'; key: string; ra: number; dec: number; count: number; zoomTo: number };
 export type FindingMarker = PinMarker | ClusterMarker;
 
@@ -31,7 +35,7 @@ export function toMarkers(items: readonly unknown[], maxMarkers: number = LIMITS
     }
     let m: FindingMarker | null = null;
     if (typeof r.id === 'string' && r.id && typeof r.title === 'string') {
-      m = { kind: 'pin', key: `pin:${r.id}`, findingId: r.id, title: r.title, ...pos };
+      m = { kind: 'pin', key: `pin:${r.id}`, findingId: r.id, title: r.title, ...pos, ...pinSummary(r) };
     } else if (isFiniteNumber(r.count) && Number.isInteger(r.count) && r.count > 0 && isFiniteNumber(r.zoomTo)) {
       m = { kind: 'cluster', key: `cluster:${pos.ra.toFixed(5)}:${pos.dec.toFixed(5)}:${r.count}`, count: r.count, zoomTo: r.zoomTo, ...pos };
     }
@@ -47,6 +51,16 @@ export function toMarkers(items: readonly unknown[], maxMarkers: number = LIMITS
     markers.push(m);
   }
   return { markers, dropped };
+}
+
+/** Keeps only well-formed summary fields; a bad value is left out, never shown wrong. */
+function pinSummary(r: Record<string, unknown>): Pick<PinMarker, 'author' | 'createdAtUtc' | 'replyCount' | 'survey'> {
+  const out: Pick<PinMarker, 'author' | 'createdAtUtc' | 'replyCount' | 'survey'> = {};
+  if (typeof r.authorDisplayName === 'string' && r.authorDisplayName.trim()) out.author = r.authorDisplayName.trim();
+  if (typeof r.createdAtUtc === 'string' && Number.isFinite(Date.parse(r.createdAtUtc))) out.createdAtUtc = r.createdAtUtc;
+  if (isFiniteNumber(r.replyCount) && Number.isInteger(r.replyCount) && r.replyCount >= 0) out.replyCount = r.replyCount;
+  if (r.survey === 'spherex' || r.survey === 'wise') out.survey = r.survey;
+  return out;
 }
 
 /** What a click on a marker means: open a thread, or zoom the map into a cluster. */
@@ -79,7 +93,7 @@ export type ActivityStatus = 'off' | 'idle' | 'loading' | 'ready' | 'error';
 export function describeActivity(state: { status: ActivityStatus; markers: readonly FindingMarker[]; dropped: number; error: string | null }): string {
   switch (state.status) {
     case 'off':
-      return 'Community findings are hidden.';
+      return 'Findings are hidden. Turn on to see other observers’ posts on the map.';
     case 'idle':
       return 'Findings load once the map has a position.';
     case 'loading':

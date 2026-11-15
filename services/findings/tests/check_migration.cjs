@@ -78,19 +78,29 @@ async function main() {
     // duplicates cannot award another entry, and hidden findings leave the board.
     const reviewId = "66666666-6666-4666-8666-666666666666";
     const rankedId = "77777777-7777-4777-8777-777777777777";
-    const report = {scoreVersion: "review-effort-v1", score: 50, reasons: ["+10: saved evidence"], catalogReview: {checks: []}};
+    const report = {scoreVersion: "point-check-v3", score: 20, reasons: ["+10: saved evidence"], catalogReview: {checks: []}};
     await db.query(`insert into public.spherex_candidate_reviews
-      (id, author_id, comparison_id, survey, ra, dec, candidate_key, fov_arcmin, score, report)
-      values ($1,$2,'saved-wise','wise',1,2,$3,6,50,$4::jsonb)`,
-      [reviewId, ownerId, "a".repeat(64), JSON.stringify(report)]);
+      (id, author_id, comparison_id, survey, ra, dec, candidate_key, fov_arcmin, score, report, object_key)
+      values ($1,$2,'saved-wise','wise',1,2,$3,6,20,$4::jsonb,$5)`,
+      [reviewId, ownerId, "a".repeat(64), JSON.stringify(report), "b".repeat(64)]);
     await assert.rejects(db.query("update public.spherex_candidate_reviews set score=10 where id=$1", [reviewId]), /permission denied/);
     await db.query(`insert into public.spherex_findings
       (id, comparison_id, survey, ra, dec, title, note, author_id, author_display_name, review_id, candidate_key)
       values ($1,'saved-wise','wise',1,2,'Cold-object review','Please check',$2,'Observer',$3,$4)`,
       [rankedId, ownerId, reviewId, "a".repeat(64)]);
+    await db.query("update public.spherex_findings set object_key=$2 where id=$1", [rankedId, "b".repeat(64)]);
+    // One entry per object: same catalog key anywhere, or any entry within the radius.
+    const near = (ra, dec, key) => value("select public.spherex_point_entry_near($1,$2,15,$3) as result", [ra, dec, key]);
+    assert.equal((await near(1, 2 + 10 / 3600, null)).findingId, rankedId);
+    assert.equal(await near(1, 2 + 20 / 3600, null), null);
+    assert.equal((await near(10, 20, "b".repeat(64))).sameObject, true);
+    assert.equal(await near(359.999, 2, null), null);
+    await assert.rejects(db.query(`insert into public.spherex_findings
+      (id, ra, dec, title, note, author_id, author_display_name, object_key)
+      values (gen_random_uuid(),5,5,'Same object','Elsewhere',$1,'Observer',$2)`, [readerId, "b".repeat(64)]), /unique constraint/);
     const board = (period) => value("select public.spherex_review_leaderboard($1) as result", [period]);
     assert.equal((await board("daily"))[0].findingId, rankedId);
-    assert.equal((await board("allTime"))[0].rarityScore, 50);
+    assert.equal((await board("allTime"))[0].rarityScore, 20);
     assert.equal((await board("allTime"))[0].survey, "wise");
     assert.equal((await board("allTime"))[0].rank, 1);
     const rankedThread = await value("select public.spherex_finding_thread($1) as result", [rankedId]);

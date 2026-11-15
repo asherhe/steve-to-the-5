@@ -66,7 +66,7 @@ export function NeossatPanel({ position, snapshot }: { position: SkyPosition | n
   return <div className="neossat-panel" aria-busy={loading}>
     <p className="pane-intro">NEOSSat optical reference images from CADC. Images stay fixed until you press Refresh.</p>
     <div className="neossat-actions">
-      <p className="neossat-selection">{position ? `Selected: ${positionText(position)}` : "Select a point on the map or search for a field first."}</p>
+      <p className="neossat-selection">{position ? `Selected: ${positionText(position)}` : "Double-click the map to mark a point, or search for a field first."}</p>
       <button type="button" className="primary" disabled={!position || loading} onClick={() => void refresh(position)}>{loading ? "Refreshing…" : "Refresh"}</button>
     </div>
     {loading && <p role="status">Querying NEOSSat observations covering the selected position…</p>}

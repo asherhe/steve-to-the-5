@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/findings/points/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Point Review
+         * @description Scores a marked point; the server runs the catalog chain and fetches survey cutouts.
+         */
+        post: operations["point_review_api_findings_points_review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/findings": {
         parameters: {
             query?: never;
@@ -111,6 +131,45 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BrightnessMeasurement */
+        BrightnessMeasurement: {
+            /**
+             * Survey
+             * @enum {string}
+             */
+            survey: "spherex" | "wise";
+            /** Comparisonid */
+            comparisonId: string;
+            /** Frameid */
+            frameId: string;
+            /** Observedatutc */
+            observedAtUtc?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "measured" | "outside" | "unmeasurable" | "unavailable";
+            /** Snr */
+            snr?: number | null;
+            /**
+             * Bright
+             * @default false
+             */
+            bright: boolean;
+        };
+        /** CatalogIdentity */
+        CatalogIdentity: {
+            /** Ra */
+            ra: number;
+            /** Dec */
+            dec: number;
+            /** Catalog */
+            catalog: string;
+            /** Name */
+            name: string;
+            /** Separationarcsec */
+            separationArcsec?: number | null;
+        };
         /** Cluster */
         Cluster: {
             /** Ra */
@@ -137,6 +196,38 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * EvidenceRef
+         * @description A saved comparison from another survey, used to test brightness at the point.
+         */
+        EvidenceRef: {
+            /**
+             * Survey
+             * @enum {string}
+             */
+            survey: "spherex" | "wise";
+            /** Comparisonid */
+            comparisonId: string;
+        };
+        /** ExistingEntry */
+        ExistingEntry: {
+            /**
+             * Findingid
+             * Format: uuid
+             */
+            findingId: string;
+            /** Title */
+            title: string;
+            /** Displayname */
+            displayName: string;
+            /** Separationarcsec */
+            separationArcsec?: number | null;
+            /**
+             * Sameobject
+             * @default false
+             */
+            sameObject: boolean;
+        };
         /** Finding */
         Finding: {
             /** Ra */
@@ -151,7 +242,7 @@ export interface components {
             /** Title */
             title: string;
             /** Comparisonid */
-            comparisonId: string;
+            comparisonId?: string | null;
             /** Note */
             note: string;
             /** Marks */
@@ -180,7 +271,7 @@ export interface components {
             /** Dec */
             dec: number;
             /** Comparisonid */
-            comparisonId: string;
+            comparisonId?: string | null;
             /**
              * Survey
              * @default spherex
@@ -195,6 +286,21 @@ export interface components {
             note: string;
             /** Marks */
             marks?: components["schemas"]["Mark"][];
+        };
+        /**
+         * FrameRef
+         * @description The dated frame a point was marked on; its observation time is used for SkyBoT.
+         */
+        FrameRef: {
+            /**
+             * Survey
+             * @enum {string}
+             */
+            survey: "spherex" | "wise";
+            /** Comparisonid */
+            comparisonId: string;
+            /** Frameid */
+            frameId: string;
         };
         /** LeaderboardEntry */
         LeaderboardEntry: {
@@ -213,7 +319,7 @@ export interface components {
              */
             findingId: string;
             /** Comparisonid */
-            comparisonId: string;
+            comparisonId?: string | null;
             /**
              * Survey
              * @enum {string}
@@ -232,7 +338,7 @@ export interface components {
             /** Reasons */
             reasons: string[];
             /** Fovarcmin */
-            fovArcmin: number;
+            fovArcmin?: number | null;
             /** Enteredatutc */
             enteredAtUtc: string;
         };
@@ -260,7 +366,11 @@ export interface components {
             /** Frameid */
             frameId: string;
         };
-        /** Pin */
+        /**
+         * Pin
+         * @description A finding on the map. The summary fields are absent before the
+         *     viewport-summary migration is applied, so clients treat them as optional.
+         */
         Pin: {
             /** Ra */
             ra: number;
@@ -273,6 +383,70 @@ export interface components {
             id: string;
             /** Title */
             title: string;
+            /** Authordisplayname */
+            authorDisplayName?: string | null;
+            /** Createdatutc */
+            createdAtUtc?: string | null;
+            /** Replycount */
+            replyCount?: number | null;
+            /** Survey */
+            survey?: ("spherex" | "wise") | null;
+        };
+        /** PointReviewInput */
+        PointReviewInput: {
+            /** Ra */
+            ra: number;
+            /** Dec */
+            dec: number;
+            /**
+             * Radiusarcsec
+             * @default 30
+             */
+            radiusArcsec: number;
+            frame?: components["schemas"]["FrameRef"] | null;
+        };
+        /** PointReviewResponse */
+        PointReviewResponse: {
+            /** Ra */
+            ra: number;
+            /** Dec */
+            dec: number;
+            /**
+             * Radiusarcsec
+             * @default 30
+             */
+            radiusArcsec: number;
+            frame?: components["schemas"]["FrameRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Observedatutc */
+            observedAtUtc?: string | null;
+            /** Reviewedatutc */
+            reviewedAtUtc: string;
+            /** Scoreversion */
+            scoreVersion: string;
+            /** Score */
+            score: number;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "known" | "uncatalogued" | "incomplete";
+            /** Reasons */
+            reasons: string[];
+            identity?: components["schemas"]["CatalogIdentity"] | null;
+            /** Catalogreview */
+            catalogReview: {
+                [key: string]: unknown;
+            };
+            /** Brightness */
+            brightness?: components["schemas"]["SourceMeasurement"][];
+            duplicate?: components["schemas"]["ExistingEntry"] | null;
+            /** Limitations */
+            limitations: string[];
         };
         /** PublicAuthConfig */
         PublicAuthConfig: {
@@ -321,6 +495,8 @@ export interface components {
              * @default 120
              */
             radiusArcsec: number;
+            /** Brightnessevidence */
+            brightnessEvidence?: components["schemas"]["EvidenceRef"][];
         };
         /** ReviewResponse */
         ReviewResponse: {
@@ -343,6 +519,8 @@ export interface components {
              * @default 120
              */
             radiusArcsec: number;
+            /** Brightnessevidence */
+            brightnessEvidence?: components["schemas"]["EvidenceRef"][];
             /**
              * Id
              * Format: uuid
@@ -356,14 +534,46 @@ export interface components {
             scoreVersion: string;
             /** Score */
             score: number;
+            /** Classification */
+            classification?: ("known" | "uncatalogued" | "incomplete") | null;
             /** Reasons */
             reasons: string[];
             /** Catalogreview */
             catalogReview: {
                 [key: string]: unknown;
             };
+            /** Brightness */
+            brightness?: components["schemas"]["BrightnessMeasurement"][];
             /** Limitations */
             limitations: string[];
+        };
+        /** SourceMeasurement */
+        SourceMeasurement: {
+            /**
+             * Survey
+             * @enum {string}
+             */
+            survey: "spherex" | "wise" | "dss" | "neossat";
+            /** Label */
+            label?: string | null;
+            /** Sourceurl */
+            sourceUrl?: string | null;
+            /** Observedatutc */
+            observedAtUtc?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "measured" | "outside" | "unmeasurable" | "no_coverage" | "unavailable";
+            /** Snr */
+            snr?: number | null;
+            /**
+             * Bright
+             * @default false
+             */
+            bright: boolean;
+            /** Message */
+            message?: string | null;
         };
         /** Viewport */
         Viewport: {
@@ -397,7 +607,7 @@ export interface operations {
                     "application/json": components["schemas"]["PublicAuthConfig"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -437,7 +647,7 @@ export interface operations {
                     "application/json": components["schemas"]["LeaderboardResult"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -488,7 +698,67 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    point_review_api_findings_points_review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PointReviewInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PointReviewResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -540,7 +810,7 @@ export interface operations {
                     "application/json": components["schemas"]["Viewport"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -591,7 +861,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -640,7 +910,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -702,7 +972,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;

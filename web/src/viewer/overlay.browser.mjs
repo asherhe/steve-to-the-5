@@ -2,9 +2,11 @@ const {chromium}=await import(process.env.PLAYWRIGHT_MODULE??"playwright");
 import assert from "node:assert/strict";
 const origin=process.env.VIEWER_TEST_URL??"http://127.0.0.1:5173";
 const browser=await chromium.launch({channel:"chrome",headless:true});
+// The first-run tour covers the page and intercepts clicks; mark it seen before each page loads.
+const skipTour=()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1");
+for(const make of ["newContext","newPage"]){const original=browser[make].bind(browser);browser[make]=async(...args)=>{const made=await original(...args);await made.addInitScript(skipTour);return made;};}
 try{
  const page=await browser.newPage({viewport:{width:1400,height:950}});
- await page.addInitScript(()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1"));
  const pngs=await page.evaluate(()=>[0,1].map(index=>{const canvas=document.createElement("canvas");canvas.width=320;canvas.height=240;const ctx=canvas.getContext("2d");
    for(const [x,y,color] of [[index?130:40,index?110:40,"rgb(224,32,16)"],[240,50,"rgb(30,200,70)"],[190,170,"rgb(60,120,200)"]]){ctx.fillStyle=color;ctx.fillRect(x,y,30,30);}return canvas.toDataURL("image/png").split(",")[1];}));
  let searches=0;
@@ -18,9 +20,9 @@ try{
  await page.goto(origin+"/?comparison=overlay-diagnostic");await page.locator(".dated-footprint").waitFor();
  await page.waitForFunction(()=>!document.querySelector(".dated-overlay-status"));
  await page.locator(".blink-button:not([disabled])").waitFor();
- const timeBox=await page.getByRole("region",{name:"Time",exact:true}).boundingBox();
- assert(timeBox.x+timeBox.width<700,"Time window must leave the field centre visible on desktop");
- await page.getByRole("button",{name:"Close Time",exact:true}).click();
+ const timeBox=await page.getByRole("region",{name:"Blink",exact:true}).boundingBox();
+ assert(timeBox.x+timeBox.width<700,"Blink window must leave the field centre visible on desktop");
+ await page.getByRole("button",{name:"Close Blink",exact:true}).click();
  async function footprint(){return page.locator(".dated-footprint").evaluate(canvas=>{
    const image=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height);let left=canvas.width,top=canvas.height,right=0,bottom=0;
    for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(image.data[(y*canvas.width+x)*4+3]){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
@@ -40,23 +42,25 @@ try{
  const isMask=rgb=>rgb[0]>=11&&rgb[0]<=18&&rgb[1]>=17&&rgb[1]<=27&&rgb[2]>=22&&rgb[2]<=34;
  assert(isMask(colors.transparent),"Missing pixels show a neutral mask, never reference-sky pixels");
  assert.notDeepEqual(colors.transparent,colors.background);
- await page.getByRole("button",{name:"Time",exact:true}).click();
+ await page.getByRole("button",{name:"Blink",exact:true}).click();
  await page.getByRole("button",{name:"Next observation",exact:true}).click();
  await page.getByText(/Dated SPHEREx · 2025-12-15/).waitFor();
  await page.waitForFunction(()=>!document.querySelector(".dated-overlay-status"));
- await page.getByRole("button",{name:"Close Time",exact:true}).click();
+ await page.getByRole("button",{name:"Close Blink",exact:true}).click();
  const later=await renderedColors();
  assert.deepEqual(later.moved,[224,32,16],"The moving source must appear at its second position");
  assert(isMask(later.red),"The previous position must disappear when the date changes");
  assert.deepEqual(later.green,colors.green);assert.deepEqual(later.blue,colors.blue);
- await page.getByRole("button",{name:"Time",exact:true}).click();
+ await page.getByRole("button",{name:"Blink",exact:true}).click();
  await page.getByRole("button",{name:"Previous observation",exact:true}).click();
- await page.getByRole("button",{name:"Close Time",exact:true}).click();
+ await page.getByRole("button",{name:"Close Blink",exact:true}).click();
  assert.deepEqual((await renderedColors()).red,colors.red,"Switching back restores the original pixels");
  const before=await page.locator(".sky-readout").innerText();
  await page.getByRole("button",{name:"Zoom in",exact:true}).click();
  await page.waitForFunction(before=>document.querySelector(".sky-readout").textContent!==before,before);
- const zoomed=await footprint();assert(zoomed.right-zoomed.left>(box.right-box.left)*1.8);
+ // The readout updates before the overlay redraws; wait for the footprint to grow.
+ let zoomed=await footprint();for(let i=0;i<30&&!(zoomed.right-zoomed.left>(box.right-box.left)*1.8);i++){await page.waitForTimeout(100);zoomed=await footprint();}
+ assert(zoomed.right-zoomed.left>(box.right-box.left)*1.8,JSON.stringify({box,zoomed}));
  await page.mouse.move(300,150);await page.mouse.down();await page.mouse.move(350,190,{steps:10});await page.mouse.up();
  await page.getByRole("button",{name:"More map options",exact:true}).click();await page.getByRole("button",{name:"All-sky view",exact:true}).click();
  assert.equal(searches,0);await page.getByText(/Dated SPHEREx · 2025-06-15/).waitFor();

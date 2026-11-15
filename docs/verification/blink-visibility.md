@@ -13,7 +13,7 @@ At a 1440-by-1000 viewport the default Time panel covered both source positions.
 The smaller stars above it remained visible. Also, transparent masks in the dated
 image exposed the older AllWISE reference layer, mixing epochs visually.
 
-Time now starts at the left edge on desktop. The dated sky raster composites the
+The Blink window (previously named Time) now starts at the left edge on desktop. The dated sky raster composites the
 saved PNG over neutral stripes before placing it with its unchanged WCS. Opaque
 source pixels retain their original RGB values and stretch. Both sky and details
 views explain the mask. Stored evidence, source images, dates and comparison IDs
@@ -38,3 +38,8 @@ installation and `VIEWER_TEST_URL=http://127.0.0.1:5178`; scripts are under
 `web/src/viewer/`. Real replay used the existing local evidence store, with no
 fresh archive search. No deployed verification or longer SPHEREx baseline is
 claimed by these checks.
+
+Integration with `origin/main` at `b90b97f` preserved its unified Blink window and
+`FrameDetails` replacement for `ComparisonPlayback`. The mask explanation moved
+into Frame image, and browser selectors use the new Blink names. The build and all
+three browser checks above passed again on the merged code before pushing.

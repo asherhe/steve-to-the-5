@@ -16,6 +16,7 @@ export type Preview =
   | { kind: "loading"; startedAt: number; progress?: BuildProgress }
   | { kind: "error"; message: string }
   | { kind: "search"; result: ComparisonResult; field: Field }
+  | { kind: "point"; finding: SavedFinding }
   | { kind: "saved"; comparison: Comparison; finding?: SavedFinding };
 
 /**
@@ -36,7 +37,7 @@ export function useComparisonLoader({ source, resolveName, loadFinding, onFocus,
   const [preview, setPreview] = useState<Preview>({ kind: "idle" });
 
   useEffect(() => {
-    if (!request || !source) {
+    if (!request || (!source && request.kind !== "saved")) {
       setPreview({ kind: "idle" });
       return;
     }
@@ -57,11 +58,19 @@ export function useComparisonLoader({ source, resolveName, loadFinding, onFocus,
             if (signal.aborted) return;
             if (!finding) throw new EvidenceReplayError("Saved finding not found. Check the finding ID.");
             if (current.id && current.id !== finding.comparisonId) throw new EvidenceReplayError("This finding belongs to a different comparison. Open its own evidence link.");
+            if (!finding.comparisonId) {
+              const { ra, dec } = finding;
+              if (typeof ra !== "number" || !Number.isFinite(ra) || ra < 0 || ra >= 360 || typeof dec !== "number" || !Number.isFinite(dec) || Math.abs(dec) > 90 || finding.marks.length) throw new EvidenceReplayError("This finding has an invalid sky position.");
+              setPreview({ kind: "point", finding });
+              onFocus({ ra, dec, fovArcmin: 6 });
+              return;
+            }
             if (finding.survey && finding.survey !== survey) {
               setPreview({ kind: "redirect", survey: finding.survey, request: { ...current, id: finding.comparisonId } });
               return;
             }
           }
+          if (!active) throw new EvidenceReplayError("The saved evidence service is not connected.");
           const comparison = await active.loadSaved(current.id || finding?.comparisonId || "", signal);
           if (comparison && finding) validateFinding(finding, comparison);
           if (!signal.aborted) {
@@ -87,6 +96,7 @@ export function useComparisonLoader({ source, resolveName, loadFinding, onFocus,
           field = current.field;
         }
 
+        if (!active) return;
         const result = await active.search(field, signal, (progress) => {
           if (!signal.aborted) setPreview((shown) => shown.kind === "loading" ? { ...shown, progress } : shown);
         }, { mode: current.mode, refresh: current.refresh });

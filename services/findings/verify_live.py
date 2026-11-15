@@ -86,7 +86,10 @@ async def verify_flow(client, comparison_id, ra, dec, first_token, second_token,
         require(response.status_code == 200 and len(response.json()["items"]) <= 100, "Viewport query failed or exceeded its limit.")
         items = response.json()["items"]
         if zoom == 10:
-            require(any(item.get("id") == finding_id for item in items), "The new finding is missing from map pins.")
+            pin = next((item for item in items if item.get("id") == finding_id), None)
+            require(pin is not None, "The new finding is missing from map pins.")
+            require(bool(pin.get("authorDisplayName")) and bool(pin.get("createdAtUtc")) and pin.get("replyCount", 0) >= 1
+                    and pin.get("survey") in ("spherex", "wise"), "The map pin is missing its author, time, reply count or survey.")
         else:
             require(any(item.get("count", 0) > 0 and item.get("zoomTo", 0) >= 8 for item in items), "The map activity clusters are missing.")
     return finding_id

@@ -24,7 +24,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -81,14 +81,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -132,7 +132,84 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/findings/points/review": {
+      "post": {
+        "tags": [
+          "findings"
+        ],
+        "summary": "Point Review",
+        "description": "Scores a marked point; the server runs the catalog chain and fetches survey cutouts.",
+        "operationId": "point_review_api_findings_points_review_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PointReviewInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointReviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -244,14 +321,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -298,14 +375,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -361,14 +438,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -439,14 +516,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -484,6 +561,114 @@
   },
   "components": {
     "schemas": {
+      "BrightnessMeasurement": {
+        "properties": {
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey"
+          },
+          "comparisonId": {
+            "type": "string",
+            "title": "Comparisonid"
+          },
+          "frameId": {
+            "type": "string",
+            "title": "Frameid"
+          },
+          "observedAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedatutc"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "measured",
+              "outside",
+              "unmeasurable",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "snr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snr"
+          },
+          "bright": {
+            "type": "boolean",
+            "title": "Bright",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "survey",
+          "comparisonId",
+          "frameId",
+          "status"
+        ],
+        "title": "BrightnessMeasurement"
+      },
+      "CatalogIdentity": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "catalog": {
+            "type": "string",
+            "title": "Catalog"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "separationArcsec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Separationarcsec"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "catalog",
+          "name"
+        ],
+        "title": "CatalogIdentity"
+      },
       "Cluster": {
         "properties": {
           "ra": {
@@ -548,6 +733,72 @@
         ],
         "title": "ErrorResponse"
       },
+      "EvidenceRef": {
+        "properties": {
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "survey",
+          "comparisonId"
+        ],
+        "title": "EvidenceRef",
+        "description": "A saved comparison from another survey, used to test brightness at the point."
+      },
+      "ExistingEntry": {
+        "properties": {
+          "findingId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Findingid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "separationArcsec": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Separationarcsec"
+          },
+          "sameObject": {
+            "type": "boolean",
+            "title": "Sameobject",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "findingId",
+          "title",
+          "displayName"
+        ],
+        "title": "ExistingEntry"
+      },
       "Finding": {
         "properties": {
           "ra": {
@@ -572,9 +823,16 @@
             "title": "Title"
           },
           "comparisonId": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Comparisonid"
           },
           "note": {
@@ -631,7 +889,6 @@
           "dec",
           "id",
           "title",
-          "comparisonId",
           "note",
           "marks",
           "authorDisplayName",
@@ -655,9 +912,16 @@
             "title": "Dec"
           },
           "comparisonId": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Comparisonid"
           },
           "survey": {
@@ -707,11 +971,43 @@
         "required": [
           "ra",
           "dec",
-          "comparisonId",
           "title",
           "note"
         ],
         "title": "FindingInput"
+      },
+      "FrameRef": {
+        "properties": {
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise"
+            ],
+            "title": "Survey"
+          },
+          "comparisonId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Comparisonid"
+          },
+          "frameId": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Frameid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "survey",
+          "comparisonId",
+          "frameId"
+        ],
+        "title": "FrameRef",
+        "description": "The dated frame a point was marked on; its observation time is used for SkyBoT."
       },
       "LeaderboardEntry": {
         "properties": {
@@ -738,7 +1034,14 @@
             "title": "Findingid"
           },
           "comparisonId": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Comparisonid"
           },
           "survey": {
@@ -777,7 +1080,14 @@
             "title": "Reasons"
           },
           "fovArcmin": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Fovarcmin"
           },
           "enteredAtUtc": {
@@ -791,14 +1101,12 @@
           "dec",
           "id",
           "findingId",
-          "comparisonId",
           "survey",
           "rank",
           "displayName",
           "title",
           "rarityScore",
           "reasons",
-          "fovArcmin",
           "enteredAtUtc"
         ],
         "title": "LeaderboardEntry"
@@ -885,6 +1193,54 @@
           "title": {
             "type": "string",
             "title": "Title"
+          },
+          "authorDisplayName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authordisplayname"
+          },
+          "createdAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdatutc"
+          },
+          "replyCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replycount"
+          },
+          "survey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "spherex",
+                  "wise"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survey"
           }
         },
         "type": "object",
@@ -894,7 +1250,179 @@
           "id",
           "title"
         ],
-        "title": "Pin"
+        "title": "Pin",
+        "description": "A finding on the map. The summary fields are absent before the\nviewport-summary migration is applied, so clients treat them as optional."
+      },
+      "PointReviewInput": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "radiusArcsec": {
+            "type": "number",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Radiusarcsec",
+            "default": 30
+          },
+          "frame": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FrameRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec"
+        ],
+        "title": "PointReviewInput"
+      },
+      "PointReviewResponse": {
+        "properties": {
+          "ra": {
+            "type": "number",
+            "exclusiveMaximum": 360.0,
+            "minimum": 0.0,
+            "title": "Ra"
+          },
+          "dec": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Dec"
+          },
+          "radiusArcsec": {
+            "type": "number",
+            "maximum": 300.0,
+            "minimum": 5.0,
+            "title": "Radiusarcsec",
+            "default": 30
+          },
+          "frame": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FrameRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "observedAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedatutc"
+          },
+          "reviewedAtUtc": {
+            "type": "string",
+            "title": "Reviewedatutc"
+          },
+          "scoreVersion": {
+            "type": "string",
+            "title": "Scoreversion"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "known",
+              "uncatalogued",
+              "incomplete"
+            ],
+            "title": "Classification"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CatalogIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "catalogReview": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Catalogreview"
+          },
+          "brightness": {
+            "items": {
+              "$ref": "#/components/schemas/SourceMeasurement"
+            },
+            "type": "array",
+            "title": "Brightness"
+          },
+          "duplicate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExistingEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ra",
+          "dec",
+          "id",
+          "reviewedAtUtc",
+          "scoreVersion",
+          "score",
+          "classification",
+          "reasons",
+          "catalogReview",
+          "limitations"
+        ],
+        "title": "PointReviewResponse"
       },
       "PublicAuthConfig": {
         "properties": {
@@ -1000,6 +1528,14 @@
             "minimum": 5.0,
             "title": "Radiusarcsec",
             "default": 120
+          },
+          "brightnessEvidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRef"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Brightnessevidence"
           }
         },
         "additionalProperties": false,
@@ -1054,6 +1590,14 @@
             "title": "Radiusarcsec",
             "default": 120
           },
+          "brightnessEvidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRef"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Brightnessevidence"
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -1075,6 +1619,22 @@
             "type": "integer",
             "title": "Score"
           },
+          "classification": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "known",
+                  "uncatalogued",
+                  "incomplete"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classification"
+          },
           "reasons": {
             "items": {
               "type": "string"
@@ -1086,6 +1646,13 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Catalogreview"
+          },
+          "brightness": {
+            "items": {
+              "$ref": "#/components/schemas/BrightnessMeasurement"
+            },
+            "type": "array",
+            "title": "Brightness"
           },
           "limitations": {
             "items": {
@@ -1112,6 +1679,97 @@
           "limitations"
         ],
         "title": "ReviewResponse"
+      },
+      "SourceMeasurement": {
+        "properties": {
+          "survey": {
+            "type": "string",
+            "enum": [
+              "spherex",
+              "wise",
+              "dss",
+              "neossat"
+            ],
+            "title": "Survey"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceurl"
+          },
+          "observedAtUtc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observedatutc"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "measured",
+              "outside",
+              "unmeasurable",
+              "no_coverage",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "snr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snr"
+          },
+          "bright": {
+            "type": "boolean",
+            "title": "Bright",
+            "default": false
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "survey",
+          "status"
+        ],
+        "title": "SourceMeasurement"
       },
       "Viewport": {
         "properties": {

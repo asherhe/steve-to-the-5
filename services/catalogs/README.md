@@ -174,7 +174,9 @@ command in `docs/common-names.md`; external lookup remains disabled by default.
 
 `GET /api/catalogs/review?ra=...&dec=...&radiusArcsec=120&observedAtUtc=2026-01-01T00:00:00Z`
 provides six independent review aids, not a cross-identification or discovery verdict.
-Radius is 5?300 arcsec; a timezone-bearing observation time is required. Offline mode
+Radius is 5?300 arcsec; `observedAtUtc` is optional but must carry a timezone when given. Without it (a point
+marked on the undated all-sky mosaic) SkyBoT is `skipped`, since asteroid positions need a real
+observation time, and the response's `observedAtUtc` is null. Offline mode
 returns `skipped` for every check. The live route reuses the Gaia and SIMBAD reliability
 layer and adds CatWISE2020, pinned UltracoolSheet 2.1.0, SkyBoT geocentric predictions,
 and VizieR's AllWISE table only. It never searches every VizieR catalog.

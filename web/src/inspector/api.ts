@@ -2,6 +2,9 @@
 // overridden at integration. Distinguishes an empty result from a service error.
 
 import type { ApiErrorBody, GaiaDetail, NearbyResponse, ResolveResult } from "./types";
+import type { components } from "./catalog.generated";
+
+export type CatalogReview = components["schemas"]["CatalogReview"];
 
 export class CatalogApiError extends Error {
   code: string;
@@ -67,6 +70,17 @@ export function createCatalogClient(options: CatalogClientOptions = {}) {
     async detail(sourceId: string, options: { retry?: boolean } = {}): Promise<GaiaDetail> {
       const url = `${baseUrl}/catalogs/gaia/${encodeURIComponent(sourceId)}${options.retry ? "?retry=true" : ""}`;
       return readCatalogResponse<GaiaDetail>(await doFetch(url));
+    },
+
+    /** Six-catalog cone check around one point. `observedAtUtc` is the dated frame's time;
+     *  omit it for an undated point (SkyBoT is then skipped). No sign-in is needed. */
+    async review(
+      request: { ra: number; dec: number; radiusArcsec: number; observedAtUtc?: string | null },
+      signal?: AbortSignal,
+    ): Promise<CatalogReview> {
+      const params = new URLSearchParams({ ra: String(request.ra), dec: String(request.dec), radiusArcsec: String(request.radiusArcsec) });
+      if (request.observedAtUtc) params.set("observedAtUtc", request.observedAtUtc);
+      return readCatalogResponse<CatalogReview>(await doFetch(`${baseUrl}/catalogs/review?${params}`, { signal }));
     },
 
     async resolve(name: string, signal?: AbortSignal): Promise<ResolveResult> {

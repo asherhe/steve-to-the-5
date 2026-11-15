@@ -44,7 +44,7 @@ try {
   // DSS must remove the controls and dated sky layer and stop fetching comparisons.
   await page.getByRole("button", { name: "DSS", exact: true }).click();
   await page.locator(".time-controls").waitFor({ state: "hidden" });
-  assert.equal(await page.getByRole("button", { name: "Time", exact: true }).count(), 0);
+  assert.equal(await page.getByRole("button", { name: "Blink", exact: true }).count(), 0);
   assert.equal(await page.getByRole("button", { name: "Compare this field", exact: true }).count(), 0);
   assert.equal(await page.locator(".dated-footprint").count(), 0);
   const before = calls.length;
@@ -56,7 +56,7 @@ try {
   await page.getByRole("button", { name: "SPHEREx", exact: true }).click();
   await waitBlink();
   assert.equal(calls.length, before);
-  await page.getByRole("button", { name: "Close Time", exact: true }).click();
+  await page.getByRole("button", { name: "Close Blink", exact: true }).click();
   await page.getByRole("button", { name: "WISE", exact: true }).click();
   await search("10, 20");
   await waitBlink();
