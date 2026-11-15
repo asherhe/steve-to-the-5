@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from . import cutouts
 from .api import create_router
 from .supabase import ApiError, Supabase
+from .spectral_store import SpectralStore
 
 
 def create_app() -> FastAPI:
@@ -91,6 +92,6 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.include_router(create_router(supabase, load_saved_comparison,
         load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
-        load_cutouts=load_cutouts))
+        load_cutouts=load_cutouts, spectral_store=SpectralStore(os.environ.get("SPHEREX_POINT_EVIDENCE_DIR", "services/findings/.local-data/spectral"))))
 
     return app

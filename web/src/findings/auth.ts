@@ -66,7 +66,7 @@ export function createAuthGateway(): AuthGateway {
 export function authReturnUrl(href: string): string {
   const current = new URL(href);
   const clean = new URL(current.origin + current.pathname);
-  for (const key of ['view', 'comparison', 'finding', 'reviewFrame', 'reviewRa', 'reviewDec', 'reviewRadius']) {
+  for (const key of ['view', 'comparison', 'finding', 'reviewFrame', 'reviewRa', 'reviewDec', 'reviewRadius', 'reviewWise']) {
     const value = current.searchParams.get(key);
     if (value) clean.searchParams.set(key, value);
   }

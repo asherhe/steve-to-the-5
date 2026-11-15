@@ -16,6 +16,7 @@ from test_findings import OWNER, READER
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURE = json.loads((ROOT / 'services/findings/fixtures/candidate-flow.json').read_text())
 SAVED = json.loads((ROOT / 'fixtures/archive/real/response.json').read_text())['comparison']
+WISE = json.loads(next((ROOT / 'fixtures/wise/real-wise0855/evidence/manifests').glob('*.json')).read_text())['response']['comparison']
 
 
 @unittest.skipUnless(HAS_DATABASE, 'PGlite is required')
@@ -44,8 +45,8 @@ class ReviewDatabaseFlow(unittest.IsolatedAsyncioTestCase):
                 return httpx.Response(200, json=answer['result'])
             saved = copy.deepcopy(SAVED)
             async def load(identifier):
-                return saved if identifier == saved['id'] else None
-            point = {'ra': SAVED['field']['ra'], 'dec': SAVED['field']['dec']}
+                return saved if identifier == saved['id'] else WISE if identifier == WISE['id'] else None
+            point = {'ra': WISE['field']['ra'], 'dec': WISE['field']['dec']}
             async def catalogs(ra, dec, radius, observed):
                 report = copy.deepcopy(FIXTURE['review']['catalogReview'])
                 report.update(ra=ra, dec=dec, radiusArcsec=radius, observedAtUtc=observed)
@@ -53,14 +54,16 @@ class ReviewDatabaseFlow(unittest.IsolatedAsyncioTestCase):
                 report['checks'][0].update(status='candidates', rows=[{'sourceId': '42', **point}])
                 return report
             async def cutouts(ra, dec):
-                raise AssertionError('A known object needs no brightness measurement')
+                return []  # Explicitly unavailable spectral imagery; preserves base-only score.
             async with httpx.AsyncClient(transport=httpx.MockTransport(upstream)) as proxy:
                 app = FastAPI()
                 app.include_router(create_router(Supabase(proxy, 'https://supabase.test', 'public', 'server-only'), load,
                                                  load_wise_comparison=load, load_catalog_review=catalogs, load_cutouts=cutouts))
                 async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as api:
                     one, two = {'Authorization': 'Bearer one'}, {'Authorization': 'Bearer two'}
-                    request = {**point, 'radiusArcsec': 30}
+                    request = {**point, 'radiusArcsec': 30, 'wiseComparisonId': WISE['id']}
+                    missing_blink = await api.post('/api/findings/points/review', json=point, headers=one)
+                    self.assertEqual((missing_blink.status_code, missing_blink.json()['code']), (422, 'wise_blink_required'))
                     self.assertEqual((await api.post('/api/findings/points/review', json=request)).status_code, 401)
                     reviewed = await api.post('/api/findings/points/review', json=request, headers=one)
                     self.assertEqual(reviewed.status_code, 201, reviewed.text)
@@ -76,7 +79,7 @@ class ReviewDatabaseFlow(unittest.IsolatedAsyncioTestCase):
                     board = (await api.get('/api/findings/leaderboard?board=allTime')).json()
                     self.assertEqual([(e['rarityScore'], e['rank'], e['comparisonId']) for e in board['entries']], [(10, 1, None)])
                     # A second user 20 arcsec away (outside the 15 arcsec radius) matches the same Gaia source.
-                    other = {'ra': point['ra'], 'dec': point['dec'] + 20 / 3600, 'radiusArcsec': 30}
+                    other = {'ra': point['ra'], 'dec': point['dec'] + 20 / 3600, 'radiusArcsec': 30, 'wiseComparisonId': WISE['id']}
                     second = (await api.post('/api/findings/points/review', json=other, headers=two)).json()
                     self.assertTrue(second['duplicate']['sameObject'])
                     second_body = {'ra': other['ra'], 'dec': other['dec'], 'title': 'Same star', 'note': 'Again', 'reviewId': second['id']}

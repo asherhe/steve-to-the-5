@@ -17,7 +17,7 @@ const report = parsePointReview(fixture.uncatalogued);
 function setup(overrides: Partial<PointSubmissionSlotProps> = {}, response: unknown = fixture.uncatalogued) {
   const fetch = vi.fn(async (url: string, _options?: RequestInit) => Response.json(url.endsWith('/points/review') ? response : { id: 'new-point' }));
   const client = createFindingsClient({ fetch, getAuthHeaders: () => ({ Authorization: 'Bearer synthetic' }) });
-  return { fetch, client, p: { client, session, position: fixture.request, defaultRadiusArcsec: 30, onPrepareSignIn: vi.fn(), onRequestSignIn: vi.fn(), onCreated: vi.fn(), onShowDuplicate: vi.fn(), ...overrides } };
+  return { fetch, client, p: { client, session, position: fixture.request, wiseComparisonId: 'saved-wise', defaultRadiusArcsec: 30, onPrepareSignIn: vi.fn(), onRequestSignIn: vi.fn(), onCreated: vi.fn(), onShowDuplicate: vi.fn(), ...overrides } };
 }
 afterEach(() => { cleanup(); sessionStorage.clear(); localStorage.clear(); vi.restoreAllMocks(); });
 
@@ -44,7 +44,16 @@ describe('point-check-v3 response boundary', () => {
   });
 });
 
-describe('submit a point without loading frames', () => {
+describe('submit a point with a saved WISE prerequisite', () => {
+  it('blocks scoring until a real WISE blink is ready and provides the load action', () => {
+    const { p, fetch } = setup({ wiseComparisonId: null, onGetWiseBlink: vi.fn() });
+    const ui = render(<PointSubmissionPane {...p} />);
+    expect(screen.getByRole('button', { name: 'Check and score this point' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Get WISE blink' }));
+    expect(p.onGetWiseBlink).toHaveBeenCalledOnce(); expect(fetch).not.toHaveBeenCalled();
+    ui.rerender(<PointSubmissionPane {...p} wiseComparisonId="ready-blink" />);
+    expect(screen.getByRole('button', { name: 'Check and score this point' })).toBeEnabled();
+  });
   it('requires sign-in before the persisted review and preserves the selection', () => {
     const { p, fetch } = setup(); render(<PointSubmissionPane {...p} session={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Sign in to submit' }));
@@ -59,7 +68,7 @@ describe('submit a point without loading frames', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Post finding' }));
     await waitFor(() => expect(p.onCreated).toHaveBeenCalledWith('new-point'));
     const first = JSON.parse(fetch.mock.calls[0][1]!.body as string);
-    expect(first).toEqual(fixture.request);
+    expect(first).toEqual({ ...fixture.request, wiseComparisonId: 'saved-wise' });
     const sent = JSON.parse(fetch.mock.calls[1][1]!.body as string);
     expect(sent).toEqual({ ra: report.ra, dec: report.dec, title: 'A point to discuss', note: 'Please check the surrounding sources.', reviewId: report.id });
     expect(fetch.mock.calls.every(([url]) => !url.includes('comparisons'))).toBe(true);
@@ -120,7 +129,7 @@ describe('submit a point without loading frames', () => {
       catalogReview: { ...structuredClone(fixture.known.catalogReview), observedAtUtc: '2020-01-01T00:00:00Z' } };
     const { p, fetch } = setup({ frame }, response); render(<PointSubmissionPane {...p} />);
     fireEvent.click(screen.getByRole('button', { name: 'Check and score this point' })); await screen.findByLabelText('Title');
-    expect(JSON.parse(fetch.mock.calls[0][1]!.body as string)).toEqual({ ...fixture.request, frame });
+    expect(JSON.parse(fetch.mock.calls[0][1]!.body as string)).toEqual({ ...fixture.request, frame, wiseComparisonId: 'saved-wise' });
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Original dated point' } });
     fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Use the frame time for asteroids.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Post finding' })); await waitFor(() => expect(p.onCreated).toHaveBeenCalled());
@@ -164,8 +173,8 @@ describe('image-free discussion and replay', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Point & discussion' })); expect(open).toHaveBeenCalledWith(entry);
   });
   it('keeps reference-point selection/radius through sign-in without credentials', () => {
-    expect(authReturnUrl('https://viewer.test/?reviewRa=10&reviewDec=20&reviewRadius=30&code=secret#token'))
-      .toBe('https://viewer.test/?reviewRa=10&reviewDec=20&reviewRadius=30');
+    expect(authReturnUrl('https://viewer.test/?reviewRa=10&reviewDec=20&reviewRadius=30&reviewWise=saved-wise&code=secret#token'))
+      .toBe('https://viewer.test/?reviewRa=10&reviewDec=20&reviewRadius=30&reviewWise=saved-wise');
   });
 });
 

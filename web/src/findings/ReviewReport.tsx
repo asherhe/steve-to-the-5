@@ -1,5 +1,6 @@
 import type { CandidateReview, CatalogCheck, SavedReview } from './types';
 import { safeSourceUrl } from './reviewContract';
+import { SpectralReport } from './SpectralReport';
 const labels: Record<CatalogCheck['status'], string> = {
   candidates: 'Nearby records returned', no_candidates: 'No records in this cone', partial: 'Partial results — search incomplete',
   unavailable: 'Unavailable — no absence inferred', skipped: 'Not checked',
@@ -25,6 +26,7 @@ export function ReviewReport({ review, compact = false }: { review: SavedReview;
     <h3>{review.score} points{review.classification ? ` · ${classLabels[review.classification]}` : ''}</h3>
     <ul>{review.reasons.map(x => <li key={x}>{x}</li>)}</ul>
     <p>Points sort submitted points for discussion. No discovery has been verified.</p>
+    {'spectral' in review && review.spectral && <SpectralReport review={review} />}
     {identity && <p>Catalog source: {identity.catalog} {identity.name}{identity.separationArcsec != null ? ` · ${identity.separationArcsec.toFixed(1)}″ from the point` : ''}. A nearby record is not a verified image identification.</p>}
     {(review.brightness ?? []).length > 0 && <details open><summary>Brightness at the point ({brightSurveys} surveys bright)</summary>
       <table className="review-brightness"><thead><tr><th>Survey</th><th>Frame time</th><th>Local peak</th></tr></thead><tbody>

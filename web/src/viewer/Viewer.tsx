@@ -116,7 +116,8 @@ function pointReviewFromUrl(): PointReviewInput | null {
   if (!Number.isFinite(ra) || ra < 0 || ra >= 360 || !Number.isFinite(dec) || Math.abs(dec) > 90 || !Number.isFinite(radiusArcsec) || radiusArcsec < 5 || radiusArcsec > 300) return null;
   const comparisonId = params.get("comparison"), frameId = params.get("reviewFrame");
   const frame: FrameRef | null = comparisonId && frameId ? { comparisonId, frameId, survey: params.get("view") === "wise" ? "wise" : "spherex" } : null;
-  return { ra, dec, radiusArcsec, ...(frame ? { frame } : {}) };
+  const wiseComparisonId = params.get('reviewWise');
+  return { ra, dec, radiusArcsec, ...(frame ? { frame } : {}), ...(wiseComparisonId ? { wiseComparisonId } : {}) };
 }
 
 /** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
@@ -220,7 +221,7 @@ export function Viewer({
     }),
     wise: useComparisonLoader({
       source: wiseSource, survey: "wise", resolveName: dataSource.resolveName, loadFinding, onFocus: focusField,
-      initial: skyView === "wise" ? requestFromUrl() : null,
+      initial: skyView === "wise" ? requestFromUrl() : pointReviewFromUrl()?.wiseComparisonId ? { kind: 'saved', id: pointReviewFromUrl()!.wiseComparisonId! } : null,
     }),
   };
   const { request, setRequest, preview } = loaders[skyView];
@@ -256,6 +257,19 @@ export function Viewer({
   const [checkRadius, setCheckRadius] = useState(30);
   const [reviewOpen, setReviewOpen] = useState(() => !!pointReviewFromUrl());
   const [reviewTarget, setReviewTarget] = useState<PointReviewInput | null>(pointReviewFromUrl);
+  const wisePreview = loaders.wise.preview;
+  const reviewWise = wisePreview.kind === 'saved' ? wisePreview.comparison : wisePreview.kind === 'search' ? wisePreview.result.comparison : null;
+  const reviewWiseEligible = !!(reviewWise && reviewTarget && reviewWise.frames.length >= 2
+    && ['real_archive', 'saved_real_example'].includes(String(reviewWise.provenance?.evidenceKind ?? ''))
+    && (() => { try {
+      const pixel = cutoutWcs(reviewWise.grid)?.toImage(reviewTarget);
+      return !!pixel && pixel.x >= 0 && pixel.y >= 0 && pixel.x < reviewWise.grid.width && pixel.y < reviewWise.grid.height;
+    } catch { return false; } })());
+  function getReviewWiseBlink() {
+    if (!reviewTarget || !wiseSource) return;
+    setSkyView('wise'); setMapImagery('wise'); setTimeOpen(true);
+    loaders.wise.setRequest({ kind: 'field', field: { ra: reviewTarget.ra, dec: reviewTarget.dec, fovArcmin: 6 }, mode: 'blink' });
+  }
   const [shownCheckSource, setShownCheckSource] = useState<CatalogSource | null>(null);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
   const [discussionOpen, setDiscussionOpen] = useState(true);
@@ -364,7 +378,7 @@ export function Viewer({
     else url.searchParams.delete("view");
     url.searchParams.delete("comparison");
     url.searchParams.delete("finding");
-    for (const key of ["reviewFrame", "reviewRa", "reviewDec"]) url.searchParams.delete(key);
+    for (const key of ["reviewFrame", "reviewRa", "reviewDec", "reviewRadius", "reviewWise"]) url.searchParams.delete(key);
     history.replaceState(history.state, "", url);
   }
 
@@ -600,6 +614,7 @@ export function Viewer({
     url.searchParams.set("reviewRa", String(reviewTarget.ra));
     url.searchParams.set("reviewDec", String(reviewTarget.dec));
     url.searchParams.set("reviewRadius", String(reviewTarget.radiusArcsec ?? 30));
+    if (reviewWiseEligible) url.searchParams.set('reviewWise', reviewWise!.id);
     history.replaceState(history.state, "", url);
   }
 
@@ -973,6 +988,8 @@ export function Viewer({
       )}
       {Review && <FloatingPane id="review-panel" title="Submit point" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>
         {reviewOpen && <Review position={reviewTarget ? { ra: reviewTarget.ra, dec: reviewTarget.dec } : null} frame={reviewTarget?.frame}
+          wiseComparisonId={reviewWiseEligible ? reviewWise!.id : null} wiseLoading={wisePreview.kind === 'loading'} onGetWiseBlink={wiseSource ? getReviewWiseBlink : undefined}
+          wiseMessage={wisePreview.kind === 'error' ? wisePreview.message : wisePreview.kind === 'search' && !reviewWiseEligible ? 'No usable two-visit WISE blink covers this point. Try another point or retry the archive.' : undefined}
           defaultRadiusArcsec={reviewTarget?.radiusArcsec ?? 30} synthetic={!!reviewTarget?.frame && synthetic}
           onPrepareSignIn={prepareReviewSignIn} onShowDuplicate={id => openFinding(null, id, skyView)} onCreated={id => {
             setReviewOpen(false); setLeaderboardRefresh(n => n + 1); setLeaderboardOpen(true);

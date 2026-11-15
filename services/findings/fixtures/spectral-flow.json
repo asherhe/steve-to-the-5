@@ -1,0 +1,707 @@
+{
+  "evidenceKind": "synthetic_fixture",
+  "request": {
+    "ra": 133.8,
+    "dec": -7.25,
+    "radiusArcsec": 30.0,
+    "frame": null,
+    "wiseComparisonId": "synthetic-wise-blink"
+  },
+  "review": {
+    "ra": 133.8,
+    "dec": -7.25,
+    "radiusArcsec": 30.0,
+    "frame": null,
+    "wiseComparisonId": "synthetic-wise-blink",
+    "id": "88888888-8888-4888-8888-888888888888",
+    "observedAtUtc": null,
+    "reviewedAtUtc": "2026-11-15T18:00:00Z",
+    "scoreVersion": "point-check-v4",
+    "score": 30,
+    "classification": "known",
+    "reasons": [
+      "+10: known object. Gaia DR3 lists a source within 30\u2033. Nearest: Gaia DR3 synthetic-42 at 0\u2033.",
+      "+10: SPHEREx aperture signal passes the 5\u03c3 screen; spectral bonuses are eligible.",
+      "+5: possible water (H\u2082O) absorption pattern; both required regions pass. Follow-up is needed.",
+      "+0: methane (CH\u2084) pattern lacks suitable wavelength coverage.",
+      "+0: hydrogen (H I) pattern lacks suitable wavelength coverage.",
+      "+5: possible variable brightness across the saved WISE blink."
+    ],
+    "identity": {
+      "ra": 133.8,
+      "dec": -7.25,
+      "catalog": "Gaia DR3",
+      "name": "synthetic-42",
+      "separationArcsec": 0.0
+    },
+    "catalogReview": {
+      "mode": "live",
+      "ra": 133.8,
+      "dec": -7.25,
+      "radiusArcsec": 30,
+      "observedAtUtc": null,
+      "checks": [
+        {
+          "catalog": "Gaia DR3",
+          "status": "candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [
+            {
+              "sourceId": "synthetic-42",
+              "ra": 133.8,
+              "dec": -7.25
+            }
+          ],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "SIMBAD",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "CatWISE2020",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "UltracoolSheet",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "SkyBoT",
+          "status": "skipped",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        },
+        {
+          "catalog": "VizieR",
+          "status": "no_candidates",
+          "scope": "Synthetic fixture cone response",
+          "sourceUrl": "",
+          "servedBy": null,
+          "retrievedAtUtc": null,
+          "responseSha256": null,
+          "columns": [],
+          "rows": [],
+          "limitations": [
+            "Synthetic API fixture; no live query performed."
+          ]
+        }
+      ],
+      "limitations": [
+        "These are cone-search review aids, not automated cross-identifications or a complete novelty search.",
+        "Unmatched does not mean new. Different epochs, sensitivity, crowding, motion and incomplete catalogs can explain a miss.",
+        "DSS and Gaia detections are not required for a cold-object candidate. WISE catalog presence is not an image detection."
+      ]
+    },
+    "brightness": [
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/1.29-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 1000.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      },
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/1.41-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 100.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      },
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/1.55-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 1000.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      },
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/1.71-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 1000.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      },
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/1.91-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 100.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      },
+      {
+        "survey": "spherex",
+        "label": "synthetic",
+        "sourceUrl": "https://example.invalid/2.12-1.fits",
+        "observedAtUtc": "2026-01-01T00:00:00Z",
+        "status": "measured",
+        "snr": 1000.01,
+        "bright": true,
+        "message": "Synthetic spectral fixture"
+      }
+    ],
+    "duplicate": null,
+    "limitations": [
+      "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
+      "Uncatalogued candidate means no returned catalog matches, with at most two unavailable catalogs; missing checks, depth, epoch and coverage limit this classification.",
+      "Bright means a local peak at least 5\u03c3 above the surrounding pixels in a cutout's FITS. It is not a photometric detection, a flux, a temperature or evidence of variability.",
+      "Survey measurements use the marked sky coordinate; source motion between survey dates is not tracked.",
+      "A cold brown dwarf is usually invisible in optical DSS and NEOSSat images; SPHEREx and WISE are the infrared surveys."
+    ],
+    "scoreBreakdown": [
+      {
+        "key": "base",
+        "points": 10,
+        "reason": "+10: known object. Gaia DR3 lists a source within 30\u2033. Nearest: Gaia DR3 synthetic-42 at 0\u2033."
+      },
+      {
+        "key": "spherex",
+        "points": 10,
+        "reason": "+10: SPHEREx aperture signal passes the 5\u03c3 screen; spectral bonuses are eligible."
+      },
+      {
+        "key": "water",
+        "points": 5,
+        "reason": "+5: possible water (H\u2082O) absorption pattern; both required regions pass. Follow-up is needed."
+      },
+      {
+        "key": "methane",
+        "points": 0,
+        "reason": "+0: methane (CH\u2084) pattern lacks suitable wavelength coverage."
+      },
+      {
+        "key": "hydrogen",
+        "points": 0,
+        "reason": "+0: hydrogen (H I) pattern lacks suitable wavelength coverage."
+      },
+      {
+        "key": "wise_variability",
+        "points": 5,
+        "reason": "+5: possible variable brightness across the saved WISE blink."
+      }
+    ],
+    "spectral": {
+      "status": "measured",
+      "message": "Synthetic spectral fixture",
+      "evidenceId": "42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843",
+      "manifestUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843",
+      "method": "fixed-aperture-v1",
+      "config": {
+        "apertureRadiusArcsec": 12.4,
+        "backgroundAnnulusArcsec": [
+          24.8,
+          49.6
+        ],
+        "minBackgroundPixels": 30,
+        "minBackgroundCoverage": 0.8,
+        "maxWavelengthSpreadBandwidth": 0.25,
+        "sourceSnr": 5.0,
+        "featureSigma": 5.0,
+        "minDepthFraction": 0.2,
+        "systematicFraction": 0.1,
+        "maxTimeSpanDays": 7.0,
+        "independentSeparationBandwidth": 1.0,
+        "background": "ZODI subtraction then local annulus median",
+        "uncertainty": "pixel variance + annulus scatter + median background error; 10% floor in band tests",
+        "flags": "Only documented SOURCE and FULLSAMPLE bits allowed; whole aperture must be valid",
+        "units": "MJy/sr",
+        "resampling": "none; native WCS fixed angular aperture",
+        "apertureCorrection": "none; surface brightness screening, not total source flux",
+        "speciesPoints": 5,
+        "sourcePoints": 10,
+        "templates": [
+          [
+            "water",
+            "water (H\u2082O)",
+            "https://www.ipac.caltech.edu/publication/1999ApJ...522L..65B",
+            [
+              [
+                "1.4 \u00b5m water band",
+                [
+                  1.35,
+                  1.48
+                ],
+                [
+                  1.26,
+                  1.32
+                ],
+                [
+                  1.5,
+                  1.59
+                ]
+              ],
+              [
+                "1.9 \u00b5m water band",
+                [
+                  1.8,
+                  2.02
+                ],
+                [
+                  1.68,
+                  1.75
+                ],
+                [
+                  2.08,
+                  2.16
+                ]
+              ]
+            ]
+          ],
+          [
+            "methane",
+            "methane (CH\u2084)",
+            "https://stsci-opo.org/STScI-01GW821M4YH9F2VXCTD2T52H8W.pdf",
+            [
+              [
+                "2.2 \u00b5m methane band",
+                [
+                  2.18,
+                  2.3
+                ],
+                [
+                  2.06,
+                  2.14
+                ],
+                [
+                  2.34,
+                  2.4
+                ]
+              ],
+              [
+                "3.3 \u00b5m methane band",
+                [
+                  3.2,
+                  3.4
+                ],
+                [
+                  3.05,
+                  3.15
+                ],
+                [
+                  3.5,
+                  3.65
+                ]
+              ]
+            ]
+          ],
+          [
+            "hydrogen",
+            "hydrogen (H I)",
+            "https://doi.org/10.1088/0004-6256/140/5/1214",
+            [
+              [
+                "Paschen beta absorption",
+                [
+                  1.263,
+                  1.301
+                ],
+                [
+                  1.2,
+                  1.24
+                ],
+                [
+                  1.32,
+                  1.36
+                ]
+              ],
+              [
+                "Brackett gamma absorption",
+                [
+                  2.136,
+                  2.196
+                ],
+                [
+                  2.03,
+                  2.09
+                ],
+                [
+                  2.25,
+                  2.31
+                ]
+              ]
+            ]
+          ]
+        ],
+        "selection": {},
+        "implementationSha256": "17f64719b685481b2016a4285b2109855926d5a6c88f5a58acd9564172ad857d",
+        "runtime": {
+          "numpy": "2.5.4",
+          "astropy": "8.0.2"
+        }
+      },
+      "sourceDetected": true,
+      "independentChannels": 6,
+      "samples": [
+        {
+          "sourceSha256": "c7215c02ed756bd4b1feea7214ad43d7533e6c748da05f823dd3c972081959de",
+          "sourceUrl": "https://example.invalid/1.29-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/c7215c02ed756bd4b1feea7214ad43d7533e6c748da05f823dd3c972081959de.fits",
+          "observationId": "test-1.29-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 2,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 1.2900000000000003,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 41.83735801094736,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 1414.0654121855518
+        },
+        {
+          "sourceSha256": "28dfa232bc37f573c360cb4e4919c0aabb3e1bc789be4a105d05f7eb9ad5560d",
+          "sourceUrl": "https://example.invalid/1.41-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/28dfa232bc37f573c360cb4e4919c0aabb3e1bc789be4a105d05f7eb9ad5560d.fits",
+          "observationId": "test-1.41-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 2,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 1.41,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 4.1834830424086835,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 141.39799820024405
+        },
+        {
+          "sourceSha256": "a577231912737a36bf0f56e14ddfd20f54abb149d7e633ffd9672005a506007c",
+          "sourceUrl": "https://example.invalid/1.55-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/a577231912737a36bf0f56e14ddfd20f54abb149d7e633ffd9672005a506007c.fits",
+          "observationId": "test-1.55-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 2,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 1.5499999999999998,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 41.83735801094736,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 1414.0654121855518
+        },
+        {
+          "sourceSha256": "3a88ad35c967df8bbbd7648faca7405fb665817b88507a36f957f141354d058a",
+          "sourceUrl": "https://example.invalid/1.71-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/3a88ad35c967df8bbbd7648faca7405fb665817b88507a36f957f141354d058a.fits",
+          "observationId": "test-1.71-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 3,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 1.7100000000000004,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 41.83735801094736,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 1414.0654121855518
+        },
+        {
+          "sourceSha256": "cc6b34cb345f5ea19ebdbffd45b7c20eff04764cd4914522b61f28df7003857f",
+          "sourceUrl": "https://example.invalid/1.91-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/cc6b34cb345f5ea19ebdbffd45b7c20eff04764cd4914522b61f28df7003857f.fits",
+          "observationId": "test-1.91-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 3,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 1.91,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 4.1834830424086835,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 141.39799820024405
+        },
+        {
+          "sourceSha256": "c09dfb804035afd5947107ed2b5291a000a7c37a6419ad47aea6d2ee4375246b",
+          "sourceUrl": "https://example.invalid/2.12-1.fits",
+          "assetUrl": "/api/findings/spectral/42cb27da18862d183adefe6eebbf1508b3dcaa7feb9afa8f2d8e62bbdc804843/assets/c09dfb804035afd5947107ed2b5291a000a7c37a6419ad47aea6d2ee4375246b.fits",
+          "observationId": "test-2.12-1",
+          "observedAtUtc": "2026-01-01T00:00:00Z",
+          "observedUntilUtc": "2026-01-01T00:01:00Z",
+          "release": "dr1",
+          "processingVersion": "synthetic-v1",
+          "detector": 3,
+          "status": "measured",
+          "reason": null,
+          "wavelengthUm": 2.1200000000000006,
+          "bandwidthUm": 0.019999999999999997,
+          "brightnessMjySr": 41.83735801094736,
+          "uncertaintyMjySr": 0.029586578987378216,
+          "snr": 1414.0654121855518
+        }
+      ],
+      "features": [
+        {
+          "key": "water",
+          "label": "water (H\u2082O)",
+          "status": "supported",
+          "points": 5,
+          "sourceUrl": "https://www.ipac.caltech.edu/publication/1999ApJ...522L..65B",
+          "bands": [
+            {
+              "name": "1.4 \u00b5m water band",
+              "status": "supported",
+              "message": "Absorption window passes the provisional screen.",
+              "sampleHashes": [
+                "28dfa232bc37f573c360cb4e4919c0aabb3e1bc789be4a105d05f7eb9ad5560d",
+                "a577231912737a36bf0f56e14ddfd20f54abb149d7e633ffd9672005a506007c",
+                "c7215c02ed756bd4b1feea7214ad43d7533e6c748da05f823dd3c972081959de"
+              ],
+              "startUm": 1.35,
+              "endUm": 1.48,
+              "depthFraction": 0.9000060414590708,
+              "significance": 12.565303148612239
+            },
+            {
+              "name": "1.9 \u00b5m water band",
+              "status": "supported",
+              "message": "Absorption window passes the provisional screen.",
+              "sampleHashes": [
+                "3a88ad35c967df8bbbd7648faca7405fb665817b88507a36f957f141354d058a",
+                "c09dfb804035afd5947107ed2b5291a000a7c37a6419ad47aea6d2ee4375246b",
+                "cc6b34cb345f5ea19ebdbffd45b7c20eff04764cd4914522b61f28df7003857f"
+              ],
+              "startUm": 1.8,
+              "endUm": 2.02,
+              "depthFraction": 0.9000060414590708,
+              "significance": 12.598020701764321
+            }
+          ]
+        },
+        {
+          "key": "methane",
+          "label": "methane (CH\u2084)",
+          "status": "insufficient",
+          "points": 0,
+          "sourceUrl": "https://stsci-opo.org/STScI-01GW821M4YH9F2VXCTD2T52H8W.pdf",
+          "bands": [
+            {
+              "name": "2.2 \u00b5m methane band",
+              "status": "insufficient",
+              "message": "Need a feature sample and independent continuum samples on both sides, on one detector within seven days.",
+              "sampleHashes": [],
+              "startUm": 2.18,
+              "endUm": 2.3,
+              "depthFraction": null,
+              "significance": null
+            },
+            {
+              "name": "3.3 \u00b5m methane band",
+              "status": "insufficient",
+              "message": "Need a feature sample and independent continuum samples on both sides, on one detector within seven days.",
+              "sampleHashes": [],
+              "startUm": 3.2,
+              "endUm": 3.4,
+              "depthFraction": null,
+              "significance": null
+            }
+          ]
+        },
+        {
+          "key": "hydrogen",
+          "label": "hydrogen (H I)",
+          "status": "insufficient",
+          "points": 0,
+          "sourceUrl": "https://doi.org/10.1088/0004-6256/140/5/1214",
+          "bands": [
+            {
+              "name": "Paschen beta absorption",
+              "status": "insufficient",
+              "message": "Need a feature sample and independent continuum samples on both sides, on one detector within seven days.",
+              "sampleHashes": [],
+              "startUm": 1.263,
+              "endUm": 1.301,
+              "depthFraction": null,
+              "significance": null
+            },
+            {
+              "name": "Brackett gamma absorption",
+              "status": "insufficient",
+              "message": "Need a feature sample and independent continuum samples on both sides, on one detector within seven days.",
+              "sampleHashes": [],
+              "startUm": 2.136,
+              "endUm": 2.196,
+              "depthFraction": null,
+              "significance": null
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "Tentative absorption-pattern matches are prompts for follow-up, not chemical identifications, abundances, temperatures or discoveries.",
+        "This provisional screen has no calibrated false-positive rate. Blends, dust, continuum curvature, motion, variability and PSF changes can mimic absorption.",
+        "Fixed-aperture surface brightness has no PSF fit, aperture correction or deblending. Different wavelengths may be observed on different dates; each band test is limited to seven days.",
+        "WCS-WAVE is a quick-look wavelength approximation. Confirm candidates with calibrated spectrophotometry and spectral modelling; hydrogen lines can be unresolved at SPHEREx resolution.",
+        "Only the declared water, methane and hydrogen absorption patterns are screened. Missing or unsupported patterns do not mean a substance is absent; emission is not tested.",
+        "Bounded DR1/QR3 image sampling is not a complete spectrum or an exhaustive archive search."
+      ]
+    },
+    "wiseVariability": {
+      "comparisonId": "synthetic-wise-blink",
+      "status": "candidate",
+      "message": "Possible variable brightness: first/last WISE visits pass the provisional change screen.",
+      "points": 5,
+      "fractionalChange": 1.1997271596096521,
+      "significance": 7.267253478879778,
+      "epochs": [
+        {
+          "frameId": "visit-0",
+          "observedStartUtc": "2026-01-01T00:00:00Z",
+          "observedEndUtc": "2026-01-01T00:01:00Z",
+          "relativeFlux": 1.7934729281899746e-06,
+          "uncertainty": 1.7954420175043246e-07,
+          "exposures": [
+            {
+              "relativeFlux": 1.7932063878783275e-06,
+              "uncertainty": 1.189639509985383e-08,
+              "magzp": 20.0,
+              "magzpUncertainty": 0.007,
+              "sourceSha256": "93b0fc28255569b180d3425c709cf00a5d6539841527daf499307d29b2875299",
+              "sourceUrl": "https://example.invalid/wise.fits",
+              "observedAtUtc": "2026-01-01T00:00:00Z",
+              "assetUrl": "/api/wise/comparisons/synthetic-wise-blink/assets/93b0fc28255569b180d3425c709cf00a5d6539841527daf499307d29b2875299.fits"
+            },
+            {
+              "relativeFlux": 1.7937394685016217e-06,
+              "uncertainty": 1.18687561043403e-08,
+              "magzp": 20.0,
+              "magzpUncertainty": 0.007,
+              "sourceSha256": "b4fbbaafc516f6544a04c53693ca6ebdbfb9c8d7bca5cde45c15cbfeceb6350e",
+              "sourceUrl": "https://example.invalid/wise.fits",
+              "observedAtUtc": "2026-01-01T00:01:00Z",
+              "assetUrl": "/api/wise/comparisons/synthetic-wise-blink/assets/b4fbbaafc516f6544a04c53693ca6ebdbfb9c8d7bca5cde45c15cbfeceb6350e.fits"
+            }
+          ]
+        },
+        {
+          "frameId": "visit-1",
+          "observedStartUtc": "2026-01-20T00:00:00Z",
+          "observedEndUtc": "2026-01-20T00:01:00Z",
+          "relativeFlux": 7.170834431360928e-06,
+          "uncertainty": 7.17830888864943e-07,
+          "exposures": [
+            {
+              "relativeFlux": 7.1705678910492805e-06,
+              "uncertainty": 4.6315314509987925e-08,
+              "magzp": 20.0,
+              "magzpUncertainty": 0.007,
+              "sourceSha256": "3305de8ba746dfcebee7efe6da28567b4080ed362c8d462e61741659a65e70ca",
+              "sourceUrl": "https://example.invalid/wise.fits",
+              "observedAtUtc": "2026-01-20T00:00:00Z",
+              "assetUrl": "/api/wise/comparisons/synthetic-wise-blink/assets/3305de8ba746dfcebee7efe6da28567b4080ed362c8d462e61741659a65e70ca.fits"
+            },
+            {
+              "relativeFlux": 7.171100971672575e-06,
+              "uncertainty": 4.631079595266976e-08,
+              "magzp": 20.0,
+              "magzpUncertainty": 0.007,
+              "sourceSha256": "b031a14a12e015134b497931fe6e155a1bd86297454bceb60185724576cc2546",
+              "sourceUrl": "https://example.invalid/wise.fits",
+              "observedAtUtc": "2026-01-20T00:01:00Z",
+              "assetUrl": "/api/wise/comparisons/synthetic-wise-blink/assets/b031a14a12e015134b497931fe6e155a1bd86297454bceb60185724576cc2546.fits"
+            }
+          ]
+        }
+      ],
+      "config": {
+        "version": "wise-aperture-v1",
+        "apertureRadiusArcsec": 8.25,
+        "annulusArcsec": [
+          22,
+          38.5
+        ],
+        "minExposuresPerVisit": 2,
+        "maxExposuresPerVisit": 12,
+        "minVisitSeparationDays": 10,
+        "sourceSnr": 5,
+        "minFractionalChange": 0.2,
+        "minChangeSigma": 5,
+        "systematicFraction": 0.1,
+        "maxWithinVisitScatterFraction": 0.2,
+        "maxCentroidOffsetArcsec": 2.75,
+        "pair": "first and last dated visits",
+        "fluxUnit": "fraction of Vega zero-magnitude flux (no aperture correction)",
+        "calibration": "sum(background-subtracted native DN) * 10**(-0.4 * MAGZP)",
+        "uncertainty": "annulus MAD and background error, MAGZPUNC, visit scatter, 10% systematic floor",
+        "implementationSha256": "80760b9b67a3d55aa1086b3cb0634aaef9fe53cdcd9b884af2036a3d6b7f0cb1"
+      },
+      "limitations": [
+        "Possible brightness change is a provisional aperture screen, not confirmed intrinsic variability.",
+        "No pixel uncertainty/mask products or PSF/deblending fit are available in this blink. Artifacts, blends, motion and changing PSFs can mimic variability.",
+        "Requires aligned visits, two exposures per visit, consistent centroids and calibrated zero points. Bright/saturation-risk sources and noisy visits receive no variability bonus.",
+        "Only first/last visits are compared; this is not a complete light curve. See retained original WISE exposures and their observation intervals."
+      ]
+    }
+  }
+}
