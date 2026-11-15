@@ -1,4 +1,4 @@
-"""point-check-v3 scoring: server-side catalog chain and cutout brightness, no saved comparison."""
+"""Base scoring: server-side catalog chain and cutout brightness (WISE gate tested at the API)."""
 import asyncio
 import copy
 import io
@@ -76,9 +76,32 @@ class PointReviewTests(unittest.TestCase):
         self.assertEqual(candidate_key, key)
         self.assertEqual(response.brightness, [])
 
-    def test_unavailable_catalog_is_incomplete_but_undated_skybot_is_not(self):
-        response, _, _ = self.run_review(report(**{"VizieR": "unavailable"}), None)
+    def test_up_to_two_unavailable_catalogs_allow_candidate_brightness(self):
+        sources = [SourceResult("wise", "ok", [Frame("WISE", "u", image(40))]),
+                   SourceResult("dss", "ok", [Frame("DSS", "u", image(40))])]
+        for count in range(4):
+            with self.subTest(count=count):
+                catalog = report(**{name: "unavailable" for name in NAMES[:count]})
+                response, _, _ = self.run_review(catalog, sources)
+                self.assertEqual((response.classification, response.score),
+                                 ("uncatalogued", 20) if count <= 2 else ("incomplete", 0))
+                if count:
+                    self.assertIn("Unavailable", response.reasons[-1])
+
+    def test_partial_empty_is_incomplete_and_actual_match_overrides_outages(self):
+        response, _, _ = self.run_review(report(**{"Gaia DR3": "partial"}), None)
         self.assertEqual((response.classification, response.score), ("incomplete", 0))
+        catalog = report(**{name: "unavailable" for name in NAMES[:3]})
+        catalog["checks"][-1].update(status="partial", rows=[{"AllWISE": "example", "RAJ2000": RA, "DEJ2000": DEC}])
+        response, _, _ = self.run_review(catalog, None)
+        self.assertEqual((response.classification, response.score), ("known", 10))
+
+    def test_identity_uses_predicted_position_and_retains_catalog_id(self):
+        checks = report()["checks"]
+        checks[0].update(status="candidates", rows=[{"sourceId": "moving", "ra": RA+1, "dec": DEC,
+                                                    "predictedRa": RA, "predictedDec": DEC}])
+        identity = known_identity(checks, RA, DEC)
+        self.assertEqual((identity.name, identity.separationArcsec), ("moving", 0))
 
     def test_identity_prefers_gaia_then_nearest_row(self):
         checks = report()["checks"]

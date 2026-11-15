@@ -21,6 +21,9 @@ calibrated chemical classifier or discovery assessment.
 
 All +5 bonuses require the SPHEREx signal gate. Known objects qualify. An
 incomplete catalog check without a listed source earns no bonuses until retried.
+Following the current catalog policy, up to two unavailable catalogs are tolerated
+when the other applicable checks return no matches; missing checks remain explicit
+and do not establish novelty. Other incomplete or truncated checks block scoring.
 Maximum score is 50 (40 for known objects). Missing measurements never establish
 absence of a substance or a constant source.
 

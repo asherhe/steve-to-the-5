@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CatalogReview } from "../inspector/api";
 import { CatalogChecks } from "../findings/ReviewReport";
 import { expectedPoints, catalogSources, nearestRow, summarize, type CatalogSource } from "./catalogCheckSummary";
 import type { SkyPosition } from "./comparison";
+import { pointReviewCache, type CheckPoint } from "./pointReviewCache";
+
+export type { CheckPoint } from "./pointReviewCache";
 
 type CatalogCheck = CatalogReview["checks"][number];
 
@@ -15,10 +18,7 @@ export interface MarkedPoint {
   onSpherexMosaic: boolean;
 }
 
-export type CheckPoint = (
-  request: { ra: number; dec: number; radiusArcsec: number; observedAtUtc?: string | null },
-  signal?: AbortSignal,
-) => Promise<CatalogReview>;
+type CheckState = { kind: "loading"; started: number } | { kind: "done"; review: CatalogReview } | { kind: "error"; message: string };
 
 const radii = [10, 30, 120, 300] as const;
 const statusText: Record<CatalogCheck["status"], string> = {
@@ -47,24 +47,38 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
 }) {
   const [radius, setRadius] = useState<number>(30);
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<{ kind: "loading"; started: number } | { kind: "done"; review: CatalogReview } | { kind: "error"; message: string }>({ kind: "loading", started: Date.now() });
+  const [response, setResponse] = useState<{ key: string; check: CheckPoint; state: CheckState }>();
   const [, tick] = useState(0);
-  const checkRef = useRef(check);
-  checkRef.current = check;
   const { ra, dec } = point.position;
   const observedAtUtc = point.frame?.observedAtUtc ?? null;
+  const cache = pointReviewCache(check);
+  const key = JSON.stringify([ra, dec, radius, observedAtUtc, attempt]);
+  const cached = cache.lookup({ ra, dec, radiusArcsec: radius, observedAtUtc });
+  const state: CheckState = response?.key === key && response.check === check ? response.state
+    : cached.exact ? { kind: "done", review: cached.exact } : { kind: "loading", started: Date.now() };
 
   useEffect(() => {
+    const request = { ra, dec, radiusArcsec: radius, observedAtUtc };
+    const setState = (state: CheckState) => setResponse({ key, check, state });
+    const { exact } = cache.lookup(request);
+    if (exact) {
+      setState({ kind: "done", review: exact });
+      return;
+    }
     const controller = new AbortController();
     setState({ kind: "loading", started: Date.now() });
-    checkRef.current({ ra, dec, radiusArcsec: radius, observedAtUtc }, controller.signal)
-      .then(review => { if (!controller.signal.aborted) setState({ kind: "done", review }); })
+    check(request, controller.signal)
+      .then(review => {
+        if (controller.signal.aborted) return;
+        cache.remember(request, review);
+        setState({ kind: "done", review });
+      })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setState({ kind: "error", message: error instanceof Error && error.message ? error.message : "Could not reach the catalog service." });
       });
     return () => controller.abort();
-  }, [ra, dec, observedAtUtc, radius, attempt]);
+  }, [cache, check, key, ra, dec, observedAtUtc, radius]);
 
   // Live checks can take tens of seconds; show that time is passing.
   useEffect(() => {
@@ -74,6 +88,9 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
   }, [state.kind]);
 
   const summary = state.kind === "done" ? summarize(state.review) : null;
+  const recentSources = state.kind !== "done" && cached.nearby
+    ? catalogSources(cached.nearby, point.position, predictionTimeUtc).filter(source => source.separationArcsec <= radius)
+    : [];
   return (
     <section className="point-check" aria-label="Catalog check for the marked point">
       <p className="point-check__where">
@@ -103,6 +120,12 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
           <button type="button" onClick={() => setAttempt(n => n + 1)}>Try again</button>
         </div>
       )}
+      {recentSources.length > 0 && (
+        <>
+          <p className="point-check__footnote">Catalog sources from a previous nearby check.</p>
+          <SourceLists sources={recentSources} shownSourceId={shownSourceId} onShowSource={onShowSource} />
+        </>
+      )}
       {state.kind === "done" && summary && (
         <>
           <div className={`point-check__verdict point-check__verdict--${summary.tone}`} role="status">
@@ -131,7 +154,7 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
             <ul>{state.review.limitations.map(text => <li key={text}>{text}</li>)}</ul>
           </details>
           <p className="point-check__footnote">
-            Positions are published catalog positions unless explicitly labeled as Gaia predictions. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
+            Positions are published catalog coordinates unless explicitly labeled as frame-time predictions. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
           </p>
         </>
       )}
@@ -151,7 +174,7 @@ function SourceLists({ sources, shownSourceId, onShowSource }: {
   const catalogs = [...new Set(sources.map(source => source.catalog))];
   return <section className="point-check__gaia" aria-label="Catalog sources near the marked point">
     <p className="point-check__subhead">Show catalog sources on the map</p>
-    <p className="point-check__footnote">Gaia positions can be predicted for the displayed date. Other catalogs retain their published coordinates; these markers are not verified detections.</p>
+    <p className="point-check__footnote">Catalogs with supported proper motions are checked at the selected frame date. Predictions are labeled; missing motions and unsupported catalogs retain published coordinates. These markers are not verified detections.</p>
     {catalogs.map(catalog => <details key={catalog} open>
       <summary>{catalog} sources ({sources.filter(source => source.catalog === catalog).length})</summary>
       <ul>{sources.filter(source => source.catalog === catalog).map(source => {

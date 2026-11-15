@@ -150,6 +150,24 @@ class SpectralTests(unittest.TestCase):
             self.assertEqual(value.score, sum(p.points for p in value.scoreBreakdown))
             self.assertIsNotNone(value.spectral.evidenceId)
 
+    def test_catalog_outage_limit_gates_spectral_and_wise_bonuses(self):
+        comparison, asset_loader = wise_blink(change=4)
+        for count in (2, 3):
+            with self.subTest(unavailable=count), evidence_directory() as directory:
+                catalog = report()
+                for check in catalog['checks'][:count]:
+                    check.update(status='unavailable')
+                async def catalogs(*_): return catalog
+                async def cutouts(*_): return [water_source()]
+                value, _, _ = asyncio.run(prepare_point_review(
+                    PointReviewInput(ra=RA, dec=DEC, wiseComparisonId=comparison['id']), catalogs, cutouts,
+                    spectral_store=SpectralStore(directory), wise_comparison=comparison, asset_loader=asset_loader))
+                self.assertEqual(value.classification, 'uncatalogued' if count == 2 else 'incomplete')
+                self.assertEqual(value.score, 20 if count == 2 else 0)
+                self.assertEqual(value.spectral.sourceDetected, count == 2)
+                self.assertEqual(value.wiseVariability.points, 5 if count == 2 else 0)
+                self.assertIn('missing checks do not establish novelty', value.reasons[-1])
+
 
 class WiseVariabilityTests(unittest.TestCase):
     def run_blink(self, change=1, zp_change=0):

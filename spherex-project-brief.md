@@ -301,3 +301,16 @@ for archive-independent demo playback; WISE's two visits each require two exposu
 Successful exact fields replay from a persistent, integrity-checked index; the viewer
 labels saved delivery and offers an explicit archive refresh. DSS has no dated playback.
 See `docs/verification/blink-latency.md` for measured timings and live limitations.
+
+
+## Frame-time catalog review update (2026-11-15)
+
+The active point-check-v3 participation rule tolerates up to two unavailable catalogs if
+no returned rows list a source. Missing checks stay visible. More than two outages,
+unexpected skips or an empty truncated search remain incomplete; an expected undated
+SkyBoT skip is still excluded. Any actual returned match takes the known-object route.
+Gaia, SIMBAD and CatWISE use expanded native-epoch cones and frame-time proper-motion
+filtering. Their predictions retain native coordinates and carry an explicit date.
+Missing motions, UltracoolSheet and VizieR AllWISE retain published coordinates. This
+bounded review does not establish novelty. Brightness checks work at a fixed sky coordinate
+across survey cutouts and do not track a source between dates.

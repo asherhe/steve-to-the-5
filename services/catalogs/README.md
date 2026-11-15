@@ -188,6 +188,14 @@ proper motion, finite search scope and incomplete catalogs prevent novelty infer
 SkyBoT returns an ERROR info field for its explicit empty-cone message; only that exact
 message family is accepted as empty, while service-error documents remain unavailable.
 
+Point Inspector catalog checks reuse results in the catalog service's process memory.
+Gaia DR3 uses its existing 24-hour cone cache. SIMBAD, CatWISE2020, UltracoolSheet,
+SkyBoT and VizieR each keep up to 128 recent cones for one hour, keyed by exact
+coordinates and radius. SIMBAD, CatWISE2020 and SkyBoT also key by observation time,
+and SIMBAD by configured endpoints. Successful empty and row-limited results are cached
+with their original retrieval timestamps. Unavailable and skipped checks are retried or re-evaluated on the
+next request. Each worker has its own cache, which is cleared on restart.
+
 UltracoolSheet data: https://zenodo.org/records/15802304 (v2.1.0, July 3, 2025), compiled
 by Will Best, Trent Dupuy, Michael Liu, Aniket Sanghi, Rob Siverd and Zhoujian Zhang.
 The complete matching rows retain original-paper reference codes; users must cite those

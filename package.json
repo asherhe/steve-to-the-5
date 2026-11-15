@@ -5,7 +5,7 @@
   "scripts": {
     "generate:findings-types": "openapi-typescript services/findings/fixtures/openapi.json -o web/src/findings/findings.generated.ts",
     "test:spectral-browser": "node scripts/verify-spectral-browser.mjs",
-    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"npm:dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
+    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"node scripts/wait-for-catalog.mjs && npm run dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",
     "dev:spherex": "node scripts/dev-backend.mjs spherex",

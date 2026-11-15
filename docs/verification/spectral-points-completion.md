@@ -44,7 +44,24 @@ Synthetic positive examples test the rule implementation, not the astrophysical
 validity of the chemical hypotheses or a false-positive rate. A scientifically
 validated chemical classifier remains separate work.
 
-No hosted Supabase migration, live auth/write test, deployed-origin verification,
-push or deployment was performed. The new SQL migration and durable evidence
+No hosted Supabase migration, live auth/write test, deployed-origin verification
+or deployment was performed. The new SQL migration and durable evidence
 storage must be configured when releasing the service. The default local demo
 still does not invent spectral or variability measurements.
+
+## Main integration verification
+
+Integrated `origin/main` at `0b44f29`, preserving catalog caching, frame-time
+predictions and the policy tolerating at most two unavailable catalogs. Added
+a regression covering the interaction between that outage limit and both
+spectral and WISE bonuses; regenerated the representative v4 fixture.
+
+- Production typecheck/build passed.
+- Findings backend: 64 passed, 42 subtests passed.
+- Frontend: 100 passed, with the same pre-existing CheckChain exclusion above.
+- Viewer: 72 passed, including the incoming catalog-cache tests.
+- Catalog suite: the documented unfinished `test_check_chain.py` could not
+  collect because `ChainMatch` is absent. With it excluded, all checks completed;
+  two temporary-directory permission errors and one transport timing failure
+  passed when those three checks were rerun outside the sandbox.
+- `git diff --check` passed. No additional live archive or hosted checks were run.

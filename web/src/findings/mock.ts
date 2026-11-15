@@ -7,7 +7,7 @@ import examples from './retained-examples.json';
 import type { ReviewClient } from './api';
 import type { CandidateReview, FindingDetail, FindingReply, PointReview, SavedReview } from './types';
 import { FindingsApiError } from './api';
-import { catalogSources } from '../viewer/catalogCheckSummary';
+import { catalogSources, catalogAvailability } from '../viewer/catalogCheckSummary';
 import { angularSeparationArcsec } from '../inspector/propagate';
 import type { LeaderboardResult } from '../leaderboard/types';
 import type { AuthGateway, AuthSession } from './auth';
@@ -56,11 +56,11 @@ export const mockFindings: ReviewClient = {
         limitations: ['The catalog service could not be reached. No real checks completed.'] };
     }
     aborted(signal);
-    const listed = catalogReview.mode === 'live' && catalogReview.checks.some(c => c.status === 'candidates' || c.status === 'partial');
-    const incomplete = catalogReview.mode !== 'live' || catalogReview.checks.some(c => ['unavailable', 'skipped'].includes(c.status)
-      && !(c.catalog === 'SkyBoT' && c.status === 'skipped' && !observedAtUtc));
+    const availability = catalogAvailability(catalogReview);
+    const listed = catalogReview.mode === 'live' && availability.listed.length > 0;
+    const incomplete = catalogReview.mode !== 'live' || availability.unchecked.length > 0;
     const priority = ['Gaia DR3', 'SIMBAD', 'CatWISE2020', 'VizieR', 'UltracoolSheet', 'SkyBoT'];
-    const source = listed ? catalogSources(catalogReview, req, null)
+    const source = listed ? catalogSources(catalogReview, req, observedAtUtc)
       .filter(s => catalogReview.checks.some(c => c.catalog === s.catalog && ['candidates', 'partial'].includes(c.status)))
       .sort((a, b) => priority.indexOf(a.catalog) - priority.indexOf(b.catalog) || a.separationArcsec - b.separationArcsec)[0] : null;
     const result: PointReview = { ...req, radiusArcsec, id: crypto.randomUUID(), observedAtUtc, reviewedAtUtc: new Date().toISOString(),

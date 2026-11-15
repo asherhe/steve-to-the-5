@@ -34,11 +34,11 @@ const steps: Step[] = [
   { title: "4. Review a point", body: <>
     <p><strong>Double-click</strong> a point, on a dated image or anywhere on the map. A box with an X marks it and six catalogs are checked at once, no sign-in needed. Use <strong>Show on map</strong> for sources from any catalog. Gaia can be predicted for the displayed date; other positions stay at their published epoch. A single click opens the full Gaia source inspector.</p>
     <p>Choose <strong>Submit to leaderboard</strong> for any marked point, including the plain map. Sign in, score the point, then add a title and note. No loaded images are needed. The local demo checks catalogs when available, skips brightness measurements and stores posts only in this browser. With a configured service, six catalog checks cover Gaia DR3, SIMBAD, CatWISE2020, UltracoolSheet, SkyBoT and VizieR AllWISE.</p>
-    <p>These are independent cone searches, not identity verdicts. Different epochs, motion and sensitivity matter. No result does not mean a new object; an unavailable catalog stays unavailable.</p>
+    <p>These are independent cone searches, not identity verdicts. Different epochs, motion and sensitivity matter. Gaia, SIMBAD and CatWISE use the marked frame date when proper motion is available. Other positions remain as published. No result does not mean a new object; unavailable checks stay visible.</p>
   </> },
   { title: "5. Share and discuss", body: <>
     <p>Add a title and a question or observation. Posting puts the sky point on the <strong>Participation leaderboard</strong> with a public discussion. If the same catalog object or a point within 15″ is already listed, open its discussion instead.</p>
-    <p>Points: 10 if a catalog already lists a source at the point. 20 if none of the six catalogs lists one and the server measures the point at least 5σ above its surroundings in any two of SPHEREx, WISE, DSS and NEOSSat; the server fetches these images itself. Otherwise 0, and you can still post it. Points are not a discovery.</p>
+    <p>Points: 10 if a catalog already lists a source at the point. 20 if no catalog returns a match, at most two catalogs are unavailable, and the server measures the point at least 5σ above its surroundings in any two of SPHEREx, WISE, DSS and NEOSSat; the server fetches these images itself. Otherwise 0, and you can still post it. Points are not a discovery.</p>
     <p>Point-only entries reopen the map without fetching a comparison. Saved image evidence still reopens with the same frames, dates, wavelength, stretch and marks. Local demo replies stay in this browser.</p>
   </> },
   { title: "Gaps stay visible", body: <>

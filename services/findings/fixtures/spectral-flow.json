@@ -203,8 +203,9 @@
     "duplicate": null,
     "limitations": [
       "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
-      "Uncatalogued means none of the applicable catalog searches listed a source; catalogs have depth, epoch and coverage limits.",
+      "Uncatalogued candidate means no returned catalog matches, with at most two unavailable catalogs; missing checks, depth, epoch and coverage limit this classification.",
       "Bright means a local peak at least 5\u03c3 above the surrounding pixels in a cutout's FITS. It is not a photometric detection, a flux, a temperature or evidence of variability.",
+      "Survey measurements use the marked sky coordinate; source motion between survey dates is not tracked.",
       "A cold brown dwarf is usually invisible in optical DSS and NEOSSat images; SPHEREx and WISE are the infrared surveys."
     ],
     "scoreBreakdown": [
