@@ -103,9 +103,11 @@ try {
  const mapModule=`window.__nameCatalogs=[]; const layers=new Map(); export default {
  init:Promise.resolve(),
  HiPS(url,options){const layer={skyFraction:1,setFrequency(){},setOpacity(){}};layer.query=Promise.resolve(layer);setTimeout(()=>options.successCallback(layer),0);return layer;},
- aladin(){return {contextMenu:{},view:{swapLayers(){}},world2pix(){return [200,200]},gotoRaDec(){},setFoV(){},setProjection(){},on(){},getRaDec(){return [${resolved[0].ra},${resolved[0].dec}]},getFoV(){return [.1,.1]},addCatalog(c){window.__nameCatalogs.push(c)},setBaseImageLayer(){},setOverlayImageLayer(layer,id){layers.set(id,layer)},getOverlayImageLayer(id){return layers.get(id)},removeImageLayer(id){layers.delete(id)},getStackLayers(){return [...layers.keys()]}}},
+ aladin(){return {contextMenu:{},view:{swapLayers(){},requestRedraw(){}},addOverlay(){},showReticle(){},pix2world(){return [0,0]},world2pix(){return [200,200]},gotoRaDec(){},setFoV(){},setProjection(){},on(){},getRaDec(){return [${resolved[0].ra},${resolved[0].dec}]},getFoV(){return [.1,.1]},addCatalog(c){window.__nameCatalogs.push(c)},setBaseImageLayer(){},setOverlayImageLayer(layer,id){layers.set(id,layer)},getOverlayImageLayer(id){return layers.get(id)},removeImageLayer(id){layers.delete(id)},getStackLayers(){return [...layers.keys()]}}},
  catalog(options){return {options,sources:[],clear(){this.sources=[]},addSources(s){this.sources.push(...s)}}},
- source(ra,dec,data){return {ra,dec,data}}
+ source(ra,dec,data){return {ra,dec,data}},
+ graphicOverlay(options){return {options,removeAll(){},add(){}}},
+ polygon(points){return {points}}
  };`;
  const context=await browser.newContext();
  let resolves=0,comparisons=0;

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "generate:findings-types": "openapi-typescript services/findings/fixtures/openapi.json -o web/src/findings/findings.generated.ts",
-    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"node scripts/wait-for-catalog.mjs && npm run dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
+    "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise,findings \"node scripts/wait-for-catalog.mjs && npm run dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\" \"npm:dev:findings\"",
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",
     "dev:spherex": "node scripts/dev-backend.mjs spherex",

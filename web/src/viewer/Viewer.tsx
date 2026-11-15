@@ -613,9 +613,9 @@ export function Viewer({
         : preview.kind === "missing"
           ? "Saved comparison not found"
           : preview.kind === "name_not_found"
-            ? "Object name not found. Try a preset or enter sky coordinates."
+            ? preview.message ?? "Object name not found. Try a preset or enter sky coordinates."
             : preview.kind === "catalog_error"
-              ? "Name lookup is unavailable. Try a preset or enter sky coordinates."
+              ? preview.message ?? "Name lookup is unavailable. Try a preset or enter sky coordinates."
               : preview.kind === "error"
                 ? preview.message
                 : preview.kind === "idle"

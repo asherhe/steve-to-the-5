@@ -32,21 +32,29 @@ export function nearestRow(check: CatalogCheck, point: SkyPosition): { name: str
   return best;
 }
 
-/** Up to two unavailable services are tolerated; truncated/invalid searches are not. */
+/** Catalogs whose check may fail without blocking points (mirrors the findings service).
+ *  A match in one still makes the point a known object. */
+export const OPTIONAL_CATALOGS: ReadonlySet<string> = new Set(["Gaia DR3"]);
+
+/** Up to two unavailable services are tolerated; truncated/invalid searches are not.
+ *  Optional catalogs that could not be checked are reported separately and never block. */
 export function catalogAvailability(review: CatalogReview) {
   const listed = review.checks.filter(c => (c.status === "candidates" || c.status === "partial") && (c.rows?.length ?? 0) > 0);
-  const unavailable = review.checks.filter(c => c.status === "unavailable");
+  const required = review.checks.filter(c => !OPTIONAL_CATALOGS.has(c.catalog));
+  const optionalUnchecked = review.checks.filter(c => OPTIONAL_CATALOGS.has(c.catalog)
+    && c.status !== "no_candidates" && !listed.includes(c));
+  const unavailable = required.filter(c => c.status === "unavailable");
   const undatedSkybot = review.checks.some(c => c.catalog === "SkyBoT" && c.status === "skipped") && !review.observedAtUtc;
-  const unchecked = review.checks.filter(c => c.status !== "no_candidates" && c.status !== "unavailable"
+  const unchecked = required.filter(c => c.status !== "no_candidates" && c.status !== "unavailable"
     && !(c.catalog === "SkyBoT" && c.status === "skipped" && undatedSkybot));
   if (unavailable.length > 2) unchecked.push(...unavailable);
-  return { listed, unavailable, unchecked, undatedSkybot };
+  return { listed, unavailable, unchecked, undatedSkybot, optionalUnchecked };
 }
 
 export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "incomplete" | "offline"; title: string; detail: string } {
   if (review.mode === "offline")
     return { tone: "offline", title: "Catalogs not searched", detail: "The catalog service is running offline, so no catalog was queried. Start it with CATALOGS_LIVE=1 to check real points." };
-  const { listed, unavailable, unchecked, undatedSkybot } = catalogAvailability(review);
+  const { listed, unavailable, unchecked, undatedSkybot, optionalUnchecked } = catalogAvailability(review);
   if (listed.length)
     return {
       tone: "listed",
@@ -62,7 +70,7 @@ export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "
   return {
     tone: "empty",
     title: "Uncatalogued candidate",
-    detail: `No returned catalog matches within ${review.radiusArcsec}″.${unavailable.length ? ` Unavailable: ${unavailable.map(c => c.catalog).join(", ")}; up to two unavailable catalogs are allowed.` : ""}${undatedSkybot ? " SkyBoT needs an observation time and was not run." : ""} That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
+    detail: `No returned catalog matches within ${review.radiusArcsec}″.${optionalUnchecked.length ? ` ${optionalUnchecked.map(c => c.catalog).join(", ")} could not be checked; it is not required for points.` : ""}${unavailable.length ? ` Unavailable: ${unavailable.map(c => c.catalog).join(", ")}; up to two unavailable catalogs are allowed.` : ""}${undatedSkybot ? " SkyBoT needs an observation time and was not run." : ""} That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
   };
 }
 

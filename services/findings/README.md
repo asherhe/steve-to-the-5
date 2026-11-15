@@ -158,13 +158,19 @@ scores, identities, image bytes or brightness measurements.
 | Result | Points |
 |---|---|
 | Any catalog returns a source row (`candidates` or `partial`) | 10 (`known`), immediately; no image download or brightness step |
-| No returned matches, at most two catalogs unavailable, no other incomplete searches, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
+| No returned matches, at most two of the other catalogs unavailable (Gaia DR3 not required), no other incomplete searches, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
 | Fewer than two bright surveys or incomplete catalog checks | 0 (`uncatalogued` / `incomplete`), still postable |
 
 Undated reference points skip SkyBoT explicitly; that expected skip does not prevent the
 20-point rule. Up to two `unavailable` catalogs are tolerated when no catalog returns a match; their failures remain visible. More than two unavailable catalogs, unexpected skips, and empty `partial` searches stay incomplete. A catalog source in a
 cone is not automatically the source in a selected pixel. Likewise brightness across surveys
 does not establish identity, novelty, motion or scientific significance.
+
+Gaia DR3 is optional for the 20-point rule. A Gaia check that could not complete (ESA down,
+or the AIP mirror rate-limiting) neither blocks the points nor counts toward the two
+tolerated outages; the review says Gaia could not be checked. A Gaia source in the cone still
+classifies the point as a known object (10). The rule keeps the `point-check-v3` label: the
+database accepts only that version, and changing it needs a migration.
 
 `cutouts.py` fetches bounded FITS directly: SPHEREx DR1 SIA/IBE, AllWISE W2 IBE, STScI DSS2 red,
 and calibrated NEOSSat COR/CORD through CADC. Capped SPHEREx metadata can supply a bounded image sample, labeled as incomplete in each

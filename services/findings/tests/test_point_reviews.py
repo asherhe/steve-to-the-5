@@ -79,17 +79,42 @@ class PointReviewTests(unittest.TestCase):
     def test_up_to_two_unavailable_catalogs_allow_candidate_brightness(self):
         sources = [SourceResult("wise", "ok", [Frame("WISE", "u", image(40))]),
                    SourceResult("dss", "ok", [Frame("DSS", "u", image(40))])]
+        required = NAMES[1:]  # Gaia DR3 is optional; see the Gaia test below.
         for count in range(4):
             with self.subTest(count=count):
-                catalog = report(**{name: "unavailable" for name in NAMES[:count]})
+                catalog = report(**{name: "unavailable" for name in required[:count]})
                 response, _, _ = self.run_review(catalog, sources)
                 self.assertEqual((response.classification, response.score),
                                  ("uncatalogued", 20) if count <= 2 else ("incomplete", 0))
                 if count:
                     self.assertIn("Unavailable", response.reasons[-1])
 
+    def test_gaia_is_not_required_for_twenty_points(self):
+        sources = [SourceResult("wise", "ok", [Frame("WISE", "u", image(40))]),
+                   SourceResult("dss", "ok", [Frame("DSS", "u", image(40))])]
+        for gaia in ("unavailable", "partial", "skipped"):
+            with self.subTest(gaia=gaia):
+                # Gaia not checked, plus two other outages: still within the allowance.
+                catalog = report(**{"Gaia DR3": gaia, "SIMBAD": "unavailable", "CatWISE2020": "unavailable"})
+                response, _, _ = self.run_review(catalog, sources)
+                self.assertEqual((response.classification, response.score), ("uncatalogued", 20))
+                self.assertTrue(any("Gaia DR3 could not be checked. It is not required for points." in r
+                                    for r in response.reasons))
+        # A third outage among the required catalogs still blocks points.
+        catalog = report(**{"Gaia DR3": "unavailable", "SIMBAD": "unavailable", "CatWISE2020": "unavailable",
+                            "VizieR": "unavailable"})
+        response, _, _ = self.run_review(catalog, sources)
+        self.assertEqual((response.classification, response.score), ("incomplete", 0))
+
+    def test_a_gaia_match_still_makes_a_known_object(self):
+        catalog = report()
+        catalog["checks"][0].update(status="candidates", rows=[{"sourceId": "1", "ra": RA, "dec": DEC, "separationArcsec": 0.5}])
+        response, _, _ = self.run_review(catalog, None)
+        self.assertEqual((response.classification, response.score), ("known", 10))
+        self.assertFalse(any("not required for points" in r for r in response.reasons))
+
     def test_partial_empty_is_incomplete_and_actual_match_overrides_outages(self):
-        response, _, _ = self.run_review(report(**{"Gaia DR3": "partial"}), None)
+        response, _, _ = self.run_review(report(**{"SIMBAD": "partial"}), None)
         self.assertEqual((response.classification, response.score), ("incomplete", 0))
         catalog = report(**{name: "unavailable" for name in NAMES[:3]})
         catalog["checks"][-1].update(status="partial", rows=[{"AllWISE": "example", "RAJ2000": RA, "DEJ2000": DEC}])

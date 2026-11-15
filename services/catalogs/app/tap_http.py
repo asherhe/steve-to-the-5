@@ -18,7 +18,7 @@ import threading
 from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass
 
-from app.reliability import EndpointDown
+from app.reliability import EndpointDown, EndpointThrottled
 
 DEFAULT_CONNECT_TIMEOUT_S = 3.0
 
@@ -56,6 +56,19 @@ def pending_requests() -> int:
     return _pending
 
 
+DEFAULT_RETRY_AFTER_S = 2.0
+MAX_RETRY_AFTER_S = 10.0
+
+
+def retry_after_s(header: str | None) -> float:
+    """Seconds to wait from a Retry-After header (seconds form), bounded; 2 s when absent."""
+    try:
+        value = float(header) if header is not None else DEFAULT_RETRY_AFTER_S
+    except ValueError:
+        value = DEFAULT_RETRY_AFTER_S  # an HTTP-date form is not worth parsing for one retry
+    return min(max(value, 0.0), MAX_RETRY_AFTER_S)
+
+
 async def _post(url: str, data: dict, deadline_s: float, connect_timeout_s: float) -> TapResponse:
     import httpx  # runtime dependency of the service; imported lazily for offline startup
 
@@ -64,11 +77,23 @@ async def _post(url: str, data: dict, deadline_s: float, connect_timeout_s: floa
         _client = httpx.AsyncClient(follow_redirects=True)
     timeout = httpx.Timeout(deadline_s, connect=min(connect_timeout_s, deadline_s))
 
+    started = asyncio.get_running_loop().time()
+
     async def request() -> TapResponse:
         response = await _client.post(url, data=data, timeout=timeout)  # reads the whole body
+        if response.status_code == 429:
+            # Rate-limited, not down: wait as asked (or briefly) and try once more, if the
+            # attempt's deadline leaves room for the wait and a reply.
+            wait = retry_after_s(response.headers.get("retry-after"))
+            left = deadline_s - (asyncio.get_running_loop().time() - started)
+            if wait + 1.0 < left:
+                await asyncio.sleep(wait)
+                response = await _client.post(url, data=data, timeout=timeout)
+            if response.status_code == 429:
+                raise EndpointThrottled("HTTP 429 (too many requests)")
         status = response.status_code
-        # 404/408/429 from a TAP sync URL mean the service is missing or overloaded, not a bad query.
-        if status >= 500 or status in (404, 408, 429):
+        # 404/408 from a TAP sync URL mean the service is missing or overloaded, not a bad query.
+        if status >= 500 or status in (404, 408):
             raise EndpointDown(f"HTTP {status}")
         if status >= 400:
             raise QueryRejected(f"HTTP {status}")

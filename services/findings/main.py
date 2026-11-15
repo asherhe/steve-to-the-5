@@ -6,20 +6,34 @@ import httpx
 from fastapi import FastAPI
 
 from . import cutouts
-from .api import create_router
+from .api import create_local_demo_router, create_router
 from .supabase import ApiError, Supabase
 
 
+def saved_comparison(body):
+    """The SPHEREx and WISE services return a saved comparison as {status, comparison,
+    diagnostics}; evidence checks need the comparison itself."""
+    if isinstance(body, dict) and "id" not in body and isinstance(body.get("comparison"), dict):
+        return body["comparison"]
+    return body
+
+
+def local_demo() -> bool:
+    """FINDINGS_LOCAL_DEMO=1 runs point scoring only: no Supabase, no sign-in, nothing stored."""
+    return os.environ.get("FINDINGS_LOCAL_DEMO", "").strip() == "1"
+
+
 def create_app() -> FastAPI:
-    required = ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
+    demo = local_demo()
+    required = () if demo else ("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVER_KEY", "SPHEREX_COMPARISON_BASE_URL")
     missing = [name for name in required if not os.environ.get(name, "").strip()]
     if missing:
         raise RuntimeError("Missing server configuration: " + ", ".join(missing))
-    comparison_base = os.environ["SPHEREX_COMPARISON_BASE_URL"].rstrip("/")
+    comparison_base = os.environ.get("SPHEREX_COMPARISON_BASE_URL", "http://127.0.0.1:8000").strip().rstrip("/")
     wise_base = os.environ.get("WISE_COMPARISON_BASE_URL", "http://127.0.0.1:8020").rstrip("/")
     catalog_base = os.environ.get("SPHEREX_CATALOG_BASE_URL", "http://127.0.0.1:8010").rstrip("/")
     client = httpx.AsyncClient(timeout=10.0, follow_redirects=False)
-    supabase = Supabase(
+    supabase = None if demo else Supabase(
         client,
         os.environ["SUPABASE_URL"],
         os.environ["SUPABASE_PUBLISHABLE_KEY"],
@@ -40,7 +54,7 @@ def create_app() -> FastAPI:
             if response.status_code == 404:
                 return None
             response.raise_for_status()
-            return response.json()
+            return saved_comparison(response.json())
         except (httpx.HTTPError, ValueError) as error:
             raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.") from error
 
@@ -89,6 +103,10 @@ def create_app() -> FastAPI:
         return await cutouts.fetch_all(client, ra, dec)
 
     app = FastAPI(lifespan=lifespan)
+    if demo:
+        app.include_router(create_local_demo_router(load_saved_comparison, load_wise_comparison=load_wise_comparison,
+            load_catalog_review=load_catalog_review, load_cutouts=load_cutouts))
+        return app
     app.include_router(create_router(supabase, load_saved_comparison,
         load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
         load_cutouts=load_cutouts))

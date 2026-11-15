@@ -10,7 +10,10 @@ export type Request =
   | { kind: "saved"; id: string; findingId?: string };
 
 export type Preview =
-  | { kind: "idle" | "missing" | "name_not_found" | "catalog_error" }
+  | { kind: "idle" | "missing" }
+  /** Name lookups keep the catalog service's own explanation when it gave one. */
+  | { kind: "name_not_found"; message?: string }
+  | { kind: "catalog_error"; message?: string }
   /** `startedAt` is `Date.now()` at the request; `progress` arrives only from services that report it. */
   | { kind: "redirect"; survey: "spherex" | "wise"; request: Request }
   | { kind: "loading"; startedAt: number; progress?: BuildProgress }
@@ -107,8 +110,12 @@ export function useComparisonLoader({ source, resolveName, loadFinding, onFocus,
           setPreview({ kind: "error", message: error instanceof ArchiveRequestError || error instanceof EvidenceReplayError
             ? error.message : "The archive service could not be reached." });
         } else {
-          const missing = error instanceof CatalogApiError && error.code === "not_found";
-          setPreview({ kind: missing ? "name_not_found" : "catalog_error" });
+          // Keep the service's wording: it distinguishes "SIMBAD is not responding", "lookup is
+          // switched off" and a miss in the dated mirror, which only means "not found there".
+          const catalog = error instanceof CatalogApiError ? error : null;
+          const missing = catalog?.code === "not_found" || catalog?.code === "not_found_in_mirror";
+          const message = catalog?.message.trim() || undefined;
+          setPreview({ kind: missing ? "name_not_found" : "catalog_error", message });
         }
       }
     }

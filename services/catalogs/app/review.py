@@ -149,6 +149,26 @@ def at_observation(rows, ra, dec, radius, observed, epoch, ra_key="ra", dec_key=
     return sorted(selected, key=lambda row: row["separationArcsec"])
 
 
+def unavailable_reason(exc: BaseException) -> str:
+    """One plain sentence on why a catalog could not be checked, most actionable cause first."""
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    text = f"{type(exc).__name__} {exc}".lower()
+    if status == 429 or "429" in text or "too many requests" in text:
+        return "the archive is limiting how many requests it accepts. Try again in a minute."
+    if getattr(exc, "busy", False) or "busy" in text:
+        return "this server is busy with other checks. Try again in a moment."
+    if isinstance(exc, (TimeoutError, asyncio.TimeoutError)) or "timed out" in text or "timeout" in text \
+            or "no complete response" in text:
+        return "the archive did not respond in time."
+    if (isinstance(status, int) and status >= 500) or "http 5" in text:
+        return "the archive returned a server error."
+    if "rejected" in text:
+        return "the archive rejected the query."
+    if "connect" in text or "unreachable" in text:
+        return "the archive could not be reached."
+    return "the search did not complete."
+
+
 def tap_check(name, scope, endpoints, query, required, settings, *, motion=None):
     policy = failover_for(settings)
 
@@ -314,10 +334,12 @@ def run_review(ra, dec, radius, observed, settings=None):
             return cached.model_copy(deep=True)
         try:
             result = task()
-        except Exception:
+        except Exception as exc:
             # Never turn a failed/malformed query into a successful zero-row result.
-            return CatalogCheck(catalog=name, status="unavailable", scope="Search did not complete", sourceUrl="",
-                limitations=["The catalog could not be checked. No absence was established; up to two unavailable catalogs are allowed by the candidate-scoring policy."])
+            reason = unavailable_reason(exc)
+            return CatalogCheck(catalog=name, status="unavailable", scope=f"Not checked: {reason}", sourceUrl="",
+                limitations=[f"The catalog could not be checked: {reason} No absence was established.",
+                             f"Detail: {str(exc)[:300] or type(exc).__name__}"])
         if cache is not None and result.status in {"candidates", "no_candidates", "partial"}:
             cache.put(key, result.model_copy(deep=True), REVIEW_CACHE_TTL_S)
         return result

@@ -156,7 +156,7 @@ try {
     await signIn(page); await page.reload();
     outage = true; await press(page, 'Check and score this point'); await page.getByText('Synthetic archive check unavailable.', { exact: true }).waitFor();
     outage = false; await press(page, 'Check and score this point');
-  } else await press(page, 'Run simulated catalog checks');
+  } else await press(page, 'Score this point (local simulation)');
   await page.locator('#review-panel').getByRole('heading', { name: /^10 points/ }).waitFor();
   assert.equal(await page.locator('#review-panel .review-brightness').count(), 0, 'Known source skips brightness');
   await page.locator('#review-panel').screenshot({ path: `${output}/desktop-review.png` });
@@ -172,7 +172,7 @@ try {
     await page.getByLabel('Reply', { exact: true }).fill('Local discussion reply.'); await press(page, 'Reply'); await page.getByText('Local discussion reply.', { exact: true }).waitFor();
     const local = await page.evaluate(() => JSON.parse(localStorage.getItem('spherex.local-demo.findings.v1'))[0]);
     await page.goto(`${origin}/?reviewRa=${local.ra}&reviewDec=${local.dec}&reviewRadius=30`);
-    await press(page, 'Run simulated catalog checks'); await page.getByText(/Already on the leaderboard/).waitFor();
+    await press(page, 'Score this point (local simulation)'); await page.getByText(/Already on the leaderboard/).waitFor();
     assert.equal(requests.filter(r => r.path.startsWith('/api/findings')).length, 0, 'Demo must not write to findings');
     checks.push('demo local persistence/reply and same-object/nearby duplicate block, no findings requests');
   } else {

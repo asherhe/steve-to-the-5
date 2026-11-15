@@ -116,12 +116,32 @@ test("an expected undated SkyBoT skip leaves the two-of-four brightness route av
 
 test("three outages, unexpected skips and truncated empty results remain incomplete", () => {
   for (const statuses of [
-    ["unavailable", "unavailable", "unavailable", "no_candidates", "skipped", "no_candidates"],
-    ["skipped", ...Array(5).fill("no_candidates")],
+    ["no_candidates", "unavailable", "unavailable", "unavailable", "skipped", "no_candidates"],
+    ["no_candidates", "skipped", ...Array(4).fill("no_candidates")],
   ]) assert.equal(summarize(review(statuses)).tone, "incomplete");
   const partial = review(Array(6).fill("no_candidates"));
-  partial.checks[0] = check("Gaia DR3", "partial", []);
+  partial.checks[1] = check("SIMBAD", "partial", []);
   assert.equal(summarize(partial).tone, "incomplete");
+});
+
+test("Gaia DR3 is not required for points, but a Gaia match still counts", async () => {
+  const { expectedPoints } = await import("./catalogCheckSummary.ts");
+  for (const gaia of ["unavailable", "skipped"]) {
+    // Gaia not checked plus two other outages stays within the allowance.
+    const result = review([gaia, "unavailable", "unavailable", "no_candidates", "skipped", "no_candidates"]);
+    assert.equal(summarize(result).tone, "empty");
+    assert.match(summarize(result).detail, /Gaia DR3 could not be checked; it is not required for points/);
+    assert.match(summarize(result).detail, /Unavailable: SIMBAD, CatWISE2020;/);
+    assert.equal(expectedPoints(result).points, 20);
+  }
+  const partial = review(Array(6).fill("no_candidates"));
+  partial.checks[0] = check("Gaia DR3", "partial", []);
+  assert.equal(summarize(partial).tone, "empty");
+  const third = review(["unavailable", "unavailable", "unavailable", "unavailable", "skipped", "no_candidates"]);
+  assert.equal(summarize(third).tone, "incomplete");
+  const known = review(["candidates", ...Array(5).fill("no_candidates")]);
+  assert.equal(summarize(known).tone, "listed");
+  assert.equal(expectedPoints(known).points, 10);
 });
 
 test("server frame-time predictions place non-Gaia sources without changing native columns", () => {

@@ -884,3 +884,6 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .frame-details { margin-top: 0.75rem; }
 .frame-source { overflow-wrap: anywhere; color: var(--muted); font-size: 0.85rem; }
 .share-links { margin: 0.5rem 0; }
+
+/* Why a catalog in the point check could not be checked. */
+.point-check__reason { display: block; flex-basis: 100%; color: var(--muted); font-size: 0.8rem; }

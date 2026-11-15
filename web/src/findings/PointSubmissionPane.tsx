@@ -28,7 +28,7 @@ export function PointSubmissionPane(p: Props) {
       <p>10 points for a source listed by any catalog, with no brightness check. If none is listed, the server fetches SPHEREx, WISE, DSS and NEOSSat images: 20 points if bright in any two, otherwise 0. Zero-point submissions are welcome.</p>
       <p>One entry per object: the same catalog source or a point within 15″ of an existing entry is blocked. Points are for discussion, not a discovery.</p>
     </details>
-    {p.simulation && <p className="example-notice">Local simulation: catalog checks are live when available; brightness is not measured. Posts and duplicate checks exist only in this browser and are separate from the public leaderboard.</p>}
+    {p.simulation && <p className="example-notice">Local simulation: points come from the local scoring service with the live rules, including the brightness measurement, so 20 points are possible. Posts and duplicate checks exist only in this browser and are separate from the public leaderboard. If that service is not running, only the catalog check runs.</p>}
     <Selection key={`${selection}:${p.session?.userId ?? 'anonymous'}`} {...p} position={p.position} selectionKey={selection} />
   </section>;
 }
@@ -94,10 +94,10 @@ function Selection(p: Props & { position: SkyPosition; selectionKey: string }) {
     <p>RA {p.position.ra.toFixed(6)}°, Dec {p.position.dec.toFixed(6)}° · radius {p.defaultRadiusArcsec ?? 30}″.
       {p.frame ? ' Marked on a dated frame; its saved observation time is used for the asteroid check.' : ' Reference-map point; no observation time is assumed.'}</p>
     {phase === 'reviewing' ? <>
-      <p role="status">{p.simulation ? 'Running simulated submission with catalog checks…' : 'Checking catalogs and fetching survey cutouts where needed… This can take about a minute.'}</p>
+      <p role="status">{p.simulation ? 'Scoring locally: checking catalogs and measuring brightness where needed… This can take about a minute.' : 'Checking catalogs and fetching survey cutouts where needed… This can take about a minute.'}</p>
       <button type="button" onClick={() => { controller.current?.abort(); setPhase('idle'); }}>Cancel review</button>
     </> : <button type="button" className="primary" disabled={phase === 'posting'} onClick={() => void run()}>
-      {!p.session ? 'Sign in to submit' : p.simulation ? 'Run simulated catalog checks' : report ? 'Score again' : 'Check and score this point'}
+      {!p.session ? 'Sign in to submit' : p.simulation ? 'Score this point (local simulation)' : report ? 'Score again' : 'Check and score this point'}
     </button>}
     {error && <p role="alert">{error}</p>}
     {expired && <button type="button" onClick={signIn}>Sign in again</button>}

@@ -45,6 +45,57 @@ class FindingsRoute(APIRoute):
         return handle
 
 
+def evidence_loader(load_saved_comparison, load_wise_comparison):
+    """Loads a frame's saved comparison from its survey's service and checks it is that one."""
+    async def evidence(identifier, survey):
+        loader = load_wise_comparison if survey == "wise" else load_saved_comparison
+        if loader is None:
+            raise ApiError(503, "comparison_unavailable", "This survey's saved evidence service is not configured.")
+        comparison = await loader(identifier)
+        if comparison is None:
+            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
+        if not isinstance(comparison, dict) or comparison.get("id") != identifier:
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
+        return comparison
+    return evidence
+
+
+LOCAL_DEMO_NOTE = ("LOCAL DEMO: scored by the local findings service with the same rules as the live service, "
+                   "but nothing is stored and there is no sign-in. Posts exist only in this browser.")
+
+
+def create_local_demo_router(load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None,
+                             load_catalog_review=None, load_cutouts=None) -> APIRouter:
+    """Point scoring without Supabase, for the local demo (FINDINGS_LOCAL_DEMO=1).
+
+    Runs exactly the live point review (catalog chain, survey cutouts, brightness), so 20 points
+    are possible, but requires no session, writes nothing and checks no leaderboard duplicates;
+    the browser keeps the demo's posts. Not for deployment: it is unauthenticated.
+    """
+    router = APIRouter(
+        prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
+        responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
+    )
+    evidence = evidence_loader(load_saved_comparison, load_wise_comparison)
+    review_slots = asyncio.Semaphore(2)
+
+    @router.post("/demo/points/review", response_model=PointReviewResponse,
+                 responses={429: {"model": ErrorResponse}})
+    async def demo_point_review(data: PointReviewInput):
+        """Scores a marked point for the local demo; nothing is stored."""
+        if load_catalog_review is None or load_cutouts is None:
+            raise ApiError(503, "catalogs_unavailable", "Point review is not configured.")
+        if review_slots.locked():
+            raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
+        async with review_slots:
+            response, _, _ = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence)
+        response.duplicate = None  # the browser checks its own demo posts
+        response.limitations = [LOCAL_DEMO_NOTE, *response.limitations]
+        return response
+
+    return router
+
+
 def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
                   load_asset=None, load_cutouts=None) -> APIRouter:
     router = APIRouter(
@@ -57,16 +108,7 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
             raise ApiError(401, "unauthorized", "Sign in to post or reply.")
         return await supabase.user(credentials.credentials)
 
-    async def evidence(identifier, survey):
-        loader = load_wise_comparison if survey == "wise" else load_saved_comparison
-        if loader is None:
-            raise ApiError(503, "comparison_unavailable", "This survey's saved evidence service is not configured.")
-        comparison = await loader(identifier)
-        if comparison is None:
-            raise ApiError(422, "invalid_comparison", "Choose a saved comparison before posting.")
-        if not isinstance(comparison, dict) or comparison.get("id") != identifier:
-            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.")
-        return comparison
+    evidence = evidence_loader(load_saved_comparison, load_wise_comparison)
 
     review_slots = asyncio.Semaphore(2)
 
