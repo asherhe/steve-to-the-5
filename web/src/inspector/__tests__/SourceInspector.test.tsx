@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SourceInspector } from "../SourceInspector";
 import { createCatalogClient } from "../api";
@@ -302,5 +302,83 @@ describe("component-specific verified labels", () => {
     expect(screen.getByText("Epsilon Indi Ba")).toBeInTheDocument();
     expect(screen.getByText("6412596012146801152")).toBeInTheDocument();
     expect(screen.queryByText("Epsilon Indi B",{exact:true})).not.toBeInTheDocument();
+  });
+});
+
+describe("summary card and detail sections", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function renderState(state: (typeof states)[keyof typeof states]) {
+    return render(<SourceInspector client={client} skyPosition={null} onMark={noMark} initialState={state} />);
+  }
+
+  it("summarises the known source in plain words", () => {
+    renderState(states.matched);
+    expect(screen.getByRole("heading", { name: "Gaia DR3 source" })).toBeInTheDocument();
+    expect(screen.getByText("…2575872")).toBeInTheDocument();
+    expect(screen.getByText(/Bright · G 8\.19/)).toBeInTheDocument();
+    expect(screen.getByText(/Red · BP−RP 3\.01/)).toBeInTheDocument();
+    expect(screen.getByText(/5\.96 light-years \(1\.83 pc\)/)).toBeInTheDocument();
+    expect(screen.getByText(/10\.4″ per year, heading N/)).toBeInTheDocument();
+    expect(screen.getByText("Fast mover")).toBeInTheDocument();
+    expect(screen.getByText(/0\.42″ from the selected point/)).toBeInTheDocument();
+    expect(screen.getByText(/not from SPHEREx images/)).toBeInTheDocument();
+  });
+
+  it("omits colour and hedges distance while detail is missing", () => {
+    renderState({ kind: "matched", source: knownSource, detail: null });
+    expect(screen.queryByText(/BP−RP/)).not.toBeInTheDocument();
+    expect(screen.getByText(/About 5\.96 light-years/)).toBeInTheDocument();
+  });
+
+  it("does not state a distance or dashes for an unmeasured parallax", () => {
+    renderState({ kind: "matched", source: ambiguousSources[2], detail: null });
+    expect(screen.getByText(/Distance too uncertain to state/)).toBeInTheDocument();
+    expect(screen.getByText("not measured")).toBeInTheDocument();
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
+  });
+
+  // jsdom does not emulate keyboard activation of <summary>; that is checked in a browser.
+  it("keeps raw values in sections that start collapsed and open on activation", async () => {
+    const { container } = renderState(states.matched);
+    const sections = [...container.querySelectorAll("details")];
+    expect(sections.map((section) => section.querySelector("summary")?.textContent)).toEqual([
+      "Position", "Motion", "Photometry", "Identifiers & links",
+    ]);
+    expect(sections.every((section) => !section.open)).toBe(true);
+    await userEvent.click(sections[0].querySelector("summary")!);
+    expect(sections[0].open).toBe(true);
+  });
+
+  it("explains a term when its hint is toggled", async () => {
+    renderState(states.matched);
+    const hint = screen.getByRole("button", { name: "What is this distance?" });
+    expect(hint).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(hint);
+    expect(hint).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/Computed from Gaia's parallax/)).toBeVisible();
+  });
+
+  it("copies the source ID and the full text export", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    renderState(states.matched);
+    await userEvent.click(screen.getByRole("button", { name: "Copy ID" }));
+    expect(writeText).toHaveBeenLastCalledWith(knownSource.sourceId);
+    await userEvent.click(screen.getByRole("button", { name: "Copy all as text" }));
+    expect(writeText.mock.lastCall?.[0]).toContain("Parallax: 546.976 ± 0.040 mas");
+    expect(screen.getByRole("status")).toHaveTextContent("All values copied.");
+  });
+
+  it("lists candidates nearest first and marks the brightest", () => {
+    const shuffled = [ambiguousSources[2], ambiguousSources[0], ambiguousSources[1]];
+    renderState({ kind: "ambiguous", sources: shuffled });
+    const rows = within(screen.getByRole("list")).getAllByRole("button");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining("1.11″ away"), expect.stringContaining("1.63″ away"), expect.stringContaining("2.04″ away"),
+    ]);
+    expect(rows[0]).toHaveTextContent("Very faint · G 18.43");
+    expect(within(rows[0]).getByText("Brightest")).toBeInTheDocument();
+    expect(screen.getAllByText("Brightest")).toHaveLength(1);
   });
 });

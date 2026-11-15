@@ -52,6 +52,28 @@ The inspector renders, driven either by self-fetching from `client` or by an exp
 - **matched** — one source; detail (uncertainties, RV, BP/RP) loads as enrichment.
 - **unavailable** — a service error, with the `{code, message}`.
 
+### Summary card and detail sections
+
+A matched source opens with a summary card (`states/SummaryCard.tsx`) in plain words:
+brightness (G magnitude), optical colour (BP−RP), distance from parallax, total proper
+motion with a compass direction, and the separation from the selected point. The mark
+button follows. Every raw catalog value sits below in sections that start collapsed
+(`states/DetailSections.tsx`): Position, Motion, Photometry, Predicted coordinates and
+Identifiers & links, plus **Copy ID** and **Copy all as text**. "?" buttons
+(`states/Hint.tsx`) define terms such as parallax and reference epoch.
+
+The wording and thresholds live in `describe.ts`. They are derived from the Gaia row
+and labelled as such; they are not observations from SPHEREx images and do not classify
+the object. A distance is stated only when parallax ÷ error ≥ 5 (or, without an error,
+parallax ≥ 2 mas, marked approximate). Motion below 3σ reads "No significant motion
+measured"; 0.5″/yr or more is flagged "Fast mover". Missing values read "not measured".
+
+When the catalog row carries a verified `identity` (matched by exact source ID), the
+card title shows its common name or designation with the component, candidate rows show
+the name, and a **Names** section lists the designation, aliases, distinct related
+objects and name references. Without one, the card says the association with the
+requested target is unverified. Never set a title from position.
+
 ### Predicted vs observed
 
 When a frame is selected, the observed position (epoch 2016.0) is propagated to the frame's

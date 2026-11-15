@@ -54,6 +54,7 @@ function Harness() {
       </div>
       <div>
         <SourceInspector
+          key={mode}
           client={client}
           skyPosition={mode === "live" ? { ra: 269.45207, dec: 4.66829 } : null}
           selectedFrame={withFrame ? demoFrame : null}
