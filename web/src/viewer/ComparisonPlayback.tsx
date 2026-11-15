@@ -23,16 +23,17 @@ export function ComparisonPlayback({
   selectedPosition: SkyPosition | null;
   frameMark: SkyPosition | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
-  onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
+  /** Optional click-to-inspect on the image. Without it the frame is display only. */
+  onInspect?: (position: SkyPosition, frame: ComparisonFrame) => void;
 }) {
   const { frame, index, frames, attempt: imageAttempt } = playback;
   const failed = playback.assets[frame.id]?.state === "failed";
   const { width, height } = comparison.grid;
   const wcs = cutoutWcs(comparison.grid);
-  const canInspect = !!wcs && playback.assets[frame.id]?.state === "ready" && !failed;
+  const canInspect = !!onInspect && !!wcs && playback.assets[frame.id]?.state === "ready" && !failed;
 
   function inspect(x: number, y: number) {
-    if (!canInspect || !wcs) return;
+    if (!canInspect || !wcs || !onInspect) return;
     playback.pause();
     onInspect(wcs.toSky({ x, y }), frame);
   }

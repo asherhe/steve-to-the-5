@@ -287,24 +287,6 @@ figcaption { display: grid; gap: 0.25rem; margin-top: 0.75rem; overflow-wrap: an
 details { margin: 0 0 0.625rem; }
 summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
 
-/* Source inspector, themed through its own variables. */
-.floating-panel .source-inspector, .floating-pane .source-inspector {
-  --si-fg: var(--text);
-  --si-muted: var(--muted);
-  --si-bg: transparent;
-  --si-panel: var(--control);
-  --si-accent: var(--cyan);
-  --si-warn: var(--amber);
-  --si-border: var(--line-strong);
-  max-width: none;
-  padding: 0;
-  border-radius: 0;
-  font-family: var(--sans);
-}
-.floating-panel .si-candidate, .floating-pane .si-candidate { justify-content: space-between; font: 400 0.875rem/1.4 var(--sans); letter-spacing: normal; text-transform: none; border-radius: 2px; }
-.floating-panel .si-mark-button, .floating-panel .si-mark-button:hover:enabled,
-.floating-pane .si-mark-button, .floating-pane .si-mark-button:hover:enabled { width: 100%; color: var(--bg); background: var(--amber); border-color: var(--amber); }
-
 /* Map and dock */
 .sky-map { position: absolute; z-index: 0; inset: 0; overflow: hidden; background: #020305; }
 .aladin-host { width: 100%; height: 100%; }
@@ -885,3 +867,8 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .point-check__submit-hint { display: grid; gap: 0.4rem; font-size: 0.8125rem; color: var(--muted); }
 .review-brightness { width: 100%; border-collapse: collapse; font: 400 0.75rem/1.4 var(--mono); }
 .review-brightness th, .review-brightness td { padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--line); text-align: left; }
+
+/* Switching map imagery: how far the view moved in time. */
+.time-shift-notice { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0 0 0.5rem; padding: 0.45rem 0.6rem; border-left: 3px solid #ffd68a; background: #ffd68a14; font-size: 0.85rem; line-height: 1.4; }
+.time-shift-notice span { flex: 1; }
+.sky-tools .time-shift-notice button { min-height: 0; padding: 0 0.4rem; border: 0; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1.2; }

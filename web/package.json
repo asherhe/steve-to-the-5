@@ -3,10 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Standalone dev harnesses and tests for the source inspector (task 3) and findings UI (task 5). Not the app shell; the integrated viewer app lives at the repository root.",
+  "description": "Standalone dev harnesses and tests for the shared catalog client and the findings UI (task 5). Not the app shell; the integrated viewer app lives at the repository root.",
   "scripts": {
-    "dev:inspector": "vite --config vite.inspector.config.ts",
-    "build:inspector": "tsc -p tsconfig.json --noEmit && vite build --config vite.inspector.config.ts",
     "dev:findings": "vite --config vite.findings.config.ts",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",

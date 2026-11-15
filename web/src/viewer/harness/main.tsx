@@ -1,19 +1,9 @@
 import { useMemo, useState } from "react";
 import { Viewer, type ViewerControlsProps } from "../Viewer";
-import { SourceInspector, type SourceInspectorProps } from "../../inspector";
 import { FixtureDiscussion } from "./EvidenceDiscussion";
 import { fixtureDataSource, loadFixtureFinding, savedFixtureId, type Scenario } from "./fixtures";
 import { targetPresets } from "../coordinates";
 
-const fixtureCatalog = {
-  async nearby() { return { sources: [] }; },
-  async detail() { throw new Error("No fixture catalog source selected."); },
-  async resolve() { throw new Error("Name resolution uses the fixture viewer adapter."); },
-  async review(): Promise<never> { throw new Error("The fixture harness has no catalog chain."); },
-};
-function Inspector(props: Omit<SourceInspectorProps, "client">) {
-  return <SourceInspector {...props} client={fixtureCatalog} />;
-}
 const labels: Record<Scenario, string> = {
   ready: "Matched pair", single_epoch: "Single epoch", no_coverage: "No coverage",
   no_comparable_pair: "No comparable pair", upstream_unavailable: "Archive unavailable",
@@ -39,6 +29,6 @@ export function FixtureHarness() {
       <button onClick={props.onReset}>Back to search</button>
     </div>;
   }, []);
-  return <Viewer dataSource={source} Inspector={Inspector} Discussion={FixtureDiscussion}
+  return <Viewer dataSource={source} Discussion={FixtureDiscussion}
     loadFinding={loadFixtureFinding} Controls={Controls} savedExampleId={savedFixtureId} synthetic />;
 }

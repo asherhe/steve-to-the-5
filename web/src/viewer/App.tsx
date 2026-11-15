@@ -1,5 +1,4 @@
-import type { ComponentProps } from 'react';
-import { SourceInspector, createCatalogClient } from '../inspector';
+import { createCatalogClient } from '../inspector';
 import { createFindingsClient, FindingsApiError } from '../findings/api';
 import { createAuthGateway } from '../findings/auth';
 import { AccountProvider, AccountControls, useAccount } from '../findings/Account';
@@ -28,9 +27,6 @@ const loadFinding = async (id: string, signal?: AbortSignal) => {
     throw new EvidenceReplayError(error instanceof FindingsApiError ? error.message : 'The finding could not be loaded. Try again.');
   }
 };
-function Inspector(props: Omit<ComponentProps<typeof SourceInspector>, 'client'>) {
-  return <SourceInspector {...props} client={catalog} requireLiveCatalog />;
-}
 function Review(props: CandidateReviewSlotProps) {
   const account = useAccount();
   return <CandidateReviewPane {...props} simulation={demo} client={findings} session={account.session} onRequestSignIn={account.requestSignIn} />;
@@ -41,5 +37,5 @@ function Discussion(props: EvidenceDiscussionProps) {
   return <FindingThread client={findings} session={account.session} findingId={props.finding.id} onClose={() => props.onClose?.()} onRequestSignIn={account.requestSignIn} onShowEvidence={() => props.onShowEvidence(props.finding)} />;
 }
 export function App() {
-  return <AccountProvider gateway={auth}><Viewer dataSource={dataSource} wiseDataSource={createWiseDataSource} Inspector={Inspector} leaderboard={leaderboard} loadFinding={loadFinding} Discussion={Discussion} Review={Review} checkPoint={catalog.review} Account={demo ? undefined : AccountControls} Activity={Activity} savedExampleId={retainedExample.comparison.id} /></AccountProvider>;
+  return <AccountProvider gateway={auth}><Viewer dataSource={dataSource} wiseDataSource={createWiseDataSource} leaderboard={leaderboard} loadFinding={loadFinding} Discussion={Discussion} Review={Review} checkPoint={catalog.review} Account={demo ? undefined : AccountControls} Activity={Activity} savedExampleId={retainedExample.comparison.id} /></AccountProvider>;
 }

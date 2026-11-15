@@ -11,6 +11,7 @@ import {
   type SpherexCube,
 } from "./spherexSurvey";
 import { watchTiles, type TileWatch } from "./tileWatch";
+import { timeShiftNotice } from "./surveyEpochs";
 import { findWiseSurvey, wiseMap, type SkyView } from "./wiseSurvey";
 import type { FieldLimits } from "./FieldSearch";
 import { compareReachDeg, fieldWidthFromView } from "./compareField";
@@ -25,7 +26,6 @@ type LayerStatus = "loading" | "ready" | "unavailable";
 
 const globeFovDeg = 180;
 /** Longest gap between the clicks of a double-click, in ms. */
-const doubleClickMs = 280;
 const referenceLayerId = "reference-sky";
 const spherexDetailLayerId = "spherex-detail";
 const imageryLabels: Record<Imagery, string> = { spherex: "SPHEREx", dss: "DSS", wise: "WISE" };
@@ -58,12 +58,11 @@ export function SkyMap({
   initialCenter,
   focus,
   onCompare,
-  onInspect,
   onAdvancedSearch,
   catalogMark,
   target,
   notice,
-  dated, onInspectDated, slice,
+  dated, slice,
   survey = "spherex",
   compareLimits,
   tiles,
@@ -90,13 +89,11 @@ export function SkyMap({
   initialCenter: SkyPosition;
   focus: Field | null;
   onCompare: (field: Field) => void;
-  onInspect: (position: SkyPosition, onSpherexMosaic: boolean) => void;
   onAdvancedSearch: () => void;
   catalogMark: MarkAction | null;
   target: ResolveResult | null;
   notice: string;
   dated?: DatedLayer | null;
-  onInspectDated?: (position: SkyPosition) => void;
   /** Cube slice shown as the SPHEREx reference layer. */
   slice: number;
   /** Survey the comparison view is on. "wise" starts the map on WISE imagery. */
@@ -124,7 +121,7 @@ export function SkyMap({
   const previousGlobeFov = useRef(globeFovDeg);
   const menu = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const clickProps = useRef({ onInspect, onInspectDated, onMarkPoint, shownDated: null as DatedLayer | null, imagery: "spherex" as Imagery });
+  const clickProps = useRef({ onMarkPoint, shownDated: null as DatedLayer | null, imagery: "spherex" as Imagery });
   const detachPointer = useRef<(() => void) | null>(null);
 
   const [viewStatus, setViewStatus] = useState<"loading" | "ready" | "failed">("loading");
@@ -156,25 +153,9 @@ export function SkyMap({
       return !!point && point.x >= -0.5 && point.y >= -0.5 && point.x < dated!.comparison.grid.width - 0.5 &&
         point.y < dated!.comparison.grid.height - 0.5 && dated!.assets[dated!.frame.id]?.state === "ready";
     };
-    // A double-click also fires two clicks. Single clicks wait briefly so a double-click
-    // marks a point without also opening the Gaia inspector.
-    let pending: number | undefined;
-    sky.on("click", ({ ra, dec, isDragging }) => {
-      window.clearTimeout(pending);
-      // Where points can be marked, a click does nothing: double-click marks and checks a
-      // point. Otherwise a third click, or two slow ones, reopened the old Gaia inspector.
-      // It still opens from its panel button and "Inspect map center".
-      if (clickProps.current.onMarkPoint) return;
-      if (!isDragging && Number.isFinite(ra) && Number.isFinite(dec)) {
-        pending = window.setTimeout(() => {
-          const { onInspect, onInspectDated, imagery } = clickProps.current;
-          if (onDated({ ra, dec })) onInspectDated?.({ ra, dec });
-          else onInspect({ ra, dec }, imagery === "spherex");
-        }, doubleClickMs);
-      }
-    });
+    // A single click does nothing on the map: a double-click marks a point and checks it
+    // against the catalogs.
     function mark(event: MouseEvent) {
-      window.clearTimeout(pending);
       const { onMarkPoint } = clickProps.current;
       if (!onMarkPoint) return;
       const box = host.getBoundingClientRect();
@@ -191,11 +172,7 @@ export function SkyMap({
     }
     // Capture phase, so this runs (and stops the event) before Aladin's canvas handler.
     host.addEventListener("dblclick", mark, true);
-    return () => {
-      window.clearTimeout(pending);
-      host.removeEventListener("dblclick", mark, true);
-      sky.on("click", () => {});
-    };
+    return () => host.removeEventListener("dblclick", mark, true);
   }
 
   function syncReadout() {
@@ -305,6 +282,21 @@ export function SkyMap({
   useEffect(() => {
     outline.current?.(pinnedField);
   }, [pinnedField, viewStatus]);
+
+  // Say how far in time a change of map moved the view. The maps share one sky grid, so a
+  // star that looks shifted between them really moved between the survey dates.
+  const shownImagery = useRef<Imagery | null>(null);
+  const [timeShift, setTimeShift] = useState<string | null>(null);
+  useEffect(() => {
+    const previous = shownImagery.current;
+    shownImagery.current = imagery;
+    if (previous && previous !== imagery) setTimeShift(timeShiftNotice(previous, imagery));
+  }, [imagery]);
+  useEffect(() => {
+    if (!timeShift) return;
+    const hide = setTimeout(() => setTimeShift(null), 12_000);
+    return () => clearTimeout(hide);
+  }, [timeShift]);
 
   // Follow the comparison view's survey: WISE view shows WISE imagery, SPHEREx view shows
   // SPHEREx. A manual imagery choice (e.g. DSS) within a view still stands until the view changes.
@@ -486,7 +478,7 @@ export function SkyMap({
   const shownDated = dated && imagery === (dated.survey ?? "spherex") ? dated : null;
 
   // Click handlers are bound once per Aladin view and read the latest props from here.
-  clickProps.current = { onInspect, onInspectDated, onMarkPoint, shownDated, imagery };
+  clickProps.current = { onMarkPoint, shownDated, imagery };
 
   // Aladin's centre crosshair gives way to the mark while the mark sits at the centre.
   const markPixel = pointMark && viewStatus === "ready" && readout ? view.current?.world2pix(pointMark.ra, pointMark.dec) : undefined;
@@ -611,6 +603,12 @@ export function SkyMap({
       {(target || visibleCatalogMark) && <small className="map-name-legend">{target && `Search field: ${target.identity?.displayName ?? target.name} (field center, not a detection). `}{visibleCatalogMark && `Marked source: ${visibleCatalogMark.displayName ?? `Gaia DR3 ${visibleCatalogMark.sourceId}`} (${visibleCatalogMark.predicted ? "predicted position" : "catalog position"}).`}</small>}
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
+        {timeShift && (
+          <p className="time-shift-notice" role="status">
+            <span>{timeShift}</span>
+            <button type="button" aria-label="Dismiss time notice" onClick={() => setTimeShift(null)}>×</button>
+          </p>
+        )}
         {onMarkPoint && mapUsable && !pointMark && <p className="mark-hint">Double-click the map to check a point against the catalogs.</p>}
         {datedReady && statusText && <small className="reference-status">Reference sky: {statusText}</small>}
         <p className="sky-readout">
@@ -657,13 +655,6 @@ export function SkyMap({
         }}>
           <button type="button" disabled={!mapUsable} onClick={() => { toggleProjection(); closeMenu(); }}>
             {allSky ? "Globe view" : "All-sky view"}
-          </button>
-          <button type="button" disabled={!mapUsable} onClick={() => {
-            const center = view.current?.getRaDec();
-            if (center) onInspect({ ra: normalizeRa(center[0]), dec: center[1] }, imagery === "spherex");
-            setMenuOpen(false);
-          }}>
-            Inspect map center
           </button>
           {onMarkPoint && (
             <button type="button" disabled={!mapUsable} onClick={() => {

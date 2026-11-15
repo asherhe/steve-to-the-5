@@ -15,10 +15,8 @@ import type {
   ViewerDataSource,
 } from "./comparison";
 import {
-  angularSeparationArcsec,
   predictAtObservation,
   type CatalogAstrometry,
-  type SourceInspectorProps,
   type MarkAction,
   type SelectedFrameMeta,
   type ResolveResult,
@@ -32,7 +30,7 @@ import type { CommunityActivityProps } from "../findings/CommunityActivity";
 import type { FindingsViewport } from "../findings/types";
 import type { FindingMarker } from "../findings/adapter";
 import type { CandidateReviewSlotProps } from "../findings/CandidateReviewPane";
-import { barnardGaiaSourceId, targetPresets } from "./coordinates";
+import { targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { compareReachDeg, fieldWidthFromView } from "./compareField";
 import { SkyMap } from "./SkyMap";
@@ -142,7 +140,6 @@ export interface ViewerControlsProps {
 }
 export interface ViewerProps {
   dataSource: ViewerDataSource;
-  Inspector: ComponentType<Omit<SourceInspectorProps, "client">>;
   Discussion?: ComponentType<EvidenceDiscussionProps>;
   Review?: ComponentType<CandidateReviewSlotProps>;
   /** Checks a double-clicked map point against the catalog chain. Marking is off without it. */
@@ -165,14 +162,13 @@ export interface ViewerProps {
   synthetic?: boolean;
 }
 
-type Panel = "search" | "comparison" | "gaia";
+type Panel = "search" | "comparison";
 
 const narrowScreen = "(max-width: 42rem)";
 
 export function Viewer({
   dataSource,
   wiseDataSource,
-  Inspector,
   Discussion,
   Review,
   checkPoint,
@@ -218,7 +214,6 @@ export function Viewer({
   const [panels, setPanels] = useState<Record<Panel, boolean>>({
     search: false,
     comparison: new URLSearchParams(location.search).has("finding"),
-    gaia: false,
   });
   const [timeOpen, setTimeOpen] = useState(
     () =>
@@ -248,10 +243,6 @@ export function Viewer({
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardButton = useRef<HTMLButtonElement>(null);
   const [mapNotice, setMapNotice] = useState("");
-  const [inspecting, setInspecting] = useState<{
-    position: SkyPosition;
-    onSpherexMosaic: boolean;
-  } | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
     comparisonId: string;
     survey: SkyView;
@@ -390,12 +381,6 @@ export function Viewer({
     openFinding(entry.comparisonId, entry.findingId ?? undefined, entry.survey ?? "spherex");
   }
 
-  function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
-    setCrossReferencePosition(position);
-    setInspecting({ position, onSpherexMosaic });
-    setInspectFrame(false);
-    openPanel("gaia");
-  }
   function markPoint(position: SkyPosition, onDatedFrame: boolean, onSpherexMosaic: boolean) {
     // The marked point is also the NEOSSat selection. Marking is a deliberate choice of
     // point, so an open NEOSSat panel loads it at once instead of waiting for Refresh.
@@ -422,28 +407,6 @@ export function Viewer({
       frame: { frameId: markedFrame.id, observedAtUtc: markedFrame.observedAtUtc, wavelengthUm: markedFrame.wavelengthUm } });
     setInspectFrame(true);
     setReviewOpen(true);
-  }
-
-  function inspectCutout(
-    comparisonId: string,
-    position: SkyPosition,
-    frame: ComparisonFrame,
-  ) {
-    playback.pause();
-    setCrossReferencePosition(position);
-    setFrameSelection({
-      comparisonId,
-      survey: skyView,
-      position,
-      frame: {
-        frameId: frame.id,
-        observedAtUtc: frame.observedAtUtc,
-        wavelengthUm: frame.wavelengthUm,
-      },
-    });
-    setInspectFrame(true);
-    openPanel("gaia");
-    panelButtons.current.gaia?.focus();
   }
 
   function search(field: Field) {
@@ -528,20 +491,6 @@ export function Viewer({
           },
         }
       : null;
-  const markedSourceId = inspectingCutout
-    ? markedSource?.sourceId
-    : catalogMark?.sourceId;
-  const markedPosition = inspectingCutout ? prediction : catalogMark;
-  const markedName = inspectingCutout
-    ? comparisonMark?.displayName
-    : catalogMark?.displayName;
-  const mosaicInspection =
-    !inspectFrame && inspecting?.onSpherexMosaic ? inspecting : null;
-  const mosaicGuideSourceId =
-    mosaicInspection &&
-    angularSeparationArcsec(mosaicInspection.position, initialCenter) <= 60
-      ? barnardGaiaSourceId
-      : undefined;
 
   // The signed-in candidate review needs the dated frame the point was marked on.
   const markedFrame = markedPoint?.frameId && comparison && comparison.id === markedPoint.comparisonId && skyView === markedPoint.survey
@@ -756,7 +705,6 @@ export function Viewer({
         activeFindingId={finding?.id ?? null}
         focus={focus}
         onCompare={compareViewport}
-        onInspect={inspect}
         pointMark={markedPoint?.position ?? null}
         onMarkPoint={checkPoint ? markPoint : undefined}
         onAdvancedSearch={() => openPanel("search")}
@@ -788,11 +736,6 @@ export function Viewer({
               }
             : null
         }
-        onInspectDated={(position) => {
-          playback.pause();
-          if (comparison && playback.frame)
-            inspectCutout(comparison.id, position, playback.frame);
-        }}
         dock={
           skyView === "wise" ? (
             <WiseDock band={wiseBand} onSelectBand={setWiseBand} />
@@ -1013,82 +956,6 @@ export function Viewer({
           openFinding(comparisonId, id, view);
         }} />}
       </FloatingPane>}
-      <FloatingPane
-        id="gaia-panel"
-        title="Source inspector"
-        open={panels.gaia}
-        onClose={() => closePanel("gaia")}
-        reset={layoutReset}
-      >
-        <p className="pane-intro">
-          Gaia source inspector{" "}
-          <InfoTip term="Gaia catalog">
-            Gaia is a European Space Agency mission that precisely measured the positions,
-            distances, and motions of nearly two billion stars. This panel lists nearby catalog sources. A nearby row is not automatically
-            the object in the image you clicked.
-          </InfoTip>
-        </p>
-        {inspectingCutout && (
-          <p>
-            Selected {survey.name} frame{" "}
-            <time dateTime={inspectingCutout.frame.observedAtUtc}>
-              {inspectingCutout.frame.observedAtUtc}
-            </time>{" "}
-            · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec{" "}
-            {inspectingCutout.position.dec.toFixed(6)}°
-          </p>
-        )}
-        {Review && inspectingCutout && <button className="primary" type="button" onClick={() => { playback.pause(); setReviewOpen(true); }}>Review this point</button>}
-        <Inspector
-          skyPosition={
-            inspectFrame
-              ? (selection?.position ?? null)
-              : (inspecting?.position ?? null)
-          }
-          selectedFrame={inspectingCutout ? inspectingCutout.frame : null}
-          mosaicGuideTimeUtc={
-            mosaicInspection ? spherexMosaicGuideTimeUtc : undefined
-          }
-          mosaicGuideSourceId={mosaicGuideSourceId}
-          onMark={(mark) => {
-            if (inspectingCutout)
-              setComparisonMark({
-                comparisonId: inspectingCutout.comparisonId,
-                source: mark.astrometry,
-                displayName: mark.displayName,
-              });
-            else setCatalogMark(mark);
-          }}
-        />
-        {markedSourceId && (
-          <p role="status">
-            {inspectingCutout
-              ? "Predicted Gaia position"
-              : catalogMark?.predicted
-                ? "Approximate Gaia position on the SPHEREx mosaic"
-                : "Gaia catalog position"}{" "}
-            for {markedName ? `${markedName} · ` : ""}
-            {markedSourceId}
-            {markedPosition && (
-              <>
-                {" at RA "}
-                {markedPosition.ra.toFixed(6)}°, Dec{" "}
-                {markedPosition.dec.toFixed(6)}°
-              </>
-            )}
-            .{" "}
-            <button
-              type="button"
-              onClick={() => {
-                if (inspectingCutout) setComparisonMark(null);
-                else setCatalogMark(null);
-              }}
-            >
-              Clear mark
-            </button>
-          </p>
-        )}
-      </FloatingPane>
       <FloatingPane
         id="search-panel"
         title="Advanced search"
@@ -1323,9 +1190,6 @@ export function Viewer({
               selectedPosition={selection?.position ?? null}
               frameMark={frameMark}
               savedMarks={finding?.marks}
-              onInspect={(position, frame) =>
-                inspectCutout(comparison.id, position, frame)
-              }
             />
             {finding && Discussion && discussionOpen && !leaderboardOpen && (
               <Discussion
