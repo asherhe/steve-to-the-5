@@ -1,6 +1,30 @@
 import { useEffect, useState } from "react";
 import type { Comparison, ComparisonFrame, SkyPosition } from "./comparison";
 import { cutoutWcs, type ImagePoint } from "./cutoutWcs";
+import { bandColors } from "./SpectralRuler";
+import { bandForWavelength } from "./spherexSurvey";
+
+function formatInterval(ms: number): string {
+  const minutes = Math.round(Math.abs(ms) / 60_000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const parts = [days && `${days}d`, (days || hours) && `${hours}h`, `${minutes % 60}m`].filter(Boolean);
+  return parts.join(" ");
+}
+
+const icons = {
+  previous: <path d="m15 6-6 6 6 6" />,
+  next: <path d="m9 6 6 6-6 6" />,
+  play: <path d="M7 5v14l11-7z" fill="currentColor" stroke="none" />,
+  pause: <path d="M8 5v14M16 5v14" />,
+};
+
+function Icon({ name }: { name: keyof typeof icons }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      aria-hidden="true">{icons[name]}</svg>
+  );
+}
 
 const alignmentLabels: Record<string, string> = {
   reference_frame: "Reference frame",
@@ -10,7 +34,7 @@ const alignmentLabels: Record<string, string> = {
 };
 
 export function ComparisonPlayback({
-  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect,
+  comparison, visible = true, selectedPosition, frameMark, savedMarks = [], onInspect, onFrameChange,
 }: {
   comparison: Comparison;
   visible?: boolean;
@@ -18,6 +42,8 @@ export function ComparisonPlayback({
   frameMark: (SkyPosition & { frameId: string | null; predicted: boolean }) | null;
   savedMarks?: readonly (SkyPosition & { frameId: string })[];
   onInspect: (position: SkyPosition, frame: ComparisonFrame) => void;
+  /** Called with the frame on screen, for the spectral ruler. */
+  onFrameChange?: (frame: ComparisonFrame) => void;
 }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -48,6 +74,10 @@ export function ComparisonPlayback({
   }
 
   useEffect(() => {
+    onFrameChange?.(frame);
+  }, [frame, onFrameChange]);
+
+  useEffect(() => {
     if (!visible) setPlaying(false);
   }, [visible]);
 
@@ -66,12 +96,12 @@ export function ComparisonPlayback({
     setIndex(next);
   }
 
+  const times = frames.map(({ observedAtUtc }) => Date.parse(observedAtUtc));
+  const span = Math.max(...times) - Math.min(...times);
+  const band = bandForWavelength(frame.wavelengthUm);
+
   return (
-    <section aria-label="Comparison playback">
-      <p>
-        {comparison.wavelengthRangeUm.map((value) => value.toFixed(4)).join("–")} µm · Shared stretch{" "}
-        {comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
-      </p>
+    <section aria-label="Comparison playback" className="playback">
       <figure className="comparison-frame">
         <div className="cutout" style={{ aspectRatio: `${comparison.grid.width} / ${comparison.grid.height}` }}>
           {failed ? (
@@ -104,41 +134,75 @@ export function ComparisonPlayback({
                 frameMark.predicted ? "Predicted Gaia position" : "Gaia catalog position", "cutout-gaia-mark")}
             </>
           )}
+          <span className="cutout-chip">
+            Shared stretch {comparison.stretch.min.toPrecision(4)}–{comparison.stretch.max.toPrecision(4)} {comparison.stretch.unit}
+          </span>
         </div>
         <figcaption>
-          <time dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
-          {" · "}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
-          {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+          <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
+          <span className="frame-meta">
+            {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}
+            {band ? `Band ${band} · ` : ""}{frame.wavelengthUm.toFixed(4)} µm · {frame.release.toUpperCase()}
+            {frame.sourceUrl && <> · <a href={frame.sourceUrl}>Source observation</a></>}
+          </span>
+          {frame.observationStartUtc && frame.observationEndUtc && (
+            <span className="frame-meta">Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</span>
+          )}
         </figcaption>
       </figure>
-      {wcs ? <p>Click the image to inspect a sky position with Gaia.</p> :
-        <p>Point inspection is unavailable for this image grid.</p>}
-      {frame.observationStartUtc && frame.observationEndUtc && (
-        <p>Exposure interval (UTC) {frame.observationStartUtc} to {frame.observationEndUtc}</p>
-      )}
-      {multi && (
-        <div className="controls playback-controls">
-          <button type="button" onClick={() => select(index - 1)} disabled={index === 0}>Previous</button>
-          <button type="button" onClick={() => setPlaying(!playing)} disabled={failed}>{playing ? "Pause" : "Play"}</button>
-          <button type="button" onClick={() => select(index + 1)} disabled={index === frames.length - 1}>Next</button>
-          <label>
-            Observation {index + 1} of {frames.length}
-            <input type="range" min={0} max={frames.length - 1} value={index}
-              aria-valuetext={frame.observedAtUtc} onChange={(event) => select(Number(event.target.value))} />
-          </label>
-          <label>
-            Playback speed
-            <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
-              <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option>
-            </select>
-          </label>
+      {multi && span > 0 && (
+        <div className="timeline" aria-hidden="true">
+          <div className="timeline-track">
+            {times.map((time, i) => (
+              <span key={frames[i].id} className={`timeline-tick${i === index ? " timeline-tick-current" : ""}`}
+                style={{ left: `${4 + 92 * (time - Math.min(...times)) / span}%` }} />
+            ))}
+            <span className="timeline-span">Δt {formatInterval(span)}</span>
+          </div>
+          <div className="timeline-ends">
+            <span>{frames[times.indexOf(Math.min(...times))].observedAtUtc.slice(0, 10)}</span>
+            <span>{frames[times.indexOf(Math.max(...times))].observedAtUtc.slice(0, 10)}</span>
+          </div>
         </div>
       )}
-      {frame.validFraction !== undefined && (
-        <p>{(frame.validFraction * 100).toFixed(1)}% valid pixels
-          {frame.alignment && <> · {alignmentLabels[frame.alignment] ?? frame.alignment}</>}
-        </p>
+      {multi && (
+        <div className="playback-controls">
+          <div className="controls">
+            <button type="button" onClick={() => select(index - 1)} disabled={index === 0}><Icon name="previous" />Previous</button>
+            <button type="button" className="primary" onClick={() => setPlaying(!playing)} disabled={failed}>
+              <Icon name={playing ? "pause" : "play"} />{playing ? "Pause" : "Play"}
+            </button>
+            <button type="button" onClick={() => select(index + 1)} disabled={index === frames.length - 1}>Next<Icon name="next" /></button>
+          </div>
+          <div className="controls">
+            <label className="playback-scrub">
+              Observation {index + 1} of {frames.length}
+              <input type="range" min={0} max={frames.length - 1} value={index}
+                aria-valuetext={frame.observedAtUtc} onChange={(event) => select(Number(event.target.value))} />
+            </label>
+            <label>
+              Playback speed
+              <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))}>
+                <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option>
+              </select>
+            </label>
+          </div>
+        </div>
       )}
+      {(frame.validFraction !== undefined || frame.alignment) && (
+        <dl className="stats">
+          {frame.validFraction !== undefined && (
+            <div><dt>Valid pixels</dt><dd>{(frame.validFraction * 100).toFixed(1)}%</dd></div>
+          )}
+          {frame.alignment && (
+            <div><dt>Alignment</dt><dd data-caution={frame.alignment === "wcs_only_not_empirically_verified" || undefined}>
+              {alignmentLabels[frame.alignment] ?? frame.alignment}
+            </dd></div>
+          )}
+        </dl>
+      )}
+      {wcs ? <p className="hint">Click the image to inspect a sky position with Gaia.</p> :
+        <p className="hint">Point inspection is unavailable for this image grid.</p>}
       {Object.keys(frame.qualityFlags).length > 0 && (
         <details>
           <summary>Frame quality flags</summary>

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import type { AladinView } from "aladin-lite";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { AladinImageSurvey, AladinView } from "aladin-lite";
 import type { Field, SkyPosition } from "./comparison";
-import { findSpherexSurvey, spherexMosaicDoi, spherexMosaicSlice } from "./spherexSurvey";
+import { findSpherexSurvey, spherexMosaicDoi, spherexSliceWavelengthsUm } from "./spherexSurvey";
 
 const globeFovDeg = 180;
 
@@ -12,6 +12,9 @@ export function SkyMap({
   onInspect,
   catalogMark,
   notice,
+  slice,
+  onStateChange,
+  dock,
 }: {
   initialCenter: SkyPosition;
   focus: Field | null;
@@ -19,9 +22,17 @@ export function SkyMap({
   onInspect: (position: SkyPosition) => void;
   catalogMark: SkyPosition | null;
   notice: string;
+  /** Cube slice shown as the reference layer. */
+  slice: number;
+  onStateChange?: (state: "loading" | "ready" | "unavailable") => void;
+  /** Rendered below the map tools, across the bottom of the map. */
+  dock?: ReactNode;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const view = useRef<AladinView | null>(null);
+  const layer = useRef<AladinImageSurvey | null>(null);
+  const currentSlice = useRef(slice);
+  currentSlice.current = slice;
   const markPosition = useRef<((position: SkyPosition | null) => void) | null>(null);
   const previousGlobeFov = useRef(globeFovDeg);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
@@ -50,9 +61,10 @@ export function SkyMap({
           cooFrame: "ICRSd",
           survey: Aladin.HiPS(survey, {
             name: "SPHEREx DR1 all-sky mosaic",
-            successCallback: (layer) => {
+            successCallback: (survey) => {
               if (controller.signal.aborted) return;
-              layer.setSliceNumber(spherexMosaicSlice);
+              layer.current = survey;
+              survey.setSliceNumber(currentSlice.current);
               setState("ready");
             },
             errorCallback: (error) => {
@@ -92,6 +104,7 @@ export function SkyMap({
     return () => {
       controller.abort();
       view.current = null;
+      layer.current = null;
       markPosition.current = null;
     };
   }, [initialCenter, surveyAttempt]);
@@ -112,6 +125,14 @@ export function SkyMap({
     });
     return () => sky.on("click", () => {});
   }, [onInspect, state]);
+
+  useEffect(() => {
+    if (state === "ready") layer.current?.setSliceNumber(slice);
+  }, [slice, state]);
+
+  useEffect(() => {
+    onStateChange?.(state);
+  }, [onStateChange, state]);
 
   useEffect(() => {
     markPosition.current?.(catalogMark);
@@ -149,6 +170,7 @@ export function SkyMap({
           </p>
         )}
       </div>
+      <div className="sky-dock">
       <div className="sky-tools">
         {notice && <p className="sky-notice" role="status">{notice}</p>}
         <div className="controls">
@@ -171,8 +193,10 @@ export function SkyMap({
           <button type="button" onClick={() => setSurveyAttempt((attempt) => attempt + 1)}>Retry imagery</button>
         )}
         {state === "ready" && (
-          <small><a href={spherexMosaicDoi}>SPHEREx DR1 all-sky mosaic</a> · 0.771 µm · NASA/SPHEREx · Caltech/IPAC IRSA</small>
+          <small><a href={spherexMosaicDoi}>SPHEREx DR1 all-sky mosaic</a> · {spherexSliceWavelengthsUm[slice].toFixed(3)} µm · NASA/SPHEREx · Caltech/IPAC IRSA</small>
         )}
+      </div>
+      {dock}
       </div>
     </section>
   );
