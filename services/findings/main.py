@@ -5,6 +5,7 @@ from urllib.parse import quote
 import httpx
 from fastapi import FastAPI
 
+from . import cutouts
 from .api import create_router
 from .supabase import ApiError, Supabase
 
@@ -51,8 +52,10 @@ def create_app() -> FastAPI:
 
     async def load_catalog_review(ra, dec, radius, observed):
         try:
-            response = await client.get(f"{catalog_base}/api/catalogs/review", params={
-                "ra": ra, "dec": dec, "radiusArcsec": radius, "observedAtUtc": observed}, timeout=40)
+            params = {"ra": ra, "dec": dec, "radiusArcsec": radius}
+            if observed is not None:  # undated points: the catalog service skips SkyBoT
+                params["observedAtUtc"] = observed
+            response = await client.get(f"{catalog_base}/api/catalogs/review", params=params, timeout=40)
             response.raise_for_status()
             result = response.json()
             if not isinstance(result, dict):
@@ -61,8 +64,33 @@ def create_app() -> FastAPI:
         except (httpx.HTTPError, ValueError) as error:
             raise ApiError(503, "catalogs_unavailable", "Catalog review could not complete. Try again shortly.") from error
 
+    max_asset_bytes = 20_000_000
+
+    async def load_asset(survey, comparison_id, name):
+        """A saved frame's FITS bytes from the survey's evidence store, size-bounded."""
+        base, path = (wise_base, "/api/wise/comparisons") if survey == "wise" else (comparison_base, "/api/comparisons")
+        if "/" in comparison_id or "/" in name or not name.endswith(".fits"):
+            raise ApiError(422, "invalid_evidence", "Invalid saved evidence asset.")
+        url = f"{base}{path}/{quote(comparison_id, safe='')}/assets/{quote(name, safe='')}"
+        try:
+            async with client.stream("GET", url, timeout=30) as response:
+                response.raise_for_status()
+                content = bytearray()
+                async for chunk in response.aiter_bytes():
+                    content.extend(chunk)
+                    if len(content) > max_asset_bytes:
+                        raise ApiError(503, "evidence_too_large", "A saved frame is too large to measure.")
+                return bytes(content)
+        except httpx.HTTPError as error:
+            raise ApiError(503, "comparison_unavailable", "Saved evidence is temporarily unavailable.") from error
+
+    async def load_cutouts(ra, dec):
+        # Same client; cutout requests set their own timeouts and follow archive redirects.
+        return await cutouts.fetch_all(client, ra, dec)
+
     app = FastAPI(lifespan=lifespan)
     app.include_router(create_router(supabase, load_saved_comparison,
-        load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review))
+        load_wise_comparison=load_wise_comparison, load_catalog_review=load_catalog_review, load_asset=load_asset,
+        load_cutouts=load_cutouts))
 
     return app

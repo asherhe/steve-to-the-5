@@ -1,131 +1,37 @@
-# Source inspector (task 3)
+# Catalog client and shared types
 
-A React component that takes a sky position and optional selected-frame metadata, shows the
-matching Gaia DR3 catalog source, and emits a mark action. Owned path:
-`web/src/inspector/**`. Backend: `services/catalogs`.
+This folder used to hold the Gaia **source inspector** panel. That panel has been removed
+from the viewer: the map no longer opens it on a click, "Inspect map center" is gone, and
+dated images are no longer click-to-inspect. Checking a point is done by double-clicking it,
+which runs the six-catalog point check (`web/src/viewer/PointCheck.tsx`). Gaia positions
+from that check still appear on the map and on dated frames through the viewer's mark
+state.
 
-The inspector does **not** own or edit shared map windowing. It receives a position and emits
-a mark; the app shell (coordinator) places it in the map panel and wires the mark to the map
-and findings.
-
-## Public API
-
-```tsx
-import { SourceInspector, createCatalogClient } from "./inspector";
-
-const client = createCatalogClient({ baseUrl: "/api" });
-
-<SourceInspector
-  client={client}
-  skyPosition={{ ra: 269.45207, dec: 4.66829 }}   // ICRS decimal degrees, or null (idle)
-  selectedFrame={{                                  // optional; enables predicted position
-    frameId: "frame-qr3-2026-03-14",
-    observedAtUtc: "2026-03-14T09:21:00Z",
-    wavelengthUm: 1.62,
-  }}
-  radiusArcsec={30}                                 // optional, default 30
-  onMark={(mark) => { /* { frameId, ra, dec, sourceId, predicted, astrometry } */ }}
-/>
-```
-
-`onMark` payload:
-
-| Field | Meaning |
-|---|---|
-| `frameId` | the selected frame, or `null` if none |
-| `ra`, `dec` | sky coordinates to mark — predicted position when a frame is selected, otherwise the observed catalog position |
-| `sourceId` | the Gaia source the mark refers to |
-| `predicted` | `true` when `ra`/`dec` are a propagated prediction |
-| `astrometry` | Catalog coordinates, source ID, reference epoch and proper motion used to recalculate the prediction across frames |
-
-A findings pin and a selected image position use these same sky coordinates.
-
-## States
-
-The inspector renders, driven either by self-fetching from `client` or by an explicit
-`initialState` (used by the harness and tests):
-
-- **idle** — no position selected.
-- **loading** — fetching.
-- **unmatched** — empty cone search; shown as a valid result, not an error.
-- **ambiguous** — several close sources; user picks one, then the detail view appears.
-- **matched** — one source; detail (uncertainties, RV, BP/RP) loads as enrichment.
-- **unavailable** — a service error, with the `{code, message}`.
-
-### Summary card and detail sections
-
-A matched source opens with a summary card (`states/SummaryCard.tsx`) in plain words:
-brightness (G magnitude), optical colour (BP−RP), distance from parallax, total proper
-motion with a compass direction, and the separation from the selected point. The mark
-button follows. Every raw catalog value sits below in sections that start collapsed
-(`states/DetailSections.tsx`): Position, Motion, Photometry, Predicted coordinates and
-Identifiers & links, plus **Copy ID** and **Copy all as text**. "?" buttons
-(`states/InspectorInfoTip.tsx`) define terms such as parallax and reference epoch.
-
-The wording and thresholds live in `describe.ts`. They are derived from the Gaia row
-and labelled as such; they are not observations from SPHEREx images and do not classify
-the object. A distance is stated only when parallax ÷ error ≥ 5 (or, without an error,
-parallax ≥ 2 mas, marked approximate). Motion below 3σ reads "No significant motion
-measured"; 0.5″/yr or more is flagged "Fast mover". Missing values read "not measured".
-
-When the catalog row carries a verified `identity` (matched by exact source ID), the
-card title shows its common name or designation with the component, candidate rows show
-the name, and a **Names** section lists the designation, aliases, distinct related
-objects and name references. Without one, the card says the association with the
-requested target is unverified. Never set a title from position.
-
-### Outages, retry and the serving archive
-
-A service problem (`UnavailableView`) is kept apart from a genuine empty result
-(`UnmatchedView`). An archive outage reads "The Gaia archive is not responding" and says it
-is not about the star selected; a routing error and fixture-mode rejection have their own
-titles. **Try again** re-runs the lookup with `retry: true`, which lets the catalog service
-probe an archive it had put in cooldown. An empty result offers no retry. During an
-outage of the first archive a cold lookup can take several seconds (up to 20 s in the
-worst case) before the mirror answers; later lookups skip the failed archive.
-
-**Identifiers & links** shows the catalog (always Gaia DR3), the archive that served the
-response (`servedBy`, with a note when it came from the service's cache), when it was
-retrieved, and a link to that archive.
-
-### Predicted vs observed
-
-When a frame is selected, the observed position (epoch 2016.0) is propagated to the frame's
-observation date and shown in a separate **predicted** section with a `predicted` badge. The
-observed position is always shown too. See `propagate.ts` and the service `PROVENANCE.md` for
-the formula and its omitted perspective terms.
-
-## Develop and verify
-
-Standalone (not the app shell):
-
-```powershell
-# from web/
-npm install
-npm run dev:inspector   # harness at http://localhost:5173
-npm run test            # vitest
-npm run typecheck
-```
-
-The harness (`harness/main.tsx`) drives every state with fixture data and stub callbacks,
-including a toggle for the selected frame to exercise predicted positions.
-
-## Files
+What remains here is shared by the viewer and the findings UI:
 
 | File | Role |
 |---|---|
-| `SourceInspector.tsx` | the exported component |
-| `types.ts` | props/callback and data types (local mirror of the service contract) |
-| `api.ts` | typed client for the three endpoints |
-| `propagate.ts` | epoch propagation, matching the backend |
-| `format.ts` | unit-aware, null-safe formatting |
-| `states/` | presentational subviews |
-| `fixtures.ts` | importable fixtures + a fixture-backed client |
-| `harness/` | standalone dev harness |
+| `api.ts` | typed client for the catalog service (`nearby`, `detail`, `resolve`, `review`, `checkChain`) and `CatalogApiError` |
+| `types.ts` | catalog contract types, generated from the service schema |
+| `catalog.generated.ts` | OpenAPI types; regenerate with `npm run generate:catalog-types` at the repository root |
+| `propagate.ts` | proper-motion propagation to an observation date, matching the backend |
+| `CheckChain.tsx` | step-by-step catalog check component and its styles |
+| `index.ts` | public exports of the above |
 
-## Integration note
+## Predicted vs observed
 
-`types.ts` is a local mirror of the catalog contract. When the coordinator publishes shared
-generated types, swap to them and reconcile any field-name difference. The `web/`-root
-tooling here (`package.json`, vite/vitest configs) is a minimal standalone harness; it must
-not become the integrated app entry point, which the coordinator owns.
+`propagate.ts` moves a Gaia DR3 position (epoch 2016.0) to another date using proper motion
+only. The result is a prediction and must be labelled as one wherever it is shown. See the
+catalog service `PROVENANCE.md` for the formula and its omitted perspective terms.
+
+## Verify
+
+```sh
+cd web
+npm test
+npm run typecheck
+```
+
+The `web/`-root tooling (`package.json`, vite/vitest configs) is a minimal standalone harness
+for tests and the findings UI; it is not the integrated app entry point, which the
+coordinator owns.

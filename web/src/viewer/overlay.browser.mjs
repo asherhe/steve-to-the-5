@@ -2,6 +2,9 @@ const {chromium}=await import(process.env.PLAYWRIGHT_MODULE??"playwright");
 import assert from "node:assert/strict";
 const origin=process.env.VIEWER_TEST_URL??"http://127.0.0.1:5173";
 const browser=await chromium.launch({channel:"chrome",headless:true});
+// The first-run tour covers the page and intercepts clicks; mark it seen before each page loads.
+const skipTour=()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1");
+for(const make of ["newContext","newPage"]){const original=browser[make].bind(browser);browser[make]=async(...args)=>{const made=await original(...args);await made.addInitScript(skipTour);return made;};}
 try{
  const page=await browser.newPage({viewport:{width:1400,height:950}});
  const png=await page.evaluate(()=>{const canvas=document.createElement("canvas");canvas.width=320;canvas.height=240;const ctx=canvas.getContext("2d");
@@ -16,7 +19,7 @@ try{
  });
  await page.goto(origin+"/?comparison=overlay-diagnostic");await page.locator(".dated-footprint").waitFor();
  await page.waitForFunction(()=>!document.querySelector(".dated-overlay-status"));
- await page.getByRole("button",{name:"Close Time",exact:true}).click();
+ await page.getByRole("button",{name:"Close Blink",exact:true}).click();
  async function footprint(){return page.locator(".dated-footprint").evaluate(canvas=>{
    const image=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height);let left=canvas.width,top=canvas.height,right=0,bottom=0;
    for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(image.data[(y*canvas.width+x)*4+3]){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
@@ -36,7 +39,9 @@ try{
  const before=await page.locator(".sky-readout").innerText();
  await page.getByRole("button",{name:"Zoom in",exact:true}).click();
  await page.waitForFunction(before=>document.querySelector(".sky-readout").textContent!==before,before);
- const zoomed=await footprint();assert(zoomed.right-zoomed.left>(box.right-box.left)*1.8);
+ // The readout updates before the overlay redraws; wait for the footprint to grow.
+ let zoomed=await footprint();for(let i=0;i<30&&!(zoomed.right-zoomed.left>(box.right-box.left)*1.8);i++){await page.waitForTimeout(100);zoomed=await footprint();}
+ assert(zoomed.right-zoomed.left>(box.right-box.left)*1.8,JSON.stringify({box,zoomed}));
  await page.mouse.move(300,150);await page.mouse.down();await page.mouse.move(350,190,{steps:10});await page.mouse.up();
  await page.getByRole("button",{name:"More map options",exact:true}).click();await page.getByRole("button",{name:"All-sky view",exact:true}).click();
  assert.equal(searches,0);await page.getByText(/Dated SPHEREx · 2025-06-15/).waitFor();

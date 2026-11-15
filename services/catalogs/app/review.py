@@ -7,6 +7,7 @@ import hashlib
 import io
 import math
 import threading
+import time
 import xml.etree.ElementTree as ET
 from typing import Literal
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +16,7 @@ from urllib.parse import urlencode
 
 import httpx
 from astropy.coordinates import SkyCoord
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
@@ -30,7 +31,6 @@ CATALOGS = ("Gaia DR3", "SIMBAD", "CatWISE2020", "UltracoolSheet", "SkyBoT", "Vi
 ULTRACOOL_URL = "https://zenodo.org/records/15802304/files/UltracoolSheet%20-%20Main.csv?download=1"
 _sheet_cache = BoundedCache(1)
 MAX_ROWS = 50
-_review_slots = threading.BoundedSemaphore(2)
 
 
 class CatalogCheck(BaseModel):
@@ -51,7 +51,8 @@ class CatalogReview(BaseModel):
     ra: float
     dec: float
     radiusArcsec: float
-    observedAtUtc: str
+    # Null when the point has no observation time (e.g. a mark on the undated all-sky mosaic).
+    observedAtUtc: str | None = None
     checks: list[CatalogCheck]
     limitations: list[str]
 
@@ -167,6 +168,15 @@ def skybot(ra, dec, radius, observed):
                       (["Row limit reached; incomplete search."] if limited else []))
 
 
+def skybot_undated():
+    # Solar System positions only mean something at an actual observation time. A point
+    # without one (the all-sky mosaic combines many dates) is not checked, never guessed.
+    return CatalogCheck(catalog="SkyBoT", status="skipped",
+        scope="Needs the observation time of a dated frame", sourceUrl="",
+        limitations=["No observation time was given, so known Solar System objects were not checked. "
+                     "Mark the point on a dated frame to include them."])
+
+
 def skybot_table(content, media):
     # SkyBoT's SCS endpoint uses QUERY_STATUS=ERROR for its explicit empty-cone
     # message. Recognize only that response; other ERROR documents stay failures.
@@ -211,7 +221,8 @@ def run_review(ra, dec, radius, observed, settings=None):
         lambda: tap_check("CatWISE2020", "CatWISE2020 catalog; consult epoch and quality columns",
             (Endpoint("IRSA", "https://irsa.ipac.caltech.edu/TAP"),),
             f"SELECT TOP 51 * FROM catwise_2020 WHERE {cone(ra, dec, radius)}", ("ra", "dec"), settings),
-        lambda: ultracool(ra, dec, radius), lambda: skybot(ra, dec, radius, observed),
+        lambda: ultracool(ra, dec, radius),
+        (lambda: skybot(ra, dec, radius, observed)) if observed else skybot_undated,
         lambda: tap_check("VizieR", "VizieR II/328/allwise only (AllWISE); other VizieR catalogs are not searched",
             (Endpoint("CDS VizieR", "https://tapvizier.cds.unistra.fr/TAPVizieR/tap"),),
             f'SELECT TOP 51 * FROM "II/328/allwise" WHERE {cone(ra, dec, radius, "RAJ2000", "DEJ2000")}',
@@ -233,17 +244,79 @@ def run_review(ra, dec, radius, observed, settings=None):
         observedAtUtc=observed, checks=checks, limitations=limitations)
 
 
+class ReviewSlots:
+    """Admission for live reviews.
+
+    `max_active` reviews may have a client waiting on them. A review whose client has gone
+    (the viewer marked another point, changed the radius or closed the panel) stops counting
+    at once, so a new check never waits behind, or is refused because of, an abandoned one.
+    Abandoned reviews keep their worker threads until their bounded queries end;
+    `max_running` caps all running reviews, abandoned ones included, so rapid re-marking
+    cannot pile up load on the catalogs."""
+
+    def __init__(self, max_active=2, max_running=6):
+        self.max_active, self.max_running = max_active, max_running
+        self.lock = threading.Lock()
+        self.active = self.running = 0
+
+    def try_take(self):
+        """A ticket for a new review, or None when there is no room."""
+        with self.lock:
+            if self.active >= self.max_active or self.running >= self.max_running:
+                return None
+            self.active += 1
+            self.running += 1
+            return {"active": True}
+
+    def abandon(self, ticket):
+        """The client went away; the review's threads may still be running."""
+        with self.lock:
+            if ticket["active"]:
+                ticket["active"] = False
+                self.active -= 1
+
+    def finish(self, ticket):
+        with self.lock:
+            self.running -= 1
+            if ticket["active"]:
+                ticket["active"] = False
+                self.active -= 1
+
+
+_review_slots = ReviewSlots()
+# A new check usually arrives just as the viewer drops the one it replaces; give the
+# server time to notice that disconnect before calling the service busy.
+REVIEW_SLOT_WAIT_S = 5.0
+DISCONNECT_POLL_S = 0.25
+
+
 @router.get("/review", response_model=CatalogReview)
-def review(ra: float = Query(ge=0, lt=360), dec: float = Query(ge=-90, le=90),
-           radiusArcsec: float = Query(default=120, ge=5, le=300),
-           observedAtUtc: datetime = Query()):
-    if observedAtUtc.tzinfo is None:
-        from app.errors import ApiError
+async def review(request: Request, ra: float = Query(ge=0, lt=360), dec: float = Query(ge=-90, le=90),
+                 radiusArcsec: float = Query(default=120, ge=5, le=300),
+                 observedAtUtc: datetime | None = Query(default=None)):
+    from app.errors import ApiError
+    if observedAtUtc is not None and observedAtUtc.tzinfo is None:
         raise ApiError("invalid_request", "Observation time must include a timezone.", 400)
-    if not _review_slots.acquire(blocking=False):
-        from app.errors import ApiError
-        raise ApiError("review_busy", "Other catalog reviews are running. Try again shortly.", 429)
-    try:
-        return run_review(ra, dec, radiusArcsec, observedAtUtc.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"))
-    finally:
-        _review_slots.release()
+    waited_until = time.monotonic() + REVIEW_SLOT_WAIT_S
+    while (ticket := _review_slots.try_take()) is None:
+        if time.monotonic() >= waited_until or await request.is_disconnected():
+            raise ApiError("review_busy", "Other catalog reviews are running. Try again shortly.", 429)
+        await asyncio.sleep(DISCONNECT_POLL_S)
+    observed = observedAtUtc.astimezone(timezone.utc).isoformat().replace("+00:00", "Z") if observedAtUtc else None
+
+    def work():
+        try:
+            return run_review(ra, dec, radiusArcsec, observed)
+        finally:
+            _review_slots.finish(ticket)
+
+    task = asyncio.ensure_future(asyncio.to_thread(work))
+    # An abandoned review's result (or error) is discarded when it eventually finishes.
+    task.add_done_callback(lambda done: done.cancelled() or done.exception())
+    while True:
+        finished, _ = await asyncio.wait({task}, timeout=DISCONNECT_POLL_S)
+        if finished:
+            return task.result()
+        if await request.is_disconnected():
+            _review_slots.abandon(ticket)
+            raise ApiError("review_abandoned", "The client stopped waiting for this review.", 409)

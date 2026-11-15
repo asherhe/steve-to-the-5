@@ -4,7 +4,9 @@ import type { Comparison, SkyPosition } from "./comparison";
 export interface SavedFinding {
   id: string;
   survey?: "spherex" | "wise";
-  comparisonId: string;
+  comparisonId?: string | null;
+  ra?: number;
+  dec?: number;
   title: string;
   note: string;
   marks: readonly (SkyPosition & { frameId: string })[];
@@ -18,7 +20,7 @@ export interface EvidenceDiscussionProps {
 
 export class EvidenceReplayError extends Error {}
 
-export function evidenceLink(href: string, comparisonId: string, findingId?: string): string {
+export function evidenceLink(href: string, comparisonId: string | null | undefined, findingId?: string): string {
   const current = new URL(href);
   const url = new URL(current.origin + current.pathname);
   // Keep only viewing context, never authentication codes/tokens or review drafts.
@@ -26,7 +28,7 @@ export function evidenceLink(href: string, comparisonId: string, findingId?: str
     const value = current.searchParams.get(key);
     if (value) url.searchParams.set(key, value);
   }
-  url.searchParams.set("comparison", comparisonId);
+  if (comparisonId) url.searchParams.set("comparison", comparisonId);
   url.searchParams.delete("finding");
   if (findingId) url.searchParams.set("finding", findingId);
   return url.href;

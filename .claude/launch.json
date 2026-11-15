@@ -42,6 +42,24 @@
         "dev:wise"
       ],
       "port": 8020
+    },
+    {
+      "name": "spherex-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:spherex"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "catalog-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:gaia"
+      ],
+      "port": 8010
     }
   ]
 }

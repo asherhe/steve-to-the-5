@@ -21,9 +21,9 @@ async function main() {
         result = (await db.query("select * from public.spherex_candidate_reviews where id=$1 and author_id=$2", [p.id.replace(/^eq\./, ""), p.author_id.replace(/^eq\./, "")])).rows;
       } else if (endpoint === "spherex_candidate_reviews") {
         await db.query(`insert into public.spherex_candidate_reviews
-          (id, author_id, comparison_id, survey, ra, dec, candidate_key, fov_arcmin, score, report)
-          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)`,
-          [p.id, p.author_id, p.comparison_id, p.survey, p.ra, p.dec, p.candidate_key, p.fov_arcmin, p.score, JSON.stringify(p.report)]);
+          (id, author_id, comparison_id, survey, ra, dec, candidate_key, fov_arcmin, score, report, object_key)
+          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11)`,
+          [p.id, p.author_id, p.comparison_id, p.survey, p.ra, p.dec, p.candidate_key, p.fov_arcmin, p.score, JSON.stringify(p.report), p.object_key ?? null]);
         result = null;
       } else if (endpoint === "rpc/spherex_review_leaderboard") {
         result = (await db.query("select public.spherex_review_leaderboard($1) as result", [p.p_board])).rows[0].result;
@@ -35,6 +35,13 @@ async function main() {
       } else if (endpoint === "rpc/spherex_findings_viewport") {
         result = (await db.query("select public.spherex_findings_viewport($1,$2,$3,$4) as result",
           [p.p_ra, p.p_dec, p.p_radius, p.p_zoom])).rows[0].result;
+      } else if (endpoint === "rpc/spherex_point_entry_near") {
+        result = (await db.query("select public.spherex_point_entry_near($1,$2,$3,$4) as result",
+          [p.p_ra, p.p_dec, p.p_radius_arcsec, p.p_object_key])).rows[0].result;
+      } else if (endpoint === "rpc/spherex_submit_point_finding") {
+        result = (await db.query("select public.spherex_submit_point_finding($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) as result",
+          [p.p_id, p.p_ra, p.p_dec, p.p_title, p.p_note, p.p_author_id, p.p_author_display_name,
+           p.p_review_id, p.p_object_key, p.p_survey, p.p_radius_arcsec])).rows[0].result;
       } else if (endpoint === "hide") {
         await db.query("update public.spherex_findings set hidden_at=now() where id=$1", [p.id]);
         result = null;

@@ -7,7 +7,7 @@ archive-blink task; WISE and SPHEREx images are never mixed in one comparison.
 ## Run and demonstrate
 
 From the repository root, `npm run dev` starts the viewer and both image services.
-Restart it after Python changes. In the viewer choose **WISE → Time → Open saved
+Restart it after Python changes. In the viewer choose **WISE → Blink → Open saved
 real example → Blink A ↔ B**. The retained W2 example of the WISE 0855 field has
 visits in May 2010 and April 2024. It needs no archive access and is explicitly
 labelled saved. SPHEREx has its own saved real example using the same controls.

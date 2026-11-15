@@ -1,0 +1,2218 @@
+{
+  "comparison": {
+    "config": {
+      "alignmentPolicy": "background_centroids_min3_mutual_within_2px_median_le_0.5px_target_excluded",
+      "asinhSoftening": 0.1,
+      "attempts": 3,
+      "backgroundPolicy": "subtract_zodi",
+      "backoffBaseSeconds": 0.5,
+      "backoffMaxSeconds": 8.0,
+      "batchSize": 120,
+      "buildDeadlineSeconds": 900.0,
+      "concurrency": 3,
+      "coveragePolicy": "full_bilinear_support_over_all_output_pixels",
+      "cutoutExtentPolicy": "circumscribed_output_footprint_plus_padding",
+      "cutoutPaddingArcsec": 20.0,
+      "lowerPercentile": 1.0,
+      "maskPolicy": "allow_source_fullsample_finite_positive_variance",
+      "maxCandidates": 1000,
+      "maxCutouts": 400,
+      "maxDownloadBytes": 20000000,
+      "maxFrames": 12,
+      "minCommonValidCoverage": 0.75,
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8,
+      "pixelScaleArcsec": 6.2,
+      "resampling": "bilinear_with_full_valid_support",
+      "targetRegionRadiusPixels": 5.0,
+      "timeoutSeconds": 30.0,
+      "upperPercentile": 99.5,
+      "wavelengthToleranceBandwidth": 0.25
+    },
+    "coverage": {
+      "allFramesCommonValidFraction": 0.8701522550991094,
+      "minPairwiseCommonValidFraction": 0.8701522550991094,
+      "outputPixels": 3481,
+      "targetRegionCommonValidFraction": 0.48148148148148145,
+      "targetRegionPixels": 81,
+      "targetRegionRadiusPixels": 5.0
+    },
+    "field": {
+      "dec": 4.76792,
+      "fovArcmin": 6.0,
+      "ra": 269.44629
+    },
+    "frames": [
+      {
+        "alignment": "reference_frame",
+        "bandwidthUm": 0.03742067767986058,
+        "coverage": {
+          "geometricFraction": 1.0,
+          "outputPixels": 3481,
+          "targetRegionPixels": 81,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionValidFraction": 0.6296296296296297,
+          "validFraction": 0.914966963516231,
+          "validFractionOfGeometric": 0.914966963516231
+        },
+        "detector": 5,
+        "id": "070e2c963bf1daeeb6f32e0d9ba3dd8a4e673a543b505589db50fbac6acf66a9",
+        "imageUrl": "/api/comparisons/19c551e87f4b416c06c7052e0e2cc5cf62b5ec5539a3afc6b2e1eeb6e758afa9/assets/070e2c963bf1daeeb6f32e0d9ba3dd8a4e673a543b505589db50fbac6acf66a9.png",
+        "observationEndUtc": "2025-08-25T17:10:17.385600Z",
+        "observationId": "2025W35_1A_0146_1",
+        "observationStartUtc": "2025-08-25T17:08:22.300800Z",
+        "observedAtUtc": "2025-08-25T17:09:19.843200Z",
+        "processingVersion": "7.0.5",
+        "qualityFlags": {
+          "flaggedInputPixels": 8046,
+          "informationalFlagMask": 2101248,
+          "inputPixels": 8281,
+          "invalidInputPixels": 236,
+          "invalidOutputPixels": 296,
+          "qualityRejectedInputPixels": 236
+        },
+        "release": "dr1",
+        "sourceSha256": "cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_1D5_spx_l2b-v27-2026-230.fits",
+        "validFraction": 0.914966963516231,
+        "wavelengthUm": 4.2959966207023
+      },
+      {
+        "alignment": "verified",
+        "bandwidthUm": 0.03738038241628154,
+        "coverage": {
+          "geometricFraction": 1.0,
+          "outputPixels": 3481,
+          "targetRegionPixels": 81,
+          "targetRegionRadiusPixels": 5.0,
+          "targetRegionValidFraction": 0.6296296296296297,
+          "validFraction": 0.9439816144785981,
+          "validFractionOfGeometric": 0.9439816144785981
+        },
+        "detector": 5,
+        "id": "8ed823eb38d423c733e51f7937f04e7dae8703ed6da822cf1c8482276c6c83dc",
+        "imageUrl": "/api/comparisons/19c551e87f4b416c06c7052e0e2cc5cf62b5ec5539a3afc6b2e1eeb6e758afa9/assets/8ed823eb38d423c733e51f7937f04e7dae8703ed6da822cf1c8482276c6c83dc.png",
+        "observationEndUtc": "2026-09-22T15:06:16.099200Z",
+        "observationId": "2026W39_1A_0371_1",
+        "observationStartUtc": "2026-09-22T15:04:21.014400Z",
+        "observedAtUtc": "2026-09-22T15:05:18.556800Z",
+        "processingVersion": "7.0.5",
+        "qualityFlags": {
+          "flaggedInputPixels": 8053,
+          "informationalFlagMask": 2101248,
+          "inputPixels": 8281,
+          "invalidInputPixels": 229,
+          "invalidOutputPixels": 195,
+          "qualityRejectedInputPixels": 229
+        },
+        "release": "qr3",
+        "sourceSha256": "74312408b4292545eb9195a4622d939147b21e3d1e5c9277effcf4e968411df1",
+        "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/5/level2_2026W39_1A_0371_1D5_spx_l2b-v27-2026-268.fits",
+        "validFraction": 0.9439816144785981,
+        "wavelengthUm": 4.29037449204496
+      }
+    ],
+    "grid": {
+      "coordinateFrame": "ICRS",
+      "fitsHeader": {
+        "CDELT1": -0.0017222222222222,
+        "CDELT2": 0.0017222222222222,
+        "CRPIX1": 30.0,
+        "CRPIX2": 30.0,
+        "CRVAL1": 269.44629,
+        "CRVAL2": 4.76792,
+        "CTYPE1": "RA---TAN",
+        "CTYPE2": "DEC--TAN",
+        "CUNIT1": "deg",
+        "CUNIT2": "deg",
+        "LATPOLE": 4.76792,
+        "LONPOLE": 180.0,
+        "MJDREF": 0.0,
+        "RADESYS": "ICRS",
+        "WCSAXES": 2
+      },
+      "height": 59,
+      "pixelScaleArcsec": 6.2,
+      "projection": "TAN",
+      "rowOrigin": "top",
+      "width": 59
+    },
+    "id": "19c551e87f4b416c06c7052e0e2cc5cf62b5ec5539a3afc6b2e1eeb6e758afa9",
+    "limitations": [
+      "Quick-look visualization, not significant motion or variability measurement.",
+      "Selection scope and completeness are recorded in diagnostics; bounded or incomplete samples do not prove absence or maximize the full-archive time baseline.",
+      "No PSF homogenization or precision photometry; one exposure per frame.",
+      "Only SOURCE/FULLSAMPLE flags allowed; ZODI subtracted, no frame-wise normalization.",
+      "Coverage thresholds are provisional engineering choices; masked pixels are transparent and never filled. Check target-region validity before interpreting the centre.",
+      "Alignment is WCS reprojection only; the stationary-source check labels frames and applies no correction.",
+      "Wavelength labels describe the target; response varies spatially.",
+      "PNG rows are flipped relative to FITS: fitsY=height-1-pngY (zero-based).",
+      "Archive search incomplete (see diagnostics.incompleteStages); some discovered exposures were not retrieved or not requested."
+    ],
+    "provenance": {
+      "acknowledgement": "This publication makes use of data products from the Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer (SPHEREx), which is a joint project of the Jet Propulsion Laboratory and the California Institute of Technology, and is funded by the National Aeronautics and Space Administration.",
+      "alignmentChecks": {
+        "74312408b4292545eb9195a4622d939147b21e3d1e5c9277effcf4e968411df1": {
+          "acceptancePixels": 0.5,
+          "matchedSources": 5,
+          "medianResidualPixels": 0.13549111875272035,
+          "referenceSourceSha256": "cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35",
+          "status": "verified"
+        },
+        "cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35": {
+          "status": "reference_frame"
+        }
+      },
+      "discoveryScope": "wide_survey_dr1_qr3",
+      "evidenceKind": "real_archive",
+      "implementation": {
+        "packages": {
+          "astropy": "8.0.2",
+          "numpy": "2.5.4",
+          "pillow": "13.0.0",
+          "reproject": "0.21.0"
+        },
+        "python": "3.12.16",
+        "sourceSha256": "9d062ffad20b88a51cd211552a57773afee4c557ee3bf45a63d444a24a42fecb"
+      },
+      "inputs": [
+        {
+          "observation": {
+            "detector": 5,
+            "endMjd": 60912.715479,
+            "observationId": "2025W35_1A_0146_1",
+            "release": "dr1",
+            "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/level2/2025W35_1A/l2b-v27-2026-230/5/level2_2025W35_1A_0146_1D5_spx_l2b-v27-2026-230.fits",
+            "startMjd": 60912.714147
+          },
+          "sourceSha256": "cb3d87112cafb52de5688cb3d2a0445fe70dd4726d59ee996f0f3e3b8ccdda35"
+        },
+        {
+          "observation": {
+            "detector": 5,
+            "endMjd": 61305.629353,
+            "observationId": "2026W39_1A_0371_1",
+            "release": "qr3",
+            "sourceUrl": "https://irsa.ipac.caltech.edu/ibe/data/spherex/qr3/level2/2026W39_1A/l2b-v27-2026-268/5/level2_2026W39_1A_0371_1D5_spx_l2b-v27-2026-268.fits",
+            "startMjd": 61305.628021
+          },
+          "sourceSha256": "74312408b4292545eb9195a4622d939147b21e3d1e5c9277effcf4e968411df1"
+        }
+      ],
+      "releaseDocumentation": "https://irsa.ipac.caltech.edu/Missions/spherex.html",
+      "schemaVersion": 2,
+      "timestampPolicy": "midpoint_of_SIA_UTC_MJD_bounds"
+    },
+    "stretch": {
+      "lower": 0.015581724703054625,
+      "softening": 0.1,
+      "type": "asinh",
+      "unit": "MJy/sr",
+      "upper": 6.447183597545003
+    },
+    "wavelengthRangeUm": [
+      4.271684300836819,
+      4.31470695954223
+    ]
+  },
+  "diagnostics": {
+    "alignmentFailures": [],
+    "candidatePairCount": 3,
+    "candidatePairsTried": 1,
+    "complete": false,
+    "coverageThresholds": {
+      "denominator": "all_output_grid_pixels",
+      "minCommonValidCoverage": 0.75,
+      "minGeometricCoverage": 0.98,
+      "minValidCoverage": 0.8
+    },
+    "discoveredExposureCount": 390,
+    "discovery": {
+      "byDetector": {
+        "D1": 64,
+        "D2": 68,
+        "D3": 63,
+        "D4": 63,
+        "D5": 70,
+        "D6": 62
+      },
+      "byRelease": {
+        "dr1": 260,
+        "qr3": 130
+      },
+      "byReleaseDetector": {
+        "dr1:D1": 45,
+        "dr1:D2": 43,
+        "dr1:D3": 42,
+        "dr1:D4": 44,
+        "dr1:D5": 45,
+        "dr1:D6": 41,
+        "qr3:D1": 19,
+        "qr3:D2": 25,
+        "qr3:D3": 21,
+        "qr3:D4": 19,
+        "qr3:D5": 25,
+        "qr3:D6": 21
+      },
+      "complete": true,
+      "failedReleaseQueries": [],
+      "observedTimeRangeUtc": {
+        "dr1": {
+          "end": "2026-05-05T02:01:23.865600Z",
+          "start": "2025-08-15T20:45:11.376000Z"
+        },
+        "qr3": {
+          "end": "2026-09-22T15:06:16.099200Z",
+          "start": "2026-08-16T15:06:13.161600Z"
+        }
+      },
+      "scope": "wide_survey_dr1_qr3",
+      "totalExposures": 390
+    },
+    "incompleteStages": [
+      "retrieval",
+      "sampling"
+    ],
+    "invalidCutouts": [
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0432_3",
+        "reason": "Cannot prepare 2025W35_1A_0432_3: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_1B_0557_1",
+        "reason": "Cannot prepare 2025W34_1B_0557_1: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W39_1A_0273_1",
+        "reason": "Cannot prepare 2026W39_1A_0273_1: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0432_3",
+        "reason": "Cannot prepare 2025W35_1A_0432_3: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_1B_0557_1",
+        "reason": "Cannot prepare 2025W34_1B_0557_1: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W39_1A_0273_1",
+        "reason": "Cannot prepare 2026W39_1A_0273_1: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_1B_0557_2",
+        "reason": "Cannot prepare 2025W34_1B_0557_2: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_1B_0557_2",
+        "reason": "Cannot prepare 2025W34_1B_0557_2: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W38_2A_0562_1",
+        "reason": "Cannot prepare 2026W38_2A_0562_1: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_1B_0557_3",
+        "reason": "Cannot prepare 2025W34_1B_0557_3: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_1B_0557_3",
+        "reason": "Cannot prepare 2025W34_1B_0557_3: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_1B_0557_4",
+        "reason": "Cannot prepare 2025W34_1B_0557_4: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_1B_0557_4",
+        "reason": "Cannot prepare 2025W34_1B_0557_4: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0090_3",
+        "reason": "Cannot prepare 2025W34_2B_0090_3: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0575_1",
+        "reason": "Cannot prepare 2026W35_1A_0575_1: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0575_1",
+        "reason": "Cannot prepare 2026W35_1A_0575_1: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0238_2",
+        "reason": "Cannot prepare 2026W34_1A_0238_2: ValueError",
+        "release": "qr3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0511_1",
+        "reason": "Cannot prepare 2025W35_1A_0511_1: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0511_1",
+        "reason": "Cannot prepare 2025W35_1A_0511_1: ValueError",
+        "release": "dr1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W40_1A_0322_1",
+        "reason": "Cannot prepare 2025W40_1A_0322_1: ValueError",
+        "release": "dr1"
+      }
+    ],
+    "notSelectedExposures": [
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0321_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0321_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0386_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0386_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0386_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0386_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_1B_0164_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_1B_0164_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0090_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0090_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0432_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0432_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0484_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0484_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0484_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0484_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_2A_0221_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_2A_0221_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W36_1A_0024_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W36_1A_0024_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W36_2B_0123_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W36_2B_0123_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W11_1A_0587_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W11_1A_0587_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W12_1A_0598_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W33_2A_0594_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W33_2A_0594_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0176_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0176_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0176_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0176_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0238_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0238_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_2A_0081_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_2A_0081_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0178_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0178_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0178_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0178_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0264_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0264_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0264_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0264_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W34_2A_0757_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W34_2A_0757_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_1A_0038_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_1A_0038_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0053_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0053_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_1A_0092_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_1A_0092_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_2A_0126_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_2A_0126_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W36_1A_0510_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W36_1A_0510_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W39_1A_0371_1"
+      }
+    ],
+    "pairChecks": {
+      "compatible": 3,
+      "different_detector": 17849,
+      "wavelength_mismatch": 3469
+    },
+    "preparedExposureCount": 219,
+    "processedExposureCount": 239,
+    "rejectedObservations": [
+      {
+        "detector": 3,
+        "geometricFraction": 0.5170927894283252,
+        "observationId": "2026W38_2A_0562_1",
+        "reason": "insufficient_geometric_coverage",
+        "validFraction": 0.0
+      },
+      {
+        "detector": 3,
+        "geometricFraction": 1.0,
+        "observationId": "2025W33_2C_0321_3",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.345590347601264
+      },
+      {
+        "detector": 3,
+        "geometricFraction": 1.0,
+        "observationId": "2026W34_1A_0431_2",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.7874174087905774
+      },
+      {
+        "detector": 6,
+        "geometricFraction": 1.0,
+        "observationId": "2026W34_1A_0431_2",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.7983338121229532
+      },
+      {
+        "detector": 1,
+        "geometricFraction": 0.9704108014938236,
+        "observationId": "2026W35_1A_0249_4",
+        "reason": "insufficient_geometric_coverage",
+        "validFraction": 0.9319161160586038
+      },
+      {
+        "detector": 4,
+        "geometricFraction": 1.0,
+        "observationId": "2026W35_1A_0249_4",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.05027291008330939
+      },
+      {
+        "detector": 3,
+        "geometricFraction": 0.527147371444987,
+        "observationId": "2026W34_1A_0238_2",
+        "reason": "insufficient_geometric_coverage",
+        "validFraction": 0.0
+      },
+      {
+        "detector": 1,
+        "geometricFraction": 1.0,
+        "observationId": "2025W35_2A_0474_4",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.7158862395863258
+      },
+      {
+        "detector": 1,
+        "geometricFraction": 1.0,
+        "observationId": "2026W34_2A_0757_3",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.7983338121229532
+      },
+      {
+        "detector": 3,
+        "geometricFraction": 1.0,
+        "observationId": "2026W12_1A_0598_1",
+        "reason": "insufficient_valid_coverage",
+        "validFraction": 0.7868428612467682
+      },
+      {
+        "detector": 2,
+        "geometricFraction": 0.6297041080149383,
+        "observationId": "2026W34_2A_0178_2",
+        "reason": "insufficient_geometric_coverage",
+        "validFraction": 0.5949439816144786
+      },
+      {
+        "detector": 5,
+        "geometricFraction": 0.8187302499281816,
+        "observationId": "2026W34_2A_0178_2",
+        "reason": "insufficient_geometric_coverage",
+        "validFraction": 0.7940247055443838
+      }
+    ],
+    "retrieval": {
+      "cutoutSizeDeg": 0.154811,
+      "failedCutouts": 1,
+      "failureCategories": {
+        "http_rejected": 1
+      },
+      "failures": [
+        {
+          "attempts": 1,
+          "category": "http_rejected",
+          "code": "UPSTREAM_ERROR",
+          "detector": 2,
+          "httpStatus": 422,
+          "observationId": "2025W34_2B_0090_3",
+          "release": "dr1"
+        }
+      ],
+      "notRequestedExposureCount": 150,
+      "requestedCutouts": 240,
+      "succeededCutouts": 239
+    },
+    "sampledExposures": [
+      {
+        "detector": 1,
+        "observationId": "2026W36_1A_0510_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W39_1A_0371_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0321_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W36_1A_0510_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W39_1A_0371_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0432_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_2A_0126_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0321_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W38_2A_0562_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0432_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_2A_0126_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_1A_0092_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0321_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_2A_0081_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_1A_0092_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0321_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_2A_0081_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W35_1A_0038_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0386_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W35_1A_0038_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0386_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_2A_0412_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0264_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W33_2C_0386_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_2A_0412_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0264_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W33_2C_0386_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_1A_0658_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0090_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0264_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_1A_0658_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0090_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0264_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_1B_0164_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0431_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_1B_0164_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0431_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_1B_0164_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0249_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0249_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0233_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0375_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W34_2B_0557_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0233_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0375_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W34_2B_0557_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0249_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0308_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0249_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W34_2B_0030_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0308_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W34_2B_0030_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0238_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0233_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0238_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0474_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0233_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0238_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0474_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0146_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0176_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0146_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0176_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0079_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0176_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0079_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0008_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0176_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W35_1A_0053_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0008_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W35_1A_0053_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0484_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W34_2A_0757_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_3"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0206_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0484_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_3"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W35_2A_0611_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_3"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0206_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2025W35_1A_0484_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_3"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W35_2A_0611_4"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W34_2A_0757_2"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_1A_0444_4"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0178_4"
+      },
+      {
+        "detector": 3,
+        "observationId": "2025W35_1A_0484_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_2"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W36_1A_0024_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_2"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_1A_0444_4"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0178_4"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_1"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_2"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W36_1A_0024_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W34_2A_0757_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0178_3"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W12_1A_0598_1"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W34_1A_0007_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2025W36_2B_0123_1"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W34_2A_0757_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0178_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W34_1A_0007_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2025W36_2B_0123_1"
+      },
+      {
+        "detector": 1,
+        "observationId": "2026W11_1A_0587_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2025W35_2A_0221_1"
+      },
+      {
+        "detector": 2,
+        "observationId": "2026W34_2A_0178_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W12_1A_0598_2"
+      },
+      {
+        "detector": 3,
+        "observationId": "2026W33_2A_0594_4"
+      },
+      {
+        "detector": 4,
+        "observationId": "2026W11_1A_0587_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2025W35_2A_0221_1"
+      },
+      {
+        "detector": 5,
+        "observationId": "2026W34_2A_0178_2"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W12_1A_0598_3"
+      },
+      {
+        "detector": 6,
+        "observationId": "2026W33_2A_0594_4"
+      }
+    ],
+    "schemaVersion": 2,
+    "selectionPolicy": "longest_baseline_then_coverage_then_wavelength_then_id_skipping_failed_alignment_pairs",
+    "selectionScope": "bounded_time_detector_sample",
+    "usableExposureCount": 207
+  },
+  "status": "ready"
+}

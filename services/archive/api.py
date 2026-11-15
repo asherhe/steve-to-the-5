@@ -43,11 +43,6 @@ def create_router(pipeline):
         cached = cache.get(field) if cache and not refresh else None
         if cached is not None:
             return JSONResponse(cached, headers={"X-Comparison-Source": "saved-cache"})
-        recorded = (pipeline.store.matching_recorded_field(field)
-                    if not refresh and hasattr(pipeline.store, "matching_recorded_field") else None)
-        if recorded is not None:
-            return JSONResponse(recorded, headers={"X-SPHEREx-Evidence": "saved-real-example",
-                                                   "X-Comparison-Source": "saved-example"})
         # Reject at once instead of queueing: excess requests never wait for the lock.
         with builds.run(progressId) as (report, cancel):
             if refresh and hasattr(getattr(pipeline, "client", None), "refresh_discovery"):
@@ -92,8 +87,8 @@ def create_app(pipeline=None):
         root = Path(os.environ.get("SPHEREX_STORAGE_DIR", Path(__file__).parent / ".local-data"))
         config = ProcessingConfig()
         fixtures = Path(__file__).resolve().parents[2] / "fixtures" / "archive"
-        examples = [fixtures / name / "evidence" for name in ("real", "real-wise0855", "real-epsindib", "real-rdraconis")]
-        pipeline = Pipeline(IRSAClient(config, root / "cache"), LocalStore(root / "evidence", examples), config)
+        examples = [fixtures / name / "evidence" for name in ("real", "real-barnard", "real-wise0855", "real-epsindib", "real-rdraconis")]
+        pipeline = Pipeline(IRSAClient(config, root / "cache", search_attempts=6, cutout_attempts=5), LocalStore(root / "evidence", examples), config)
     @asynccontextmanager
     async def lifespan(app):
         yield

@@ -11,6 +11,10 @@ declare module "aladin-lite" {
   }
   export interface AladinView {
     world2pix(ra: number, dec: number): [number, number] | undefined;
+    /** Map pixel (relative to the view) to ICRS degrees; throws or returns undefined off the sky. */
+    pix2world(x: number, y: number, frame?: "icrs"): [number, number] | undefined;
+    /** Shows or hides Aladin's crosshair at the view centre. */
+    showReticle(show: boolean): void;
     setOverlayImageLayer(image: AladinImage | AladinImageSurvey, id: string): void;
     getOverlayImageLayer(id: string): AladinImage | AladinImageSurvey | undefined;
     getStackLayers(): string[];

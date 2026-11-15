@@ -264,10 +264,17 @@
           {
             "name": "observedAtUtc",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string",
-              "format": "date-time",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Observedatutc"
             }
           }
@@ -526,7 +533,14 @@
             "title": "Radiusarcsec"
           },
           "observedAtUtc": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Observedatutc"
           },
           "checks": {
@@ -550,7 +564,6 @@
           "ra",
           "dec",
           "radiusArcsec",
-          "observedAtUtc",
           "checks",
           "limitations"
         ],

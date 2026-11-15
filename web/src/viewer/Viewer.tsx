@@ -15,10 +15,8 @@ import type {
   ViewerDataSource,
 } from "./comparison";
 import {
-  angularSeparationArcsec,
   predictAtObservation,
   type CatalogAstrometry,
-  type SourceInspectorProps,
   type MarkAction,
   type SelectedFrameMeta,
   type ResolveResult,
@@ -31,8 +29,9 @@ import {
 import type { CommunityActivityProps } from "../findings/CommunityActivity";
 import type { FindingsViewport } from "../findings/types";
 import type { FindingMarker } from "../findings/adapter";
-import type { CandidateReviewSlotProps } from "../findings/CandidateReviewPane";
-import { barnardGaiaSourceId, targetPresets } from "./coordinates";
+import type { PointSubmissionSlotProps } from "../findings/PointSubmissionPane";
+import type { PointReviewInput, FrameRef } from "../findings/types";
+import { targetPresets } from "./coordinates";
 import { FieldSearch, inFieldRange } from "./FieldSearch";
 import { compareReachDeg, fieldWidthFromView } from "./compareField";
 import { SkyMap } from "./SkyMap";
@@ -42,13 +41,13 @@ import { FloatingPane } from "./FloatingPane";
 import { NeossatPanel, useNeossat } from "./NeossatPanel";
 import { TimeControls } from "./TimeControls";
 import { usePlayback } from "./usePlayback";
-import { ComparisonPlayback } from "./ComparisonPlayback";
+import { FrameDetails } from "./FrameDetails";
 import { cutoutWcs } from "./cutoutWcs";
 import { SpectralRuler, bandColors } from "./SpectralRuler";
 import {
   bandForWavelength,
+  defaultMapSlice,
   spherexMosaicGuideTimeUtc,
-  spherexMosaicSlice,
 } from "./spherexSurvey";
 import {
   evidenceLink,
@@ -62,6 +61,8 @@ import { BuildProgressBar } from "./BuildProgress";
 import { wiseBandName, type SkyView } from "./wiseSurvey";
 import { InfoTip } from "./InfoTip";
 import { Tutorial, useTutorial } from "./Tutorial";
+import { PointCheck, type CheckPoint, type MarkedPoint } from "./PointCheck";
+import type { CatalogSource } from "./catalogCheckSummary";
 import "./styles.css";
 
 const scenarios: Record<ComparisonResult["status"], string> = {
@@ -84,12 +85,12 @@ const badges: Record<ComparisonResult["status"], string> = {
 /** Wording that differs between the two survey views. */
 const surveys = {
   spherex: {
-    name: "SPHEREx", limits: archiveFieldLimits, panel: "Comparison", panelHeading: "Comparison",
+    name: "SPHEREx", limits: archiveFieldLimits,
     ready: "Matched pair", noCoverage: "No SPHEREx coverage",
     observations: "SPHEREx archive observations",
   },
   wise: {
-    name: "WISE", limits: wiseFieldLimits, panel: "Time-lapse", panelHeading: "WISE time-lapse",
+    name: "WISE", limits: wiseFieldLimits,
     ready: "Time-lapse", noCoverage: "No WISE coverage",
     observations: "WISE/NEOWISE single exposures from IRSA, combined per visit",
   },
@@ -104,6 +105,18 @@ function requestFromUrl(): Request | null {
   const id = params.get("comparison") ?? "";
   const findingId = params.get("finding") ?? undefined;
   return id || findingId ? { kind: "saved", id, findingId } : null;
+}
+
+/** Minimal selection carried through email sign-in; scores and identities never come from the URL. */
+function pointReviewFromUrl(): PointReviewInput | null {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("reviewRa") || !params.has("reviewDec")) return null;
+  const ra = Number(params.get("reviewRa")), dec = Number(params.get("reviewDec"));
+  const radiusArcsec = Number(params.get("reviewRadius") ?? 30);
+  if (!Number.isFinite(ra) || ra < 0 || ra >= 360 || !Number.isFinite(dec) || Math.abs(dec) > 90 || !Number.isFinite(radiusArcsec) || radiusArcsec < 5 || radiusArcsec > 300) return null;
+  const comparisonId = params.get("comparison"), frameId = params.get("reviewFrame");
+  const frame: FrameRef | null = comparisonId && frameId ? { comparisonId, frameId, survey: params.get("view") === "wise" ? "wise" : "spherex" } : null;
+  return { ra, dec, radiusArcsec, ...(frame ? { frame } : {}) };
 }
 
 /** Publishes an element's height as a CSS variable on the workspace, so panels can avoid it. */
@@ -140,9 +153,10 @@ export interface ViewerControlsProps {
 }
 export interface ViewerProps {
   dataSource: ViewerDataSource;
-  Inspector: ComponentType<Omit<SourceInspectorProps, "client">>;
   Discussion?: ComponentType<EvidenceDiscussionProps>;
-  Review?: ComponentType<CandidateReviewSlotProps>;
+  Review?: ComponentType<PointSubmissionSlotProps>;
+  /** Checks a double-clicked map point against the catalog chain. Marking is off without it. */
+  checkPoint?: CheckPoint;
   Activity?: ComponentType<CommunityActivityProps>;
   Account?: ComponentType<{ mode: "button" | "pane" }>;
   loadFinding?: (
@@ -162,16 +176,16 @@ export interface ViewerProps {
   synthetic?: boolean;
 }
 
-type Panel = "search" | "comparison" | "gaia";
+type Panel = "search";
 
 const narrowScreen = "(max-width: 42rem)";
 
 export function Viewer({
   dataSource,
   wiseDataSource,
-  Inspector,
   Discussion,
   Review,
+  checkPoint,
   Account,
   Activity,
   loadFinding,
@@ -225,8 +239,6 @@ export function Viewer({
 
   const [panels, setPanels] = useState<Record<Panel, boolean>>({
     search: false,
-    comparison: new URLSearchParams(location.search).has("finding"),
-    gaia: false,
   });
   const [timeOpen, setTimeOpen] = useState(
     () =>
@@ -236,8 +248,15 @@ export function Viewer({
   const [communityOpen, setCommunityOpen] = useState(false);
   const [viewport, setViewport] = useState<FindingsViewport | null>(null);
   const [communityMarkers, setCommunityMarkers] = useState<FindingMarker[]>([]);
-  const [reviewOpen, setReviewOpen] = useState(() => new URLSearchParams(location.search).has("reviewFrame"));
-  const [comparisonLarge, setComparisonLarge] = useState(false);
+  // Hovering a finding in the list or on the map highlights it in both.
+  const [highlightedMarker, setHighlightedMarker] = useState<string | null>(null);
+  // Point double-clicked on the map, with the dated frame it was marked on (for its time).
+  const [markedPoint, setMarkedPoint] = useState<(MarkedPoint & { comparisonId?: string; frameId?: string; survey: SkyView }) | null>(null);
+  // Search radius chosen in the check pane; a submission scores the same cone.
+  const [checkRadius, setCheckRadius] = useState(30);
+  const [reviewOpen, setReviewOpen] = useState(() => !!pointReviewFromUrl());
+  const [reviewTarget, setReviewTarget] = useState<PointReviewInput | null>(pointReviewFromUrl);
+  const [shownCheckSource, setShownCheckSource] = useState<CatalogSource | null>(null);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
   const [discussionOpen, setDiscussionOpen] = useState(true);
   const [layoutReset, setLayoutReset] = useState(0);
@@ -250,10 +269,6 @@ export function Viewer({
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardButton = useRef<HTMLButtonElement>(null);
   const [mapNotice, setMapNotice] = useState("");
-  const [inspecting, setInspecting] = useState<{
-    position: SkyPosition;
-    onSpherexMosaic: boolean;
-  } | null>(null);
   const [frameSelection, setFrameSelection] = useState<{
     comparisonId: string;
     survey: SkyView;
@@ -271,7 +286,7 @@ export function Viewer({
   const target = resolvedTarget?.request === request ? resolvedTarget.result : null;
   const targetLabel = target?.identity?.commonName || target?.identity?.displayName || target?.name;
   const [copyStatus, setCopyStatus] = useState("");
-  const [mapSlice, setMapSlice] = useState(spherexMosaicSlice);
+  const [mapSlice, setMapSlice] = useState(defaultMapSlice);
   const [mapState, setMapState] = useState<"loading" | "ready" | "unavailable">(
     "loading",
   );
@@ -307,7 +322,8 @@ export function Viewer({
       loaders[view].setRequest(saved);
       setTimeOpen(!!saved);
       setDiscussionOpen(true);
-      setReviewOpen(new URLSearchParams(location.search).has("reviewFrame"));
+      setReviewTarget(pointReviewFromUrl());
+      setReviewOpen(!!pointReviewFromUrl());
       setPanels((old) => ({ ...old, comparison: new URLSearchParams(location.search).has("finding") }));
     }
     window.addEventListener("popstate", restore);
@@ -373,17 +389,16 @@ export function Viewer({
 
   function goToEntry(entry: LeaderboardEntry) {
     setMapNotice("");
-    focusField({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin });
+    focusField({ ra: entry.ra, dec: entry.dec, fovArcmin: entry.fovArcmin ?? 6 });
   }
 
-  function openFinding(comparisonId: string, findingId: string | undefined, view: SkyView) {
-    if (view === "wise" && !wiseSource) { setMapNotice("The WISE evidence service is not connected."); return; }
+  function openFinding(comparisonId: string | null | undefined, findingId: string | undefined, view: SkyView) {
+    if (view === "wise" && !wiseSource && comparisonId) { setMapNotice("The WISE evidence service is not connected."); return; }
     setFrameSelection(null); setInspectFrame(false); setReviewOpen(false);
     setSkyView(view);
     setMapImagery(view);
-    loaders[view].setRequest({ kind: "saved", id: comparisonId, findingId });
+    loaders[view].setRequest({ kind: "saved", id: comparisonId ?? "", findingId });
     setTimeOpen(true); setDiscussionOpen(true);
-    openPanel("comparison");
     const url = new URL(evidenceLink(location.href, comparisonId, findingId));
     if (view === "wise") url.searchParams.set("view", "wise");
     else url.searchParams.delete("view");
@@ -391,37 +406,44 @@ export function Viewer({
   }
 
   function showEntryEvidence(entry: LeaderboardEntry) {
-    if (!entry.comparisonId) return;
+    if (!entry.comparisonId && !entry.findingId) return;
+    goToEntry(entry);
     if (window.matchMedia(narrowScreen).matches) setLeaderboardOpen(false);
     openFinding(entry.comparisonId, entry.findingId ?? undefined, entry.survey ?? "spherex");
   }
 
-  function inspect(position: SkyPosition, onSpherexMosaic: boolean) {
+  function markPoint(position: SkyPosition, onDatedFrame: boolean, onSpherexMosaic: boolean) {
+    // The marked point is also the NEOSSat selection. Marking is a deliberate choice of
+    // point, so an open NEOSSat panel loads it at once instead of waiting for Refresh.
+    setReviewOpen(false); setReviewTarget(null);
+    showCheckSource(null);
+    setCheckRadius(30);
     setCrossReferencePosition(position);
-    setInspecting({ position, onSpherexMosaic });
-    setInspectFrame(false);
-    openPanel("gaia");
-  }
-  function inspectCutout(
-    comparisonId: string,
-    position: SkyPosition,
-    frame: ComparisonFrame,
-  ) {
-    playback.pause();
-    setCrossReferencePosition(position);
-    setFrameSelection({
-      comparisonId,
-      survey: skyView,
+    if (neossatOpen) void neossat.refresh(position);
+    const frame = onDatedFrame && comparison ? playback.frame : null;
+    // Keep the frame the point was marked on in view while its check runs.
+    if (frame) playback.pause();
+    setMarkedPoint({
       position,
-      frame: {
-        frameId: frame.id,
-        observedAtUtc: frame.observedAtUtc,
-        wavelengthUm: frame.wavelengthUm,
-      },
+      survey: skyView,
+      onSpherexMosaic,
+      comparisonId: frame ? comparison!.id : undefined,
+      frameId: frame?.id,
+      frame: frame
+        ? { observedAtUtc: frame.observedAtUtc, label: `${survey.name} frame ${comparison!.frames.indexOf(frame) + 1} (${frame.wavelengthUm.toFixed(3)} µm)` }
+        : null,
     });
-    setInspectFrame(true);
-    openPanel("gaia");
-    panelButtons.current.gaia?.focus();
+  }
+  function beginReview(position: SkyPosition, frame?: FrameRef | null) {
+    playback.pause();
+    setReviewTarget({ ...position, radiusArcsec: checkRadius, ...(frame ? { frame } : {}) });
+    setReviewOpen(true);
+  }
+  function reviewMarkedPoint() {
+    if (!markedPoint) return;
+    const frame: FrameRef | null = markedPoint.comparisonId && markedPoint.frameId
+      ? { comparisonId: markedPoint.comparisonId, frameId: markedPoint.frameId, survey: markedPoint.survey } : null;
+    beginReview(markedPoint.position, frame);
   }
 
   function search(field: Field) {
@@ -466,7 +488,6 @@ export function Viewer({
     setCrossReferencePosition({ ra: view.ra, dec: view.dec });
     setRequest({ kind: "field", field: { ra: view.ra, dec: view.dec, fovArcmin } });
     setTimeOpen(true);
-    openPanel("comparison");
   }
 
   const comparison =
@@ -477,11 +498,12 @@ export function Viewer({
         : null;
   useEffect(() => {
     if (preview.kind === "saved" && preview.comparison.id === savedExampleId)
-      setFocus({ ...preview.comparison.field, fovArcmin: Math.min(30, preview.comparison.field.fovArcmin * 3) });
+      // Close enough that a pixel-scale shift between the dated frames is visible when blinking.
+      setFocus({ ...preview.comparison.field });
   }, [preview, savedExampleId]);
   const playback = usePlayback(
     comparison,
-    datedEnabled && (timeOpen || panels.comparison) && preview.kind !== "loading",
+    datedEnabled && timeOpen && preview.kind !== "loading",
   );
   const selection =
     frameSelection?.comparisonId === comparison?.id && frameSelection?.survey === skyView ? frameSelection : null;
@@ -520,21 +542,34 @@ export function Viewer({
           },
         }
       : null;
-  const markedSourceId = inspectingCutout
-    ? markedSource?.sourceId
-    : catalogMark?.sourceId;
-  const markedPosition = inspectingCutout ? prediction : catalogMark;
-  const markedName = inspectingCutout
-    ? comparisonMark?.displayName
-    : catalogMark?.displayName;
-  const mosaicInspection =
-    !inspectFrame && inspecting?.onSpherexMosaic ? inspecting : null;
-  const mosaicGuideSourceId =
-    mosaicInspection &&
-    angularSeparationArcsec(mosaicInspection.position, initialCenter) <= 60
-      ? barnardGaiaSourceId
-      : undefined;
 
+  // The signed-in candidate review needs the dated frame the point was marked on.
+  const markedFrame = markedPoint?.frameId && comparison && comparison.id === markedPoint.comparisonId && skyView === markedPoint.survey
+    ? comparison.frames.find(f => f.id === markedPoint.frameId) ?? null : null;
+  // Gaia positions in the check pane are moved to the time the map shows, as in the inspector:
+  // the marked frame's time, the mosaic guide date on the SPHEREx mosaic, or none (catalog epoch).
+  const checkPredictionTime = markedPoint?.frame ? markedPoint.frame.observedAtUtc
+    : markedPoint?.onSpherexMosaic ? spherexMosaicGuideTimeUtc : null;
+  /** Gaia retains the existing frame-time prediction; other catalogs use labeled published positions. */
+  function showCheckSource(source: CatalogSource | null) {
+    setShownCheckSource(source);
+    if (!source?.gaia) {
+      if (shownCheckSource?.gaia) { setComparisonMark(null); setCatalogMark(null); }
+      return;
+    }
+    const gaia = source.gaia;
+    if (markedFrame && comparison) {
+      setComparisonMark({ comparisonId: comparison.id, source: gaia });
+      return;
+    }
+    const at = checkPredictionTime ? gaia.predicted : null;
+    setCatalogMark({ frameId: null, ra: (at ?? gaia).ra, dec: (at ?? gaia).dec, sourceId: gaia.sourceId,
+      predicted: at !== null, astrometry: gaia, refEpoch: gaia.refEpoch });
+  }
+  function clearMarkedPoint() {
+    showCheckSource(null);
+    setCheckRadius(30); setMarkedPoint(null); setReviewOpen(false); setReviewTarget(null);
+  }
   const restoredReview = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -549,22 +584,27 @@ export function Viewer({
       playback.select(playback.frames.findIndex(f => f.id === selected.id));
       setFrameSelection({ comparisonId: comparison.id, survey: skyView, position: { ra, dec }, frame: { frameId: selected.id, observedAtUtc: selected.observedAtUtc, wavelengthUm: selected.wavelengthUm } });
       setCrossReferencePosition({ ra, dec });
-      setInspectFrame(true); setReviewOpen(true);
+      setInspectFrame(true);
+      setReviewTarget({ ra, dec, radiusArcsec: pointReviewFromUrl()?.radiusArcsec ?? 30, frame: { comparisonId: comparison.id, frameId: selected.id, survey: skyView } });
+      setReviewOpen(true);
     }
     restoredReview.current = restoreKey;
   }, [comparison, skyView]);
 
   function prepareReviewSignIn() {
-    if (!comparison || !inspectingCutout) return;
-    const url = new URL(comparisonLink(comparison.id));
-    url.searchParams.set("reviewFrame", inspectingCutout.frame.frameId);
-    url.searchParams.set("reviewRa", String(inspectingCutout.position.ra));
-    url.searchParams.set("reviewDec", String(inspectingCutout.position.dec));
+    if (!reviewTarget) return;
+    const url = new URL(evidenceLink(location.href, reviewTarget.frame?.comparisonId));
+    if (reviewTarget.frame?.survey === "wise") url.searchParams.set("view", "wise");
+    else url.searchParams.delete("view");
+    if (reviewTarget.frame) url.searchParams.set("reviewFrame", reviewTarget.frame.frameId);
+    url.searchParams.set("reviewRa", String(reviewTarget.ra));
+    url.searchParams.set("reviewDec", String(reviewTarget.dec));
+    url.searchParams.set("reviewRadius", String(reviewTarget.radiusArcsec ?? 30));
     history.replaceState(history.state, "", url);
   }
 
   const status =
-    preview.kind === "search"
+    preview.kind === "point" ? "Submitted sky position" : preview.kind === "search"
       ? (skyView === "wise" && preview.result.status === "ready"
           ? `Time-lapse of ${preview.result.comparison.frames.length} dated visits`
           : scenarios[preview.result.status])
@@ -596,15 +636,13 @@ export function Viewer({
       preview.result.status === "upstream_unavailable");
 
   function openExample() {
-    setMapNotice("Saved WISE 0855 field: 6 arcmin image footprint; the requested object is not confirmed in these frames.");
+    setMapNotice(skyView === "wise" ? "Saved real WISE W2 field: two dated visits for visual comparison." : "Saved Barnard’s Star field: blink the two dates to see the star shift north against the fixed background stars.");
     setTimeOpen(true);
     if (skyView === "wise") setWiseBand(2);
     setRequest({ kind: "saved", id: skyView === "wise" && wiseSavedExampleId ? wiseSavedExampleId : savedExampleId });
-    setComparisonLarge(false);
-    openPanel("comparison");
   }
 
-  function comparisonLink(id: string, findingId?: string) {
+  function comparisonLink(id: string | null | undefined, findingId?: string) {
     const url = new URL(evidenceLink(location.href, id, findingId));
     if (skyView === "wise") url.searchParams.set("view", "wise");
     else url.searchParams.delete("view");
@@ -615,7 +653,7 @@ export function Viewer({
     openFinding(finding.comparisonId, finding.id, finding.survey ?? "spherex");
   }
 
-  async function copyLink(id: string, findingId?: string) {
+  async function copyLink(id: string | null | undefined, findingId?: string) {
     try {
       await navigator.clipboard.writeText(comparisonLink(id, findingId));
       setCopyStatus(
@@ -625,7 +663,12 @@ export function Viewer({
       setCopyStatus("Copying failed. Use the saved evidence link below.");
     }
   }
-  const finding = preview.kind === "saved" ? preview.finding : undefined;
+  const finding = preview.kind === "saved" || preview.kind === "point" ? preview.finding : undefined;
+  useEffect(() => {
+    if (preview.kind !== "point") return;
+    setTimeOpen(false);
+    setMarkedPoint(null); setDiscussionOpen(true);
+  }, [preview]);
 
   useEffect(() => {
     const mark = finding?.marks[0];
@@ -644,7 +687,7 @@ export function Viewer({
   const badgeFor = (state: ComparisonResult["status"]) =>
     state === "ready" ? survey.ready : state === "no_coverage" ? survey.noCoverage : badges[state];
   const badge =
-    preview.kind === "search"
+    preview.kind === "point" ? "Submitted point" : preview.kind === "search"
       ? comparison
         ? `${badgeFor(preview.result.status)} · ${source}`
         : badgeFor(preview.result.status)
@@ -657,7 +700,7 @@ export function Viewer({
             : preview.kind === "name_not_found" || preview.kind === "missing"
               ? "Not found"
               : "Unavailable";
-  const tone = comparison
+  const tone = comparison || preview.kind === "point"
     ? "ready"
     : preview.kind === "idle" || preview.kind === "loading"
       ? "idle"
@@ -678,9 +721,14 @@ export function Viewer({
         onViewport={setViewport}
         communityMarkers={communityMarkers}
         onFindingMarker={activateFindingMarker}
+        highlightedMarker={highlightedMarker}
+        onHighlightMarker={setHighlightedMarker}
+        activeFindingId={finding?.id ?? null}
         focus={focus}
         onCompare={compareViewport}
-        onInspect={inspect}
+        pointMark={markedPoint?.position ?? (preview.kind === "point" && finding?.ra != null && finding.dec != null ? { ra: finding.ra, dec: finding.dec } : null)}
+        sourceMarks={shownCheckSource && !shownCheckSource.gaia ? [shownCheckSource] : []}
+        onMarkPoint={checkPoint ? markPoint : undefined}
         onAdvancedSearch={() => openPanel("search")}
         catalogMark={catalogMark}
         target={datedEnabled ? target : null}
@@ -704,17 +752,13 @@ export function Viewer({
                 selected: selection?.position ?? null,
                 marks: finding?.marks ?? [],
                 predictedMark: frameMark,
-                predictedLabel:
-                  markedName ??
-                  (markedSourceId ? `Gaia DR3 ${markedSourceId}` : undefined),
+                // Label the source the frame mark was predicted from (set by the inspector or the check pane).
+                predictedLabel: frameMark && markedSource
+                  ? comparisonMark?.displayName ?? `Gaia DR3 ${markedSource.sourceId}`
+                  : undefined,
               }
             : null
         }
-        onInspectDated={(position) => {
-          playback.pause();
-          if (comparison && playback.frame)
-            inspectCutout(comparison.id, position, playback.frame);
-        }}
         dock={
           skyView === "wise" ? (
             <WiseDock band={wiseBand} onSelectBand={setWiseBand} />
@@ -839,15 +883,13 @@ export function Viewer({
               aria-controls="time-window"
               onClick={() => setTimeOpen(!timeOpen)}
             >
-              Time
+              Blink
             </button>}
             {(
               [
                 ["search", "Advanced"],
-                ["comparison", survey.panel],
-                ["gaia", "Gaia"],
               ] as const
-            ).filter(([id]) => datedEnabled || id !== "comparison").map(([id, label]) => (
+            ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
@@ -866,7 +908,6 @@ export function Viewer({
                 if (!neossatOpen) neossat.open(crossReferencePosition);
                 setNeossatOpen(!neossatOpen);
               }}>NEOSSat</button>
-            {Review && <button type="button" aria-expanded={reviewOpen} aria-controls="review-panel" onClick={() => { playback.pause(); setReviewOpen(!reviewOpen); }}>Review candidate</button>}
             {Activity && <button type="button" aria-expanded={communityOpen} aria-controls="community-panel" onClick={() => setCommunityOpen(!communityOpen)}>Community</button>}
             {Account && <Account mode="button" />}
             <button
@@ -912,89 +953,38 @@ export function Viewer({
         <NeossatPanel position={crossReferencePosition} snapshot={neossat} />
       </FloatingPane>
       {Account && <Account mode="pane" />}
-      {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} /></FloatingPane>}
-      {Review && <FloatingPane id="review-panel" title="Candidate review" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>
-        {reviewOpen && <Review comparison={comparison} frame={playback.frame ?? null} position={inspectingCutout && playback.frame && playback.assets[playback.frame.id]?.state === "ready" ? inspectingCutout.position : null} survey={skyView} synthetic={synthetic} onPrepareSignIn={prepareReviewSignIn} onCreated={(id, comparisonId, view) => {
-          setReviewOpen(false); setLeaderboardRefresh(n => n + 1); setLeaderboardOpen(true);
-          openFinding(comparisonId, id, view);
-        }} />}
+      {Activity && <FloatingPane id="community-panel" title="Community findings" anchor="left" open={communityOpen} reset={layoutReset} onClose={() => setCommunityOpen(false)}><Activity viewport={viewport} onMarkersChange={setCommunityMarkers} onActivate={activateFindingMarker} refresh={leaderboardRefresh} highlighted={highlightedMarker} onHighlight={setHighlightedMarker} activeFindingId={finding?.id ?? null} /></FloatingPane>}
+      {checkPoint && (
+        <FloatingPane id="point-check-panel" title="Check this point" anchor="left" open={!!markedPoint} reset={layoutReset} onClose={clearMarkedPoint}>
+          {markedPoint && (
+            <PointCheck
+              key={`${markedPoint.position.ra}:${markedPoint.position.dec}:${markedPoint.comparisonId ?? ''}:${markedPoint.frameId ?? ''}`}
+              point={markedPoint}
+              check={checkPoint}
+              onClear={clearMarkedPoint}
+              onReview={Review ? reviewMarkedPoint : undefined}
+              predictionTimeUtc={checkPredictionTime}
+              shownSourceId={shownCheckSource?.key ?? null}
+              onShowSource={showCheckSource}
+              onRadiusChange={radius => { setCheckRadius(radius); showCheckSource(null); setReviewOpen(false); setReviewTarget(null); }}
+            />
+          )}
+        </FloatingPane>
+      )}
+      {Review && <FloatingPane id="review-panel" title="Submit point" anchor="left" size="wide" open={reviewOpen} reset={layoutReset} onClose={() => setReviewOpen(false)}>
+        {reviewOpen && <Review position={reviewTarget ? { ra: reviewTarget.ra, dec: reviewTarget.dec } : null} frame={reviewTarget?.frame}
+          defaultRadiusArcsec={reviewTarget?.radiusArcsec ?? 30} synthetic={!!reviewTarget?.frame && synthetic}
+          onPrepareSignIn={prepareReviewSignIn} onShowDuplicate={id => openFinding(null, id, skyView)} onCreated={id => {
+            setReviewOpen(false); setLeaderboardRefresh(n => n + 1); setLeaderboardOpen(true);
+            openFinding(null, id, skyView);
+          }} />}
       </FloatingPane>}
-      <FloatingPane
-        id="gaia-panel"
-        title="Source inspector"
-        open={panels.gaia}
-        onClose={() => closePanel("gaia")}
-        reset={layoutReset}
-      >
-        <p className="pane-intro">
-          Gaia source inspector{" "}
-          <InfoTip term="Gaia catalog">
-            Gaia is a European Space Agency mission that precisely measured the positions,
-            distances, and motions of nearly two billion stars. This panel lists nearby catalog sources. A nearby row is not automatically
-            the object in the image you clicked.
-          </InfoTip>
-        </p>
-        {inspectingCutout && (
-          <p>
-            Selected {survey.name} frame{" "}
-            <time dateTime={inspectingCutout.frame.observedAtUtc}>
-              {inspectingCutout.frame.observedAtUtc}
-            </time>{" "}
-            · RA {inspectingCutout.position.ra.toFixed(6)}°, Dec{" "}
-            {inspectingCutout.position.dec.toFixed(6)}°
-          </p>
-        )}
-        {Review && inspectingCutout && <button className="primary" type="button" onClick={() => { playback.pause(); setReviewOpen(true); }}>Review this point</button>}
-        <Inspector
-          skyPosition={
-            inspectFrame
-              ? (selection?.position ?? null)
-              : (inspecting?.position ?? null)
-          }
-          selectedFrame={inspectingCutout ? inspectingCutout.frame : null}
-          mosaicGuideTimeUtc={
-            mosaicInspection ? spherexMosaicGuideTimeUtc : undefined
-          }
-          mosaicGuideSourceId={mosaicGuideSourceId}
-          onMark={(mark) => {
-            if (inspectingCutout)
-              setComparisonMark({
-                comparisonId: inspectingCutout.comparisonId,
-                source: mark.astrometry,
-                displayName: mark.displayName,
-              });
-            else setCatalogMark(mark);
-          }}
-        />
-        {markedSourceId && (
-          <p role="status">
-            {inspectingCutout
-              ? "Predicted Gaia position"
-              : catalogMark?.predicted
-                ? "Approximate Gaia position on the SPHEREx mosaic"
-                : "Gaia catalog position"}{" "}
-            for {markedName ? `${markedName} · ` : ""}
-            {markedSourceId}
-            {markedPosition && (
-              <>
-                {" at RA "}
-                {markedPosition.ra.toFixed(6)}°, Dec{" "}
-                {markedPosition.dec.toFixed(6)}°
-              </>
-            )}
-            .{" "}
-            <button
-              type="button"
-              onClick={() => {
-                if (inspectingCutout) setComparisonMark(null);
-                else setCatalogMark(null);
-              }}
-            >
-              Clear mark
-            </button>
-          </p>
-        )}
+      <FloatingPane id="point-discussion-panel" title="Point discussion" anchor="left" size="wide"
+        open={preview.kind === "point" && discussionOpen && !leaderboardOpen} reset={layoutReset} onClose={() => setDiscussionOpen(false)}>
+        {preview.kind === "point" && finding && Discussion && discussionOpen && !leaderboardOpen && <Discussion finding={finding}
+          onShowEvidence={showEvidence} onCopyLink={value => void copyLink(value.comparisonId, value.id)} onClose={() => setDiscussionOpen(false)} />}
       </FloatingPane>
+
       <FloatingPane
         id="search-panel"
         title="Advanced search"
@@ -1013,7 +1003,7 @@ export function Viewer({
       </FloatingPane>
       <FloatingPane
         id="time-window"
-        title="Time"
+        title="Blink"
         anchor="time"
         badge={
           comparison
@@ -1052,6 +1042,38 @@ export function Viewer({
             <small>
               Requested target · name resolved, image detection not established.
             </small>
+            {target.identity && (
+              <small>
+                {target.identity.canonicalDesignation} · {target.identity.component}
+              </small>
+            )}
+            <small>
+              {target.positionProvenance?.source ?? "Resolver reference position"}
+              {target.positionProvenance?.refEpochJulianYear != null
+                ? ` · position epoch ${target.positionProvenance.refEpochJulianYear.toFixed(3)}`
+                : " · position epoch unspecified"}
+            </small>
+            {target.identity && (
+              <details>
+                <summary>Name references and aliases</summary>
+                <p>{target.identity.aliases.join(" · ")}</p>
+                {target.identity.relatedDesignations.length > 0 && (
+                  <p>
+                    Distinct related objects:{" "}
+                    {target.identity.relatedDesignations.join(" · ")}
+                  </p>
+                )}
+                {target.identity.provenance.map((item) => (
+                  <p key={item.url}>
+                    <a href={item.url} target="_blank" rel="noreferrer">
+                      {item.source}
+                    </a>{" "}
+                    · snapshot {item.retrievedAtUtc.slice(0, 10)} ·{" "}
+                    {item.kind.replaceAll("_", " ")}
+                  </p>
+                ))}
+              </details>
+            )}
           </section>
         )}
         {!comparison && <p role="status">{status}</p>}
@@ -1166,97 +1188,41 @@ export function Viewer({
                 Check archive again
               </button>
             </div>
-            <TimeControls
-              comparison={comparison}
-              playback={playback}
-              onDetails={() => openPanel("comparison")}
-            />
-          </>
-        )}
-      </FloatingPane>
-      <FloatingPane
-        id="comparison-panel"
-        title="Compare details"
-        size={comparisonLarge ? "large" : "wide"}
-        open={datedEnabled && panels.comparison}
-        reset={layoutReset}
-        onClose={() => closePanel("comparison")}
-      >
-        <button type="button" aria-pressed={comparisonLarge} onClick={() => setComparisonLarge(!comparisonLarge)}>{comparisonLarge ? "Standard image view" : "Enlarge image view"}</button>
-        {target && (
-          <section className="target-context" aria-label="Target details">
-            <strong>{targetLabel}</strong>
-            {target.identity && (
-              <p>
-                {target.identity.canonicalDesignation} ·{" "}
-                {target.identity.component}
-              </p>
-            )}
-            <p>
-              Name resolved. Identification of an image source and visible
-              target detection are not established by this lookup.
+            <p className="pane-intro">
+              Blink comparison{" "}
+              <InfoTip term="Blink comparison">
+                The dated images are stacked on the same grid and brightness scale, then shown one
+                after another. Objects that moved or changed brightness between the dates appear to
+                jump or flicker; the steady background stays put. This is how moving objects are
+                spotted.
+              </InfoTip>
             </p>
-            <small>
-              {target.positionProvenance?.source ?? "Resolver reference position"}
-              {target.positionProvenance?.refEpochJulianYear != null
-                ? ` · position epoch ${target.positionProvenance.refEpochJulianYear.toFixed(3)}`
-                : " · position epoch unspecified"}
-            </small>
-            {target.identity && (
-              <details>
-                <summary>Name references and aliases</summary>
-                <p>{target.identity.aliases.join(" · ")}</p>
-                {target.identity.relatedDesignations.length > 0 && (
-                  <p>
-                    Distinct related objects:{" "}
-                    {target.identity.relatedDesignations.join(" · ")}
-                  </p>
-                )}
-                {target.identity.provenance.map((item) => (
-                  <p key={item.url}>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      {item.source}
-                    </a>{" "}
-                    · snapshot {item.retrievedAtUtc.slice(0, 10)} ·{" "}
-                    {item.kind.replaceAll("_", " ")}
-                  </p>
-                ))}
-              </details>
-            )}
-          </section>
-        )}
-        <p className="pane-intro">
-          Blink comparison{" "}
-          <InfoTip term="Blink comparison">
-            The dated images are stacked on the same grid and brightness scale, then shown one
-            after another. Objects that moved or changed brightness between the dates appear to
-            jump or flicker; the steady background stays put. This is how moving objects are
-            spotted.
-          </InfoTip>
-        </p>
-        {!comparison && <p>Load dated images using the Time window.</p>}
-        {comparison && (
-          <>
-            {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">WISE 0855 field: 6 arcminutes across at RA 133.795129°, Dec −7.245147° (ICRS; source coordinate epoch unspecified). The outline marks the saved field, not a detected object. This SPHEREx pair does not establish that WISE 0855 appears or moves in these frames.</p>}
-            <p>
-              {synthetic || kind === "synthetic_fixture"
-                ? "Synthetic comparison"
-                : kind === "saved_real_example"
-                  ? "Saved real SPHEREx example"
-                  : survey.observations}
-            </p>
-            <ComparisonPlayback
+            <TimeControls comparison={comparison} playback={playback} />
+            {request?.kind === "saved" && request.id === savedExampleId && <p className="example-notice">Barnard’s Star field: 6 arcminutes across, centred on the star’s Gaia DR3 position propagated to late 2025. Both frames are at 4.29 µm, 393 days apart. The star is saturated, so its core is masked and shows as a hole; blink the dates and the whole bright patch shifts about 2 pixels (≈11″) north while the field stars stay put. That matches its known proper motion of about 10.4″ per year. This is a visual quick-look, not a measured motion.</p>}
+            <FrameDetails
               key={comparison.id}
               comparison={comparison}
               playback={playback}
               survey={skyView}
+              label={synthetic || kind === "synthetic_fixture"
+                ? "Synthetic comparison"
+                : kind === "saved_real_example"
+                  ? "Saved real SPHEREx example"
+                  : survey.observations}
               selectedPosition={selection?.position ?? null}
               frameMark={frameMark}
               savedMarks={finding?.marks}
-              onInspect={(position, frame) =>
-                inspectCutout(comparison.id, position, frame)
-              }
             />
+            <div className="controls share-links">
+              <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
+              <button type="button" onClick={() => void copyLink(comparison.id)}>
+                Copy comparison link
+              </button>
+              {finding && (
+                <a href={comparisonLink(comparison.id, finding.id)}>Saved evidence link</a>
+              )}
+            </div>
+            {copyStatus && <p role="status">{copyStatus}</p>}
             {finding && Discussion && discussionOpen && !leaderboardOpen && (
               <Discussion
                 finding={finding}
@@ -1267,23 +1233,6 @@ export function Viewer({
                 }
               />
             )}
-            {finding && (
-              <p>
-                <a href={comparisonLink(comparison.id, finding.id)}>
-                  Saved evidence link
-                </a>
-              </p>
-            )}
-            <div className="controls">
-              <a href={comparisonLink(comparison.id)}>Saved comparison link</a>
-              <button
-                type="button"
-                onClick={() => void copyLink(comparison.id)}
-              >
-                Copy comparison link
-              </button>
-            </div>
-            {copyStatus && <p role="status">{copyStatus}</p>}
           </>
         )}
       </FloatingPane>
