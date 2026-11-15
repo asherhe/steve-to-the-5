@@ -6,6 +6,7 @@ async function date(page,expected){await page.waitForFunction(expected=>document
 async function ready(page){await page.waitForFunction(()=>{const b=[...document.querySelectorAll("button")].find(b=>b.textContent==="Blink A ↔ B");return b&&!b.disabled;});}
 try{
  const context=await browser.newContext({viewport:{width:1400,height:950},permissions:["clipboard-read","clipboard-write"]});
+ await context.addInitScript(()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1"));
  const page=await context.newPage();page.setDefaultTimeout(15000);
  await page.goto(origin+"/?fixtures=1&comparison=fixture-irregular-times");await ready(page);
  const time=page.getByRole("region",{name:"Time",exact:true});
@@ -34,7 +35,7 @@ try{
  await page.mouse.move(box.x+40,box.y+20);await page.mouse.down();await page.mouse.move(80,100,{steps:10});await page.mouse.up();
  let moved=await time.boundingBox();assert(moved.x<100);assert(moved.y<150);
  await handle.focus();const before=await time.boundingBox();await handle.press("ArrowRight");assert(Math.abs((await time.boundingBox()).x-before.x-20)<1);
- await page.getByRole("button",{name:"Reset layout",exact:true}).click();assert((await time.boundingBox()).x>300);
+ await page.getByRole("button",{name:"Reset layout",exact:true}).click();assert.equal((await time.boundingBox()).x,16);
  await page.getByRole("button",{name:"Collapse Time",exact:true}).click();assert.equal(await slider.isVisible(),false);
  await page.getByRole("button",{name:"Expand Time",exact:true}).click();await slider.waitFor();
  await page.getByRole("button",{name:"Close Time",exact:true}).click();assert.equal(await time.isVisible(),false);
@@ -48,16 +49,17 @@ try{
  assert.equal(await page.locator('[aria-label="Saved finding mark"]').count(),1);
  await page.getByRole("button",{name:"Copy link",exact:true}).click();
  const link=await page.evaluate(()=>navigator.clipboard.readText());assert.equal(new URL(link).searchParams.get("finding"),"fixture-finding");
- const fresh=await browser.newPage();await fresh.goto(link);await fresh.getByRole("region",{name:"Fixture discussion"}).waitFor();
+ const fresh=await context.newPage();await fresh.goto(link);await fresh.getByRole("region",{name:"Fixture discussion"}).waitFor();
  assert.equal(await fresh.locator('[aria-label="Saved finding mark"]').count(),1);await fresh.close();
  // An image failure disables blinking, then an explicit retry recovers.
- const broken=await browser.newPage();let fail=true;
+ const broken=await context.newPage();let fail=true;
  await broken.route("**/epoch-two.png",route=>{if(fail){fail=false;return route.fulfill({status:503,body:"unavailable"});}return route.continue();});
  await broken.goto(origin+"/?fixtures=1&comparison=fixture-matched-pair");await broken.getByRole("button",{name:"Retry images",exact:true}).waitFor();
  assert(await broken.getByRole("button",{name:"Blink A ↔ B",exact:true}).isDisabled());await broken.getByRole("button",{name:"Retry images",exact:true}).click();await ready(broken);await broken.close();
  await page.goto(origin+"/?fixtures=1&comparison=fixture-single-epoch");await page.getByText("One dated image is available. Blink needs at least two.",{exact:true}).waitFor();
  assert(await page.getByRole("button",{name:"Blink A ↔ B",exact:true}).isDisabled());
  const mobileContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});const mobile=await mobileContext.newPage();
+ await mobileContext.addInitScript(()=>localStorage.setItem("spherex.tutorial.review-v1.seen","1"));
  await mobile.goto(origin+"/?fixtures=1&comparison=fixture-matched-pair");await ready(mobile);
  const mobileTime=mobile.getByRole("region",{name:"Time",exact:true});box=await mobileTime.boundingBox();assert(box.x>=0&&box.x+box.width<=390&&box.y+box.height<=844);
  await mobile.getByRole("button",{name:"Collapse Time",exact:true}).tap();const mh=await mobile.getByRole("button",{name:"Move Time window"}).boundingBox();

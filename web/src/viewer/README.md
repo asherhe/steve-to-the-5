@@ -326,7 +326,10 @@ state. A single observation remains viewable with blink disabled.
 `DatedSkyOverlay.tsx` uses Aladin's native PNG/WCS image layers. It passes the saved
 FITS header and rendered dimensions, keeps inactive layers transparent, and draws
 a sampled sky-coordinate footprint and frame-specific marks. It uses the saved
-rendered PNGs without re-stretching or reprocessing them. Unsupported grids have an
+rendered PNGs without re-stretching them. For the sky display only, transparent
+masked/uncovered pixels are composited over neutral stripes, so the older reference
+survey cannot appear through gaps in a dated frame. Stored PNGs and comparison IDs
+are unchanged. Unsupported grids have an
 explicit details-only fallback. Image failures disable blink and expose retry.
 The field label in Playback settings identifies the loaded field; map browsing
 alone never starts another archive comparison or alters the loaded grid.
@@ -336,6 +339,8 @@ collapse, close, stacking, viewport bounds, and reset behavior. The top toolbar
 remains accessible above the panes. Map controls collapse initially on narrower
 screens, and touch devices can drag the same handles. Layout is session state;
 it is separate from the saved scientific comparison identity.
+On desktop, Time starts at the left edge above the dock so it does not cover the
+centre of the compared field. It remains draggable and collapsible.
 
 Try the browser-only synthetic examples:
 
@@ -357,9 +362,10 @@ Use the temporary Playwright installation described earlier. The time-window tes
 checks irregular date spacing, distinct A/B blink, pointer and keyboard scrubbing,
 shared details/inspector state, drag and touch movement, collapse/close/reset,
 viewport resizing, single-epoch behavior, image retry, and saved finding links.
-The overlay diagnostic uses an asymmetric synthetic RGBA image to check orientation,
-exact colour values, transparency, zoom/pan/projection, and absence of comparison
-searches during browsing. It needs no live archive or catalog.
+The overlay diagnostic uses two asymmetric synthetic RGBA images to check actual
+source movement, unchanged stationary sources, exact colour values, neutral masks,
+desktop panel placement, zoom/pan/projection, and absence of comparison searches
+during browsing. It needs no live archive or catalog.
 
 The existing `production.browser.mjs`, `harness/evidence.browser.mjs` and
 `live.browser.mjs` checks now use Time controls and explicitly open Compare details.

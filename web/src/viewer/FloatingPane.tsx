@@ -37,7 +37,8 @@ export function FloatingPane({ id, title, open = true, onClose, anchor = "right"
         const style = getComputedStyle(ref.current!.closest(".sky-workspace") ?? document.documentElement);
         const header = parseFloat(style.getPropertyValue("--header-height")) || 60;
         const dock = parseFloat(style.getPropertyValue("--dock-height")) || 144;
-        const x = anchor === "time" ? (innerWidth-box.width)/2 : anchor === "left" || anchor === "map" ? 16 : innerWidth-box.width-16;
+        // Keep the time controls away from the comparison centre on wider screens.
+        const x = anchor === "time" ? (mobile ? (innerWidth-box.width)/2 : 16) : anchor === "left" || anchor === "map" ? 16 : innerWidth-box.width-16;
         const top = 14 + header + 14;
         const y = anchor === "map" ? innerHeight-box.height-16 : anchor === "time" ? (mobile ? top : innerHeight-dock-box.height-28) : top;
         clamp(x,y);

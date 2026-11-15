@@ -96,6 +96,7 @@ export function ComparisonPlayback({
           </span>
         </div>
         <figcaption>
+          <span>Striped pixels are masked or uncovered.</span>
           <time className="frame-time" dateTime={frame.observedAtUtc}>{frame.observedAtUtc}</time>
           <span className="frame-meta">
             {band && <span className="band-swatch" style={{ background: bandColors[band - 1] }} aria-hidden="true" />}

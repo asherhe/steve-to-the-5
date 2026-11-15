@@ -13,8 +13,23 @@ export interface DatedLayer {
   predictedMark: SkyPosition | null;
   predictedLabel?: string;
 }
-// Raster layers use the already-rendered PNGs and their saved FITS WCS. The
-// transparent canvas adds only the footprint and annotations, never a new stretch.
+// Preserve the saved PNG's visible pixels, with a neutral missing-data background.
+// Transparent masks must not reveal a reference survey from a different epoch.
+function skyRaster(image: HTMLImageElement) {
+  const raster=document.createElement("canvas");
+  raster.width=image.naturalWidth;raster.height=image.naturalHeight;
+  const context=raster.getContext("2d")!;
+  context.fillStyle="#0b1116";context.fillRect(0,0,raster.width,raster.height);
+  context.fillStyle="#121b22";
+  for(let x=-raster.height;x<raster.width;x+=8){
+    context.beginPath();context.moveTo(x,0);context.lineTo(x+4,0);
+    context.lineTo(x+raster.height+4,raster.height);context.lineTo(x+raster.height,raster.height);context.fill();
+  }
+  context.drawImage(image,0,0);
+  return raster.toDataURL("image/png");
+}
+// Raster layers use the saved FITS WCS and shared stretch. The transparent canvas
+// adds only the footprint and annotations. Stored images remain unchanged.
 export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView; aladin: AladinModule; dated:DatedLayer;redraw:unknown}) {
   const mounted=useRef(true);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
@@ -30,9 +45,10 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
     if (!wcs) return;
     const entries=layers.current;
     for(const frame of dated.comparison.frames){
-      if(dated.assets[frame.id]?.state!=="ready" || entries.has(frame.id))continue;
+      const asset=dated.assets[frame.id];
+      if(asset?.state!=="ready" || !asset.image || entries.has(frame.id))continue;
       const id=`dated-${dated.comparison.id}-${frame.id}-${dated.attempt}`;
-      const image=aladin.image(frame.imageUrl,{
+      const image=aladin.image(skyRaster(asset.image),{
         name:`Dated ${dated.survey === "wise" ? "WISE" : "SPHEREx"} ${frame.observedAtUtc}`,imgFormat:"png",opacity:0,
         wcs:{...dated.comparison.grid.fitsHeader,NAXIS:2,NAXIS1:dated.comparison.grid.width,NAXIS2:dated.comparison.grid.height},
         successCallback:(_ra,_dec,_fov,added)=>{
@@ -95,7 +111,7 @@ export function DatedSkyOverlay({ sky, aladin, dated, redraw }: {sky: AladinView
   return <>
     <canvas ref={canvas} className="dated-footprint"
       aria-label={predictedMark ? "Dated-image footprint, frame marks and predicted Gaia position" : "Dated-image footprint and frame marks"} />
-    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated {dated.survey === "wise" ? "WISE" : "SPHEREx"} · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}</p>}
+    {label&&<p className="dated-label" style={{left:label.x,top:label.y}}>Dated {dated.survey === "wise" ? "WISE" : "SPHEREx"} · {dated.frame.observedAtUtc.slice(0,10)}{dated.frame.release==="Synthetic"?" · synthetic":""}<br />Stripes: masked or uncovered</p>}
     {(!wcs || failure)&&<p className="dated-overlay-status" role="status">Sky overlay unavailable for this grid. Open Compare details to inspect the saved image.</p>}
     {wcs && !ready[dated.frame.id] && dated.assets[dated.frame.id]?.state==="ready" && <p className="dated-overlay-status" role="status">Placing dated image on the sky…</p>}
   </>;
