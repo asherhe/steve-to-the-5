@@ -24,7 +24,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -81,14 +81,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -132,7 +132,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -209,7 +209,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -321,14 +321,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -375,14 +375,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -438,14 +438,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {
@@ -516,14 +516,14 @@
             }
           },
           "422": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "503": {
             "content": {

@@ -607,7 +607,7 @@ export interface operations {
                     "application/json": components["schemas"]["PublicAuthConfig"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -647,7 +647,7 @@ export interface operations {
                     "application/json": components["schemas"]["LeaderboardResult"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -698,7 +698,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -758,7 +758,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -810,7 +810,7 @@ export interface operations {
                     "application/json": components["schemas"]["Viewport"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -861,7 +861,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -910,7 +910,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -972,7 +972,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Unprocessable Entity */
+            /** @description Invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;

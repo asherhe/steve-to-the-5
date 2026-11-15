@@ -165,3 +165,24 @@ probe. `/api/resolve` adds `not_found_in_mirror` (404) within the existing error
 The OpenAPI export, representative responses and generated inspector types were regenerated
 together. No archive, findings or saved-evidence contract change. See
 `services/catalogs/README.md` for failover, deadlines, cooldown and cache behaviour.
+
+
+## Point-check-v3 completion (2026-11-15)
+
+The current viewer uses `PointSubmissionPane`, not the historical comparison-based review
+screen. `POST /api/findings/points/review` accepts `{ra, dec, radiusArcsec=30, frame?}`;
+`frame` is optional `{survey, comparisonId, frameId}` used only for a validated original
+observation time. `POST /api/findings` then takes `{ra, dec, title, note, reviewId}` with no
+comparison or marks. The server owns the 0/10/20 rule and image fetching. Point submissions
+and saved image evidence stay distinct. `Finding.comparisonId`, leaderboard comparison IDs
+and field width may be null. Point-only findings use `?finding=<id>` links and never invoke
+an image build/replay; historical comparison/finding links retain exact frame replay.
+
+Catalog marks now cover all six catalogs, with published positions labeled and Gaia
+predictions preserved. Duplicate reviews expose an existing discussion; racing writes return
+409 `already_on_leaderboard`. The original same-object/15-arcsec SQL lock remains authoritative.
+The demo performs local duplicates and live catalog queries when available, but no brightness
+or public writes. New fixtures and tests live in `services/findings/fixtures/point-flow.json`,
+`services/findings/tests/test_cutout_sources.py` and `web/src/findings/tests/point-workflow.test.tsx`.
+Read `docs/verification/point-check-v3-completion.md` for checks and deployment boundaries.
+The unrelated unfinished CheckChain source/tests were left unchanged.

@@ -64,7 +64,7 @@ describe('review contract and identity', () => {
   });
 });
 
-describe('candidate workflow', () => {
+describe('historical frame-backed review compatibility', () => {
   it('sign-in is requested before any persisted review', () => {
     const { p, fetch } = setup();
     render(<CandidateReviewPane {...p} session={null} />);

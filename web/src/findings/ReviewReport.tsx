@@ -1,4 +1,4 @@
-import type { CandidateReview, CatalogCheck } from './types';
+import type { CandidateReview, CatalogCheck, SavedReview } from './types';
 import { safeSourceUrl } from './reviewContract';
 const labels: Record<CatalogCheck['status'], string> = {
   candidates: 'Nearby records returned', no_candidates: 'No records in this cone', partial: 'Partial results — search incomplete',
@@ -10,27 +10,35 @@ function Value({ value }: { value: unknown }) {
   return url ? <a href={url} target="_blank" rel="noreferrer">{text}</a> : <>{text}</>;
 }
 const classLabels: Record<NonNullable<CandidateReview['classification']>, string> = {
-  known: 'known object', uncatalogued: 'not in any of the six catalogs', incomplete: 'catalog check incomplete',
+  known: 'known object', uncatalogued: 'not listed by the checked catalogs', incomplete: 'catalog check incomplete',
 };
-const brightnessStatus: Record<string, string> = { outside: 'outside this frame', unmeasurable: 'could not be measured', unavailable: 'frame unavailable' };
-export function ReviewReport({ review }: { review: CandidateReview }) {
+const brightnessStatus: Record<string, string> = { outside: 'outside this image', unmeasurable: 'could not be measured', unavailable: 'archive unavailable', no_coverage: 'no image coverage returned' };
+const surveyLabels: Record<string, string> = { spherex: 'SPHEREx', wise: 'WISE', dss: 'DSS', neossat: 'NEOSSat' };
+export function ReviewReport({ review, compact = false }: { review: SavedReview; compact?: boolean }) {
+  const identity = 'identity' in review ? review.identity : null;
+  const brightSurveys = new Set((review.brightness ?? []).filter(m => m.bright).map(m => m.survey)).size;
+  const records = <>
+    <CatalogChecks checks={review.catalogReview.checks} />
+    <details><summary>Review limitations</summary><ul>{[...review.limitations, ...review.catalogReview.limitations].map((x, i) => <li key={i}>{x}</li>)}</ul></details>
+  </>;
   return <section aria-label="Saved candidate review" className="review-report">
     <h3>{review.score} points{review.classification ? ` · ${classLabels[review.classification]}` : ''}</h3>
     <ul>{review.reasons.map(x => <li key={x}>{x}</li>)}</ul>
-    <p>Points sort submitted points for discussion. No discovery has been verified. Rules: {review.scoreVersion}.</p>
-    {(review.brightness ?? []).length > 0 && <details open><summary>Brightness at the point ({review.brightness!.filter(m => m.bright).length} of {review.brightness!.length} frames bright)</summary>
+    <p>Points sort submitted points for discussion. No discovery has been verified.</p>
+    {identity && <p>Catalog source: {identity.catalog} {identity.name}{identity.separationArcsec != null ? ` · ${identity.separationArcsec.toFixed(1)}″ from the point` : ''}. A nearby record is not a verified image identification.</p>}
+    {(review.brightness ?? []).length > 0 && <details open><summary>Brightness at the point ({brightSurveys} surveys bright)</summary>
       <table className="review-brightness"><thead><tr><th>Survey</th><th>Frame time</th><th>Local peak</th></tr></thead><tbody>
-        {review.brightness!.map(m => <tr key={`${m.comparisonId}-${m.frameId}`}><td>{m.survey === 'wise' ? 'WISE' : 'SPHEREx'}</td>
+        {review.brightness!.map((m, index) => <tr key={index}><td>{surveyLabels[m.survey]}{'sourceUrl' in m && m.sourceUrl && safeSourceUrl(m.sourceUrl) && <> · <a href={safeSourceUrl(m.sourceUrl)} target="_blank" rel="noreferrer">Source</a></>}</td>
           <td>{m.observedAtUtc ? <time dateTime={m.observedAtUtc}>{m.observedAtUtc.slice(0, 10)}</time> : '—'}</td>
-          <td>{m.status === 'measured' ? `${m.snr?.toFixed(1)}σ${m.bright ? ' · bright' : ''}` : brightnessStatus[m.status]}</td></tr>)}
+          <td>{m.status === 'measured' ? `${m.snr?.toFixed(1)}σ${m.bright ? ' · bright' : ''}` : brightnessStatus[m.status]}
+            {'message' in m && m.message && <small className="review-measurement-note">{m.message}</small>}</td></tr>)}
       </tbody></table>
-      <p>Bright means a local peak at least 5σ above the surrounding pixels in that frame's saved FITS: a contrast test, not a flux or detection measurement.</p>
+      <p>Bright means a local peak at least 5σ above the surrounding pixels in the archive FITS: a contrast test, not a flux or detection measurement. Two bright frames from one survey count as one survey.</p>
     </details>}
-    <p>Search radius {review.radiusArcsec}″ · RA {review.ra.toFixed(6)}°, Dec {review.dec.toFixed(6)}°</p>
-    <p>Image time <time dateTime={review.observedAtUtc}>{review.observedAtUtc}</time>. Review saved <time dateTime={review.reviewedAtUtc}>{review.reviewedAtUtc}</time>.</p>
-    <p>Nearby records are not verified identities or image detections. Catalog positions use different epochs; motion can move a counterpart outside this cone.</p>
-    <CatalogChecks checks={review.catalogReview.checks} />
-    <details><summary>Review limitations</summary><ul>{[...review.limitations, ...review.catalogReview.limitations].map((x, i) => <li key={i}>{x}</li>)}</ul></details>
+    {!compact && <p>Search radius {review.radiusArcsec}″ · RA {review.ra.toFixed(6)}°, Dec {review.dec.toFixed(6)}°</p>}
+    <p>{review.observedAtUtc ? <>Image time <time dateTime={review.observedAtUtc}>{review.observedAtUtc}</time>. </> : 'Undated reference-map point; SkyBoT was not run. '}Review saved <time dateTime={review.reviewedAtUtc}>{review.reviewedAtUtc}</time>.</p>
+    {!compact && <p>Nearby records are not verified identities or image detections. Catalog positions use different epochs; motion can move a counterpart outside this cone.</p>}
+    {compact ? <details><summary>Catalog records and limitations</summary>{records}</details> : records}
   </section>;
 }
 

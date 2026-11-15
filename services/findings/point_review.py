@@ -6,9 +6,9 @@
   measured here on cutouts this service fetches itself (cutouts.py).
 - 0 points otherwise; the point can still be posted for discussion.
 
-Without an observation time (a point on the undated mosaic) SkyBoT cannot run. That does not
-block the 20-point rule: requiring the same spot to be bright in two surveys taken years apart
-already excludes a moving asteroid.
+Without an observation time (a point on the undated mosaic) SkyBoT cannot run. Its expected
+skip is excluded from the incomplete-check gate. Brightness across surveys does not
+establish a common source or rule out chance alignments.
 
 One leaderboard entry per object: the catalog identity (for known objects) and the position
 (DUPLICATE_RADIUS_ARCSEC) are checked here for an early answer and again, atomically, when the
@@ -105,7 +105,8 @@ async def measure_sources(results, ra: float, dec: float) -> list[SourceMeasurem
                                                   status=result.status, message=result.message))
             continue
         for frame in result.frames:
-            base = dict(survey=result.survey, label=frame.label, sourceUrl=frame.source_url, observedAtUtc=frame.observed_at_utc)
+            base = dict(survey=result.survey, label=frame.label, sourceUrl=frame.source_url, observedAtUtc=frame.observed_at_utc,
+                        message=result.message)
             try:
                 value = await asyncio.to_thread(brightness.measure, frame.fits, result.survey, ra, dec)
             except Exception:
@@ -174,7 +175,7 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
                        f"{len(bright)} of the {MIN_BRIGHT_SURVEYS} surveys needed ({names_bright}).{gaps}"]
         if observed is None:
             reasons.append("SkyBoT (known asteroids) needs an observation time and was not run; "
-                           "brightness in surveys taken years apart rules out a moving object.")
+                           "brightness across surveys does not verify identity or rule out chance alignments.")
 
     key = object_key(identity)
     response = PointReviewResponse(
@@ -184,7 +185,7 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
         identity=identity, catalogReview=report, brightness=measurements,
         limitations=[
             "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
-            "Uncatalogued means none of six cone searches listed a source; catalogs have depth, epoch and coverage limits.",
+            "Uncatalogued means none of the applicable catalog searches listed a source; catalogs have depth, epoch and coverage limits.",
             f"Bright means a local peak at least {brightness.BRIGHT_SNR:g}σ above the surrounding pixels in a cutout's FITS. "
             "It is not a photometric detection, a flux, a temperature or evidence of variability.",
             "A cold brown dwarf is usually invisible in optical DSS and NEOSSat images; SPHEREx and WISE are the infrared surveys.",

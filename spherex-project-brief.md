@@ -21,6 +21,25 @@ local verification only. No hosted migration, real auth, deployment or publicati
 No discovery, composition, physical temperature or catalog-exhaustiveness inference follows
 from the participation score. WISE playback already exists and is preserved.
 
+## Point submission update (2026-11-15)
+
+The double-click check pane now submits reference-map points without loaded images.
+The signed-in `point-check-v3` route runs fresh catalog checks and obtains its own
+SPHEREx/WISE/DSS/NEOSSat cutouts. Listed sources score 10 immediately without brightness;
+otherwise a point bright in any two surveys scores 20, and other points score 0 and remain
+postable. Applicable catalog outages remain explicit; undated points skip SkyBoT.
+Same catalog identity or separation within 15 arcsec blocks another leaderboard entry under
+a database lock. These points measure participation, not a verified detection or discovery.
+
+Every catalog's returned coordinates can be displayed as labeled map markers. Gaia's
+proper-motion predictions stay separate from other catalogs' published positions. An
+image-free entry opens its sky position and public discussion without comparison requests;
+legacy image evidence still replays unchanged. The browser-local demo never simulates
+20-point brightness. The new SQL migration remains unapplied to hosted Supabase; local
+unit, browser and isolated database verification is documented in
+`docs/verification/point-check-v3-completion.md`. The older frame-backed review description
+below remains historical compatibility context; v3 is the active submission route.
+
 ## What we are building
 
 NASA Space Apps 2026 asks for a public web tool where anyone enters right ascension and

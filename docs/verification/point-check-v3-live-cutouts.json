@@ -1,0 +1,83 @@
+{
+  "point": {
+    "dec": 4.76792,
+    "fovArcmin": 6.0,
+    "ra": 269.44629
+  },
+  "sources": [
+    {
+      "survey": "spherex",
+      "status": "unavailable",
+      "frames": 0,
+      "message": "HTTPStatusError from irsa.ipac.caltech.edu"
+    },
+    {
+      "survey": "wise",
+      "status": "unavailable",
+      "frames": 0,
+      "message": "ReadTimeout from irsa.ipac.caltech.edu"
+    },
+    {
+      "survey": "dss",
+      "status": "ok",
+      "frames": 1,
+      "message": null
+    },
+    {
+      "survey": "neossat",
+      "status": "no_coverage",
+      "frames": 0,
+      "message": null
+    }
+  ],
+  "measurements": [
+    {
+      "survey": "spherex",
+      "label": "SPHEREx",
+      "sourceUrl": null,
+      "observedAtUtc": null,
+      "status": "unavailable",
+      "snr": null,
+      "bright": false,
+      "message": "HTTPStatusError from irsa.ipac.caltech.edu"
+    },
+    {
+      "survey": "wise",
+      "label": "WISE",
+      "sourceUrl": null,
+      "observedAtUtc": null,
+      "status": "unavailable",
+      "snr": null,
+      "bright": false,
+      "message": "ReadTimeout from irsa.ipac.caltech.edu"
+    },
+    {
+      "survey": "dss",
+      "label": "DSS2 red",
+      "sourceUrl": "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=269.44629&d=4.76792&e=J2000&h=2.0&w=2.0&f=fits&c=none",
+      "observedAtUtc": null,
+      "status": "measured",
+      "snr": 2.08,
+      "bright": false,
+      "message": null
+    },
+    {
+      "survey": "neossat",
+      "label": "NEOSSat",
+      "sourceUrl": null,
+      "observedAtUtc": null,
+      "status": "no_coverage",
+      "snr": null,
+      "bright": false,
+      "message": null
+    }
+  ],
+  "dateUtc": "2026-11-15",
+  "verificationKind": "live public archive check; no catalog review, object identification or submission",
+  "additionalDiscoveryCheck": {
+    "survey": "spherex",
+    "queryStatus": "OVERFLOW",
+    "rows": 200,
+    "meaning": "Valid capped metadata was returned by a separate request. Final code permits a bounded image sample and labels the cap; final live image retrieval still failed upstream."
+  }
+}

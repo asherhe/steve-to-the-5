@@ -872,3 +872,11 @@ summary { cursor: pointer; font: 500 0.75rem/2 var(--mono); letter-spacing: 0.06
 .time-shift-notice { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0 0 0.5rem; padding: 0.45rem 0.6rem; border-left: 3px solid #ffd68a; background: #ffd68a14; font-size: 0.85rem; line-height: 1.4; }
 .time-shift-notice span { flex: 1; }
 .sky-tools .time-shift-notice button { min-height: 0; padding: 0 0.4rem; border: 0; background: transparent; color: inherit; font-size: 1.1rem; line-height: 1.2; }
+
+/* Point submission and image-free discussions share the larger review window bounds. */
+#point-discussion-panel { max-height: calc(100dvh - var(--header-height) - 3rem); }
+.candidate-review input, .candidate-review textarea { width: 100%; box-sizing: border-box; }
+.candidate-review textarea { min-height: 6rem; resize: vertical; }
+.review-brightness { overflow-wrap: anywhere; table-layout: fixed; }
+
+.review-measurement-note { display: block; color: var(--muted); margin-top: .25rem; }

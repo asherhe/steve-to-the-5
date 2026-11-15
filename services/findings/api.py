@@ -49,7 +49,7 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
                   load_asset=None, load_cutouts=None) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
-        responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+        responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
     )
 
     async def signed_in(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]):

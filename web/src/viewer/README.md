@@ -445,3 +445,48 @@ services/catalogs/.venv/bin/python -m pytest services/catalogs/tests/test_neossa
 node --experimental-strip-types --test web/src/viewer/neossat.test.mjs
 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node web/src/viewer/neossat.browser.mjs
 ```
+
+
+## Point submission: no loaded frames (point-check-v3)
+
+Double-click a reference-map point to mark it with an amber box/X and open **Check this point**.
+A single click still inspects Gaia. The anonymous six-catalog check offers **Show on map**
+for every record with valid coordinates, including sexagesimal SkyBoT positions. Gaia keeps
+its existing frame/mosaic-date proper-motion prediction; other markers are labeled published
+catalog positions. Showing a record does not identify a selected image pixel.
+
+**Submit to leaderboard** opens the point submission flow: sign in, request the server score,
+then enter title/note and post. This works on the plain map. No SPHEREx or WISE frame build is
+triggered. An original dated-frame reference is optional and supplies SkyBoT's time only.
+The radius selected in the check pane is preserved through submission and email sign-in.
+Known objects get 10 without image work. Otherwise the server fetches SPHEREx, WISE, DSS and
+NEOSSat itself and awards 20 if any two surveys are bright; 0-point points can still be posted.
+The saved report shows each archive's measurement, unavailable or coverage state separately.
+
+Duplicate reviews link the existing discussion. A racing 409 blocks another post and preserves
+the text. Changing point, frame, radius or account invalidates the old review. Text is retained
+per point/radius/frame in sessionStorage so reauthentication does not lose it. Review scores and
+identities never come from the client or sign-in URL.
+
+Image-free entries on the leaderboard expose **Point & discussion**, focus a six-arcminute
+field and open the public thread. Finding-only links work anonymously, including in WISE
+view without a connected WISE image service. They make no comparison requests. Legacy
+comparison/finding links still restore exact saved frames and marks. Point reviews do not
+create or mutate saved image evidence.
+
+`PointSubmissionPane` is the production route. `CandidateReviewPane` remains only for
+historical frame-backed compatibility tests; the old loaded-survey brightness controls are
+removed from the point check pane. The demo runs the point flow locally, skips brightness
+and never awards simulated 20-point measurements. Hosted mode requires the point-score SQL
+migration and configured findings/auth services; local checks do not apply migrations.
+
+```sh
+npm run check
+node --experimental-strip-types --test web/src/viewer/*.test.mjs
+npm --prefix web test -- src/findings/tests/point-workflow.test.tsx
+# Live-mode UI with synthetic browser API responses:
+VITE_LIVE_FINDINGS=1 VIEWER_PORT=5189 npm run dev:viewer
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs VIEWER_TEST_URL=http://127.0.0.1:5189 node web/src/viewer/point-review.browser.mjs
+# Demo mode uses the same runner against a normal dev viewer:
+POINT_REVIEW_DEMO=1 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs VIEWER_TEST_URL=http://127.0.0.1:5190 node web/src/viewer/point-review.browser.mjs
+```
