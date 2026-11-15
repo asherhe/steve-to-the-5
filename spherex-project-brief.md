@@ -23,6 +23,15 @@ from the participation score. WISE playback already exists and is preserved.
 
 ## Point submission update (2026-11-15)
 
+The `feat/spherex-spectral-points` implementation adds user-authorized v4 spectral
+screening and WISE variability bonuses for known and unlisted points. A real saved
+WISE blink is required before calculating a score. Base points remain 0/10/20;
+SPHEREx signal adds 10, tentative two-region water/methane/hydrogen patterns add
+5 each, and a qualifying WISE brightness-change screen adds 5. These are explicitly
+provisional follow-up patterns, not validated chemical identifications. See
+`docs/spectral-points.md` for thresholds, retention and deployment requirements.
+The v3 description below remains historical context.
+
 The double-click check pane now submits reference-map points without loaded images.
 The signed-in `point-check-v3` route runs fresh catalog checks and obtains its own
 SPHEREx/WISE/DSS/NEOSSat cutouts. Listed sources score 10 immediately without brightness;

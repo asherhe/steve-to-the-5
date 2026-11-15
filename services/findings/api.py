@@ -5,13 +5,14 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.routing import APIRoute
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .models import CreatedFinding, ErrorResponse, ExistingEntry, Finding, FindingInput, Reply, ReplyInput, Viewport, ReviewInput, ReviewResponse, LeaderboardResult, PublicAuthConfig, PointReviewInput, PointReviewResponse
 from .point_review import DUPLICATE_RADIUS_ARCSEC, SCORE_VERSION as POINT_SCORE_VERSION, prepare_point_review
 from .review import prepare_review
+from .wise_variability import validate_blink
 from .supabase import ApiError, Supabase
 
 ComparisonLoader = Callable[[str], Awaitable[dict | None]]
@@ -46,7 +47,7 @@ class FindingsRoute(APIRoute):
 
 
 def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *, load_wise_comparison=None, load_catalog_review=None,
-                  load_asset=None, load_cutouts=None) -> APIRouter:
+                  load_asset=None, load_cutouts=None, spectral_store=None) -> APIRouter:
     router = APIRouter(
         prefix="/api/findings", tags=["findings"], route_class=FindingsRoute,
         responses={422: {"model": ErrorResponse, "description": "Invalid request"}, 503: {"model": ErrorResponse}},
@@ -69,6 +70,20 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
         return comparison
 
     review_slots = asyncio.Semaphore(2)
+
+    @router.get("/spectral/{evidence_id}")
+    async def spectral_manifest(evidence_id: str):
+        if spectral_store is None:
+            raise ApiError(503, "evidence_unavailable", "Spectral evidence storage is not configured.")
+        payload = await asyncio.to_thread(spectral_store.read, evidence_id, ".json")
+        return Response(payload, media_type="application/json", headers={"ETag": f'"{evidence_id}"', "Cache-Control": "public, max-age=31536000, immutable"})
+
+    @router.get("/spectral/{evidence_id}/assets/{sha}.fits")
+    async def spectral_asset(evidence_id: str, sha: str):
+        if spectral_store is None:
+            raise ApiError(503, "evidence_unavailable", "Spectral evidence storage is not configured.")
+        payload = await asyncio.to_thread(spectral_store.asset, evidence_id, sha)
+        return Response(payload, media_type="application/fits", headers={"ETag": f'"{sha}"', "Cache-Control": "public, max-age=31536000, immutable"})
 
     @router.get("/auth/config", response_model=PublicAuthConfig)
     async def auth_config():
@@ -118,7 +133,11 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
         if review_slots.locked():
             raise ApiError(429, "review_busy", "Other reviews are running. Try again shortly.")
         async with review_slots:
-            response, candidate_key, key = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence)
+            if not data.wiseComparisonId:
+                raise ApiError(422, "wise_blink_required", "Get a WISE blink at this point before calculating its score.")
+            wise_comparison = await evidence(data.wiseComparisonId, "wise")
+            validate_blink(wise_comparison, data)
+            response, candidate_key, key = await prepare_point_review(data, load_catalog_review, load_cutouts, evidence, spectral_store, wise_comparison, load_asset)
             response.duplicate = await existing_entry(data.ra, data.dec, key)
             await supabase.request("POST", "spherex_candidate_reviews", json={
                 "id": str(response.id), "author_id": author.id,
@@ -154,7 +173,7 @@ def create_router(supabase: Supabase, load_saved_comparison: ComparisonLoader, *
         if finding.reviewId:
             point = await supabase.request("GET", "spherex_candidate_reviews", params={
                 "id": f"eq.{finding.reviewId}", "author_id": f"eq.{author.id}", "select": "*", "limit": 1})
-            if point and point[0]["report"].get("scoreVersion") == POINT_SCORE_VERSION:
+            if point and point[0]["report"].get("scoreVersion") in ("point-check-v3", POINT_SCORE_VERSION):
                 return await create_point_finding(finding, point[0], author)
         if finding.comparisonId is None:
             raise ApiError(422, "invalid_comparison", "Choose a saved comparison or a completed point review before posting.")

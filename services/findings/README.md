@@ -149,6 +149,12 @@ This complements browser contract tests and is not hosted Auth/PostgREST verific
 
 ## Point scoring — point-check-v3 (2026-11-15)
 
+New point reviews now use v4: a saved real WISE blink is required; known objects
+can earn SPHEREx, tentative absorption-pattern and WISE variability bonuses.
+See [spectral points](../../docs/spectral-points.md) for the current contract,
+thresholds, required durable evidence directory and additive migration. The v3
+details below describe historical reports, which remain readable and ranked.
+
 `POST /api/findings/points/review` takes `{ra, dec, radiusArcsec=30, frame?}`. `frame`, when
 present, is `{survey, comparisonId, frameId}` and supplies only the saved observation time for
 SkyBoT after the server verifies the real frame and point. No loaded frames are required for

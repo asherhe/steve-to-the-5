@@ -130,6 +130,7 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewCl
     async pointReview(req, signal) {
       const review = parsePointReview(await request('/api/findings/points/review', { method: 'POST', body: JSON.stringify(req), signal }, true));
       if (review.ra !== req.ra || review.dec !== req.dec || review.radiusArcsec !== (req.radiusArcsec ?? 30) || !sameFrame(review.frame, req.frame)) throw invalid('point review identity');
+      if (review.scoreVersion === 'point-check-v4' && review.wiseComparisonId !== req.wiseComparisonId) throw invalid('WISE blink identity');
       return review;
     },
     async authConfig(signal) {
@@ -173,7 +174,7 @@ export function createFindingsClient(opts: FindingsClientOptions = {}): ReviewCl
       if (body.survey !== undefined && body.survey !== 'spherex' && body.survey !== 'wise') throw invalid('finding survey');
       const survey = body.survey === 'wise' ? 'wise' : 'spherex';
       const rawReview = body.candidateReview as Record<string, unknown> | null;
-      const candidateReview: SavedReview | null = rawReview ? rawReview.scoreVersion === 'point-check-v3' ? parsePointReview(rawReview) : parseReview(rawReview) : null;
+      const candidateReview: SavedReview | null = rawReview ? ['point-check-v3', 'point-check-v4'].includes(String(rawReview.scoreVersion)) ? parsePointReview(rawReview) : parseReview(rawReview) : null;
       if (candidateReview && ('frameId' in candidateReview
         ? candidateReview.comparisonId !== body.comparisonId || candidateReview.survey !== survey
         : candidateReview.ra !== body.ra || candidateReview.dec !== body.dec || body.comparisonId != null)) throw invalid('finding review identity');

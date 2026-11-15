@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/findings/spectral/{evidence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Spectral Manifest */
+        get: operations["spectral_manifest_api_findings_spectral__evidence_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/findings/spectral/{evidence_id}/assets/{sha}.fits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Spectral Asset */
+        get: operations["spectral_asset_api_findings_spectral__evidence_id__assets__sha__fits_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/findings/auth/config": {
         parameters: {
             query?: never;
@@ -404,6 +438,8 @@ export interface components {
              */
             radiusArcsec: number;
             frame?: components["schemas"]["FrameRef"] | null;
+            /** Wisecomparisonid */
+            wiseComparisonId?: string | null;
         };
         /** PointReviewResponse */
         PointReviewResponse: {
@@ -417,6 +453,8 @@ export interface components {
              */
             radiusArcsec: number;
             frame?: components["schemas"]["FrameRef"] | null;
+            /** Wisecomparisonid */
+            wiseComparisonId?: string | null;
             /**
              * Id
              * Format: uuid
@@ -447,6 +485,10 @@ export interface components {
             duplicate?: components["schemas"]["ExistingEntry"] | null;
             /** Limitations */
             limitations: string[];
+            /** Scorebreakdown */
+            scoreBreakdown?: components["schemas"]["ScorePart"][];
+            spectral?: components["schemas"]["SpectralReview"] | null;
+            wiseVariability?: components["schemas"]["WiseVariability"] | null;
         };
         /** PublicAuthConfig */
         PublicAuthConfig: {
@@ -547,6 +589,18 @@ export interface components {
             /** Limitations */
             limitations: string[];
         };
+        /** ScorePart */
+        ScorePart: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "base" | "spherex" | "water" | "methane" | "hydrogen" | "wise_variability";
+            /** Points */
+            points: number;
+            /** Reason */
+            reason: string;
+        };
         /** SourceMeasurement */
         SourceMeasurement: {
             /**
@@ -575,10 +629,176 @@ export interface components {
             /** Message */
             message?: string | null;
         };
+        /** SpectralBandTest */
+        SpectralBandTest: {
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "supported" | "not_supported" | "insufficient";
+            /** Message */
+            message: string;
+            /** Samplehashes */
+            sampleHashes: string[];
+            /** Startum */
+            startUm: number;
+            /** Endum */
+            endUm: number;
+            /** Depthfraction */
+            depthFraction?: number | null;
+            /** Significance */
+            significance?: number | null;
+        };
+        /** SpectralFeature */
+        SpectralFeature: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "water" | "methane" | "hydrogen";
+            /** Label */
+            label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "supported" | "not_supported" | "insufficient";
+            /** Points */
+            points: number;
+            /** Sourceurl */
+            sourceUrl: string;
+            /** Bands */
+            bands: components["schemas"]["SpectralBandTest"][];
+        };
+        /** SpectralReview */
+        SpectralReview: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_eligible" | "unavailable" | "no_coverage" | "insufficient" | "measured";
+            /** Message */
+            message: string;
+            /** Evidenceid */
+            evidenceId?: string | null;
+            /** Manifesturl */
+            manifestUrl?: string | null;
+            /**
+             * Method
+             * @default fixed-aperture-v1
+             */
+            method: string;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Sourcedetected
+             * @default false
+             */
+            sourceDetected: boolean;
+            /**
+             * Independentchannels
+             * @default 0
+             */
+            independentChannels: number;
+            /** Samples */
+            samples?: components["schemas"]["SpectralSample"][];
+            /** Features */
+            features?: components["schemas"]["SpectralFeature"][];
+            /** Limitations */
+            limitations?: string[];
+        };
+        /** SpectralSample */
+        SpectralSample: {
+            /** Sourcesha256 */
+            sourceSha256: string;
+            /** Sourceurl */
+            sourceUrl: string;
+            /** Asseturl */
+            assetUrl?: string | null;
+            /** Observationid */
+            observationId?: string | null;
+            /** Observedatutc */
+            observedAtUtc?: string | null;
+            /** Observeduntilutc */
+            observedUntilUtc?: string | null;
+            /** Release */
+            release?: string | null;
+            /** Processingversion */
+            processingVersion?: string | null;
+            /** Detector */
+            detector?: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "measured" | "rejected";
+            /** Reason */
+            reason?: string | null;
+            /** Wavelengthum */
+            wavelengthUm?: number | null;
+            /** Bandwidthum */
+            bandwidthUm?: number | null;
+            /** Brightnessmjysr */
+            brightnessMjySr?: number | null;
+            /** Uncertaintymjysr */
+            uncertaintyMjySr?: number | null;
+            /** Snr */
+            snr?: number | null;
+        };
         /** Viewport */
         Viewport: {
             /** Items */
             items: (components["schemas"]["Pin"] | components["schemas"]["Cluster"])[];
+        };
+        /** WiseEpoch */
+        WiseEpoch: {
+            /** Frameid */
+            frameId: string;
+            /** Observedstartutc */
+            observedStartUtc: string;
+            /** Observedendutc */
+            observedEndUtc: string;
+            /** Relativeflux */
+            relativeFlux: number;
+            /** Uncertainty */
+            uncertainty: number;
+            /** Exposures */
+            exposures: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** WiseVariability */
+        WiseVariability: {
+            /** Comparisonid */
+            comparisonId: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "candidate" | "stable" | "insufficient" | "unavailable";
+            /** Message */
+            message: string;
+            /**
+             * Points
+             * @default 0
+             */
+            points: number;
+            /** Fractionalchange */
+            fractionalChange?: number | null;
+            /** Significance */
+            significance?: number | null;
+            /** Epochs */
+            epochs?: components["schemas"]["WiseEpoch"][];
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Limitations */
+            limitations?: string[];
         };
     };
     responses: never;
@@ -589,6 +809,87 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    spectral_manifest_api_findings_spectral__evidence_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    spectral_asset_api_findings_spectral__evidence_id__assets__sha__fits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evidence_id: string;
+                sha: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     auth_config_api_findings_auth_config_get: {
         parameters: {
             query?: never;

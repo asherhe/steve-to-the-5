@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "generate:findings-types": "openapi-typescript services/findings/fixtures/openapi.json -o web/src/findings/findings.generated.ts",
+    "test:spectral-browser": "node scripts/verify-spectral-browser.mjs",
     "dev": "concurrently --kill-others --success all --names viewer,gaia,spherex,wise \"npm:dev:viewer\" \"npm:dev:gaia\" \"npm:dev:spherex\" \"npm:dev:wise\"",
     "dev:viewer": "vite web/src/viewer --strictPort",
     "dev:gaia": "node scripts/dev-backend.mjs gaia",
@@ -28,6 +29,7 @@
     "@types/react-dom": "^19.0.0",
     "concurrently": "9.2.5",
     "openapi-typescript": "7.10.1",
+    "playwright": "^1.65.1",
     "typescript": "~5.9.3",
     "vite": "^7.0.0"
   }

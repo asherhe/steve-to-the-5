@@ -95,11 +95,11 @@ export function expectedPoints(review: CatalogReview): { points: number | null; 
   if (summary.tone === "offline")
     return { points: null, label: "No points while catalogs are offline", detail: "Points need a live catalog check.", needsBrightness: false };
   if (summary.tone === "listed")
-    return { points: 10, label: "10 points · known object", detail: "A catalog already lists a source here.", needsBrightness: false };
+    return { points: 10, label: "10 base points · known object", detail: "A catalog lists a source here. Get a WISE blink before scoring. Known objects also qualify for +10 SPHEREx signal and +5 per supported spectral pattern or WISE brightness-change criterion.", needsBrightness: true };
   if (summary.tone === "incomplete")
     return { points: 0, label: "0 points so far", detail: "A catalog could not be checked. Check again for points; you can still submit it for discussion.", needsBrightness: false };
   return { points: 20, label: "20 points if bright in 2 surveys",
-    detail: "No checked catalog lists a source here. The server fetches SPHEREx, WISE, DSS and NEOSSat images and measures the point: at least 5σ above its surroundings in any two surveys earns 20 points. Otherwise it earns 0 and can still be submitted. No loaded frames are needed.",
+    detail: "Get a WISE blink before scoring. Brightness in two of SPHEREx, WISE, DSS and NEOSSat earns 20 base points. A usable SPHEREx signal adds 10; tentative water, methane and hydrogen patterns and possible WISE brightness change can each add 5. Missing measurements earn no bonus. These are follow-up criteria, not verified discoveries.",
     needsBrightness: true };
 }
 

@@ -29,13 +29,14 @@ class CutoutSourceTests(unittest.IsolatedAsyncioTestCase):
             if request.url.path == '/SIA':
                 return httpx.Response(200, content=votable([('https://irsa.ipac.caltech.edu/ibe/data/spherex/dr1/image.fits', 60000, 'SPHEREx-D5')]))
             self.assertEqual(request.url.params['center'], '10,20')
-            self.assertAlmostEqual(float(request.url.params['size']), 120 / 3600)
+            self.assertAlmostEqual(float(request.url.params['size']), 180 / 3600)
             return httpx.Response(200, content=b'SIMPLE  = synthetic FITS transport fixture')
         async with httpx.AsyncClient(transport=httpx.MockTransport(response)) as client:
             result = await cutouts.spherex(client, 10, 20)
         self.assertEqual(result.status, 'ok')
         self.assertEqual(result.frames[0].observed_at_utc, '2023-02-25T00:00:00Z')
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual({c.url.params['COLLECTION'] for c in calls if c.url.path == '/SIA'}, {'spherex_dr1', 'spherex_qr3'})
 
     async def test_wise_uses_allwise_w2_and_ibe_coadd_hierarchy(self):
         table = Table({'coadd_id': ['1234p567_ac51'], 'band': [2]})

@@ -55,7 +55,7 @@ class PointReviewTests(unittest.TestCase):
         response, _, key = self.run_review(report(), sources)
         self.assertEqual((response.classification, response.score, key), ("uncatalogued", 20, None))
         self.assertEqual({m.survey for m in response.brightness if m.bright}, {"wise", "dss"})
-        self.assertIn("SkyBoT", response.reasons[-1])
+        self.assertTrue(any("SkyBoT" in reason for reason in response.reasons))
 
     def test_bright_in_one_survey_scores_zero_and_names_the_gaps(self):
         sources = [SourceResult("spherex", "unavailable", message="IRSA 502"),
@@ -67,7 +67,7 @@ class PointReviewTests(unittest.TestCase):
         self.assertIn("1 of the 2", response.reasons[0])
         self.assertIn("SPHEREx, NEOSSat", response.reasons[0])
 
-    def test_known_object_scores_ten_without_any_cutout(self):
+    def test_known_object_keeps_ten_base_points_without_usable_cutouts(self):
         catalog = report()
         catalog["checks"][1].update(status="candidates", rows=[{"main_id": "* tst 1", "ra": RA, "dec": DEC + 2 / 3600}])
         response, candidate_key, key = self.run_review(catalog, None)

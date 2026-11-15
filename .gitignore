@@ -37,6 +37,7 @@ Thumbs.db
 
 # Archive runtime output (keep curated fixtures/archive evidence tracked)
 /services/archive/.local-data/
+/services/findings/.local-data/
 .cache/
 .coverage.*
 coverage.xml
