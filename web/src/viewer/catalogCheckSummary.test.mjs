@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { gaiaNeighbours, nearestRow, summarize, catalogSources, publishedPosition } from "./catalogCheckSummary.ts";
 
 // Synthetic check results: shapes follow fixtures/catalogs/openapi.json; values are made up.
-const check = (catalog, status, rows = []) => ({ catalog, status, scope: "", sourceUrl: "", rows });
+const check = (catalog, status, rows = ["candidates", "partial"].includes(status) ? [{ name: "fixture" }] : []) => ({ catalog, status, scope: "", sourceUrl: "", rows });
 const names = ["Gaia DR3", "SIMBAD", "CatWISE2020", "UltracoolSheet", "SkyBoT", "VizieR"];
 const review = (statuses, extra = {}) => ({
   mode: "live", ra: 10, dec: 10, radiusArcsec: 30, observedAtUtc: null, limitations: [],
@@ -18,10 +18,10 @@ test("a record in any catalog reads as listed, not as a confirmed match", () => 
   assert.match(result.detail, /not a confirmed match/);
 });
 
-test("an unchecked catalog makes an empty result incomplete, never empty", () => {
+test("up to two unavailable catalogs allow an uncatalogued candidate with visible gaps", () => {
   const result = summarize(review(["no_candidates", "unavailable", "no_candidates", "no_candidates", "skipped", "no_candidates"]));
-  assert.equal(result.tone, "incomplete");
-  assert.match(result.detail, /SIMBAD was not checked/);
+  assert.equal(result.tone, "empty");
+  assert.match(result.detail, /Unavailable: SIMBAD/);
 });
 
 test("all six empty is a lead, not a discovery", () => {
@@ -71,7 +71,7 @@ test("expected points follow point-check-v3: known 10, uncatalogued up to 20, ot
   const blank = expectedPoints(make(Array(6).fill("no_candidates")));
   assert.equal(blank.points, 20);
   assert.ok(blank.needsBrightness);
-  assert.equal(expectedPoints(make(["unavailable", ...Array(5).fill("no_candidates")])).points, 0);
+  assert.equal(expectedPoints(make(["unavailable", ...Array(5).fill("no_candidates")])).points, 20);
   assert.equal(expectedPoints(make(Array(6).fill("skipped"), "offline")).points, null);
 });
 
@@ -111,4 +111,27 @@ test("an expected undated SkyBoT skip leaves the two-of-four brightness route av
   assert.match(result.detail, /SPHEREx, WISE, DSS and NEOSSat/);
   assert.equal(summarize(checked).tone, "empty");
   assert.match(summarize(checked).detail, /SkyBoT needs an observation time/);
+});
+
+
+test("three outages, unexpected skips and truncated empty results remain incomplete", () => {
+  for (const statuses of [
+    ["unavailable", "unavailable", "unavailable", "no_candidates", "skipped", "no_candidates"],
+    ["skipped", ...Array(5).fill("no_candidates")],
+  ]) assert.equal(summarize(review(statuses)).tone, "incomplete");
+  const partial = review(Array(6).fill("no_candidates"));
+  partial.checks[0] = check("Gaia DR3", "partial", []);
+  assert.equal(summarize(partial).tone, "incomplete");
+});
+
+test("server frame-time predictions place non-Gaia sources without changing native columns", () => {
+  const observedAtUtc = "2026-01-01T00:00:00Z";
+  const value = review(Array(6).fill("no_candidates"), { observedAtUtc });
+  value.checks[1] = check("SIMBAD", "candidates", [{ main_id: "mover", ra: 11, dec: 10,
+    predictedRa: 10, predictedDec: 10, positionAtUtc: observedAtUtc }]);
+  const [source] = catalogSources(value, { ra: 10, dec: 10 }, observedAtUtc);
+  assert.equal(source.ra, 10);
+  assert.match(source.label, /predicted for 2026/);
+  const [native] = catalogSources(value, { ra: 10, dec: 10 }, "2025-01-01T00:00:00Z");
+  assert.equal(native.ra, 11, "do not reuse a prediction at another date");
 });

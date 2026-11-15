@@ -25,7 +25,7 @@ def test_review_fixture_matches_contract():
 
 def test_independent_checks_keep_failures_distinct(monkeypatch):
     monkeypatch.setattr(review, "get_provider", lambda *_: SimpleNamespace(nearby=lambda *args: []))
-    def tap(name, scope, endpoints, query, required, settings):
+    def tap(name, scope, endpoints, query, required, settings, **kwargs):
         if name == "SIMBAD":
             raise EndpointDown("outage")
         return review.CatalogCheck(catalog=name, status="no_candidates", scope=scope, sourceUrl=endpoints[0].url)
@@ -80,7 +80,7 @@ def test_route_requires_observation_timezone(client):
 
 def test_undated_point_skips_skybot_without_guessing_a_time(monkeypatch):
     monkeypatch.setattr(review, "get_provider", lambda *_: SimpleNamespace(nearby=lambda *args: []))
-    monkeypatch.setattr(review, "tap_check", lambda name, scope, endpoints, *args: review.CatalogCheck(catalog=name, status="no_candidates", scope=scope, sourceUrl=""))
+    monkeypatch.setattr(review, "tap_check", lambda name, scope, endpoints, *args, **kwargs: review.CatalogCheck(catalog=name, status="no_candidates", scope=scope, sourceUrl=""))
     monkeypatch.setattr(review, "ultracool", lambda *args: review.CatalogCheck(catalog="UltracoolSheet", status="no_candidates", scope="", sourceUrl=""))
     monkeypatch.setattr(review, "skybot", lambda *args: pytest.fail("SkyBoT needs an observation time"))
     result = review.run_review(10, 10, 30, None, replace(get_settings(), live=True))
@@ -93,3 +93,59 @@ def test_route_accepts_a_point_without_observation_time(client):
     result = client.get("/api/catalogs/review", params={"ra": 10, "dec": 10, "radiusArcsec": 30})
     assert result.status_code == 200
     assert result.json()["observedAtUtc"] is None
+
+
+def test_motion_filter_recovers_entering_sources_and_rejects_departing_sources():
+    rows = [{"ra": 0, "dec": -40/3600, "pmra": 0, "pmdec": 2000, "name": "enter"},
+            {"ra": 0, "dec": 0, "pmra": 0, "pmdec": 2000, "name": "leave"}]
+    result = review.at_observation(rows, 0, 0, 10, "2020-01-01T12:00:00Z", 2000)
+    assert [row["name"] for row in result] == ["enter"]
+    assert result[0]["dec"] == -40/3600  # retain original measurement
+    assert result[0]["separationArcsec"] < .01
+    assert result[0]["positionAtUtc"].startswith("2020")
+    assert review.motion_radius(10, "2020-01-01T12:00:00Z", 2000) > 300
+
+
+def test_motion_filter_wrap_poles_missing_motion_and_catwise_units():
+    row = {"ra": 359.999, "dec": 0, "pmra": 1000, "pmdec": 0}
+    [result] = review.at_observation([row], .00177778, 0, 1, "2010-01-01T00:00:00Z", 2000)
+    assert 0 <= result["predictedRa"] < 1
+    [pole] = review.at_observation([{"ra": 0, "dec": 89.999, "pmra": 0, "pmdec": 2000}], 180, 89.9954, 2, "2010-01-01T00:00:00Z", 2000)
+    assert pole["predictedDec"] < 90
+    [missing] = review.at_observation([{"ra": 0, "dec": 0}], 0, 0, 1, "2010-01-01T00:00:00Z", 2000)
+    assert "predictedRa" not in missing
+    [catwise] = review.at_observation([{"ra_pm": 0, "dec_pm": -.01, "pmra": 0, "pmdec": 3.6}], 0, 0, 1,
+        "2010-01-01T00:00:00Z", 2000, ra_key="ra_pm", dec_key="dec_pm", motion_scale=1000)
+    assert catwise["separationArcsec"] < .01
+
+
+def test_gaia_motion_search_fetches_outside_original_cone(monkeypatch):
+    from app.models import NearbySource
+    calls = []
+    def nearby(ra, dec, radius, limit):
+        calls.append((radius, limit))
+        return [NearbySource(sourceId="123", ra=0, dec=-40/3600, refEpoch=2016,
+                             pmRaCosDecMasYr=0, pmDecMasYr=4000, separationArcsec=40)]
+    monkeypatch.setattr(review, "get_provider", lambda *_: SimpleNamespace(nearby=nearby))
+    monkeypatch.setattr(review, "tap_check", lambda name, *args, **kwargs: review.CatalogCheck(catalog=name, status="no_candidates", scope="", sourceUrl=""))
+    monkeypatch.setattr(review, "ultracool", lambda *args: review.CatalogCheck(catalog="UltracoolSheet", status="no_candidates", scope="", sourceUrl=""))
+    monkeypatch.setattr(review, "skybot", lambda *args: review.CatalogCheck(catalog="SkyBoT", status="no_candidates", scope="", sourceUrl=""))
+    result = review.run_review(0, 0, 10, "2026-01-01T00:00:00Z", replace(get_settings(), live=True))
+    assert calls[0][0] > 150 and calls[0][1] == review.MOTION_ROWS
+    assert result.checks[0].status == "candidates"
+    assert result.checks[0].rows[0]["separationArcsec"] < .02
+
+
+def test_truncated_motion_search_stays_partial_after_all_rows_move_out(monkeypatch):
+    monkeypatch.setattr(review, "tap_sync", lambda *args: SimpleNamespace(content=b"fixture", media_type="application/xml"))
+    monkeypatch.setattr(review, "table_result", lambda *args: ([], [{"ra": 0, "dec": 0, "pmra": 0, "pmdec": 10000}], True))
+    endpoint = review.Endpoint("fixture", "https://fixture.example/tap")
+    class Policy:
+        connect_timeout_s = 1
+        def run(self, endpoints, fetch):
+            return endpoint, fetch(endpoint, 1)
+    monkeypatch.setattr(review, "failover_for", lambda *_: Policy())
+    value = review.tap_check("SIMBAD", "fixture", [endpoint], "fixture query", (), get_settings(),
+        motion=dict(ra=0, dec=0, radius=10, observed="2020-01-01T00:00:00Z", epoch=2000))
+    assert value.status == "partial" and value.rows == []
+    assert any("limit" in note for note in value.limitations)

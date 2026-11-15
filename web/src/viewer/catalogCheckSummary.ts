@@ -13,14 +13,14 @@ function numeric(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** The closest returned row, by the catalog's own separation or its published position.
- *  Positions are as catalogued (not moved to an epoch), so this is a guide, not a match. */
+/** The closest returned row, using its frame-time prediction when supplied.
+ *  A nearby record remains a review aid, not a confirmed counterpart. */
 export function nearestRow(check: CatalogCheck, point: SkyPosition): { name: string; arcsec: number } | null {
   let best: { name: string; arcsec: number } | null = null;
   for (const row of check.rows ?? []) {
     let arcsec = numeric(row.separationArcsec);
     if (arcsec === null) {
-      const position = publishedPosition(row);
+      const position = predictionPosition(row) ?? publishedPosition(row);
       if (position) arcsec = angularSeparationArcsec(point, position);
     }
     if (arcsec === null) continue;
@@ -32,12 +32,21 @@ export function nearestRow(check: CatalogCheck, point: SkyPosition): { name: str
   return best;
 }
 
+/** Up to two unavailable services are tolerated; truncated/invalid searches are not. */
+export function catalogAvailability(review: CatalogReview) {
+  const listed = review.checks.filter(c => (c.status === "candidates" || c.status === "partial") && (c.rows?.length ?? 0) > 0);
+  const unavailable = review.checks.filter(c => c.status === "unavailable");
+  const undatedSkybot = review.checks.some(c => c.catalog === "SkyBoT" && c.status === "skipped") && !review.observedAtUtc;
+  const unchecked = review.checks.filter(c => c.status !== "no_candidates" && c.status !== "unavailable"
+    && !(c.catalog === "SkyBoT" && c.status === "skipped" && undatedSkybot));
+  if (unavailable.length > 2) unchecked.push(...unavailable);
+  return { listed, unavailable, unchecked, undatedSkybot };
+}
+
 export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "incomplete" | "offline"; title: string; detail: string } {
   if (review.mode === "offline")
     return { tone: "offline", title: "Catalogs not searched", detail: "The catalog service is running offline, so no catalog was queried. Start it with CATALOGS_LIVE=1 to check real points." };
-  const listed = review.checks.filter(c => c.status === "candidates" || c.status === "partial");
-  const undatedSkybot = review.checks.some(c => c.catalog === "SkyBoT" && c.status === "skipped") && !review.observedAtUtc;
-  const unchecked = review.checks.filter(c => c.status === "unavailable" || (c.status === "skipped" && !(c.catalog === "SkyBoT" && undatedSkybot)));
+  const { listed, unavailable, unchecked, undatedSkybot } = catalogAvailability(review);
   if (listed.length)
     return {
       tone: "listed",
@@ -52,8 +61,8 @@ export function summarize(review: CatalogReview): { tone: "listed" | "empty" | "
     };
   return {
     tone: "empty",
-    title: undatedSkybot ? "No record in the checked catalogs" : "No record in any of the six catalogs",
-    detail: `Nothing within ${review.radiusArcsec}″.${undatedSkybot ? " SkyBoT needs an observation time and was not run." : ""} That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
+    title: "Uncatalogued candidate",
+    detail: `No returned catalog matches within ${review.radiusArcsec}″.${unavailable.length ? ` Unavailable: ${unavailable.map(c => c.catalog).join(", ")}; up to two unavailable catalogs are allowed.` : ""}${undatedSkybot ? " SkyBoT needs an observation time and was not run." : ""} That makes this point worth a closer look, not a discovery: catalogs have depth and epoch limits, and image artifacts or moving objects can explain it.`,
   };
 }
 
@@ -83,7 +92,7 @@ export function gaiaNeighbours(review: CatalogReview, point: SkyPosition, predic
     if (ra === null || dec === null || refEpoch === null || !sourceId) continue;
     const source = { sourceId, ra, dec, refEpoch, pmRaCosDecMasYr: numeric(row.pmRaCosDecMasYr), pmDecMasYr: numeric(row.pmDecMasYr) };
     const moved = predictionTimeUtc ? predictAtObservation(source, predictionTimeUtc) : null;
-    const predicted = moved ? { ra: moved.ra, dec: moved.dec } : null;
+    const predicted = predictionPosition(row, predictionTimeUtc) ?? (moved ? { ra: moved.ra, dec: moved.dec } : null);
     result.push({ ...source, gMag: numeric(row.gMag), predicted, separationArcsec: angularSeparationArcsec(point, predicted ?? source) });
   }
   return result.sort((a, b) => a.separationArcsec - b.separationArcsec);
@@ -97,7 +106,7 @@ export function expectedPoints(review: CatalogReview): { points: number | null; 
   if (summary.tone === "listed")
     return { points: 10, label: "10 points · known object", detail: "A catalog already lists a source here.", needsBrightness: false };
   if (summary.tone === "incomplete")
-    return { points: 0, label: "0 points so far", detail: "A catalog could not be checked. Check again for points; you can still submit it for discussion.", needsBrightness: false };
+    return { points: 0, label: "0 points so far", detail: "More than two catalogs are unavailable, or another search is incomplete. Check again for points; you can still submit it for discussion.", needsBrightness: false };
   return { points: 20, label: "20 points if bright in 2 surveys",
     detail: "No checked catalog lists a source here. The server fetches SPHEREx, WISE, DSS and NEOSSat images and measures the point: at least 5σ above its surroundings in any two surveys earns 20 points. Otherwise it earns 0 and can still be submitted. No loaded frames are needed.",
     needsBrightness: true };
@@ -114,7 +123,7 @@ function sexagesimal(value: unknown, hours: boolean): number | null {
   return (match[1] === "-" ? -1 : 1) * (first + minute / 60 + second / 3600) * (hours ? 15 : 1);
 }
 
-/** Published coordinates remain catalog positions; only Gaia has a propagation model here. */
+/** Read published coordinates; frame-time predictions are stored separately. */
 export function publishedPosition(row: Record<string, unknown>): SkyPosition | null {
   for (const [raKey, decKey] of positionKeys) {
     const ra = raKey === "RA" ? sexagesimal(row[raKey], true) : numeric(row[raKey]);
@@ -122,6 +131,12 @@ export function publishedPosition(row: Record<string, unknown>): SkyPosition | n
     if (ra !== null && dec !== null && ra >= 0 && ra < 360 && Math.abs(dec) <= 90) return { ra, dec };
   }
   return null;
+}
+
+export function predictionPosition(row: Record<string, unknown>, observedAtUtc?: string | null): SkyPosition | null {
+  if (!row.positionAtUtc || (observedAtUtc !== undefined && observedAtUtc !== row.positionAtUtc)) return null;
+  const ra = numeric(row.predictedRa), dec = numeric(row.predictedDec);
+  return ra !== null && dec !== null && ra >= 0 && ra < 360 && Math.abs(dec) <= 90 ? { ra, dec } : null;
 }
 
 export interface CatalogSource extends SkyPosition {
@@ -145,8 +160,9 @@ export function catalogSources(review: CatalogReview, point: SkyPosition, predic
       const nameKey = nameKeys.find(key => (typeof row[key] === "string" && String(row[key]).trim()) || typeof row[key] === "number") ?? (row.Num != null ? "Num" : undefined);
       const name = nameKey ? String(row[nameKey]).trim() : "unnamed record";
       const neighbour = check.catalog === "Gaia DR3" ? gaia.get(String(row.sourceId ?? row.source_id)) : undefined;
-      const at = neighbour?.predicted ?? position;
-      const epoch = neighbour?.predicted ? `predicted for ${predictionTimeUtc?.slice(0, 10)}` : "published catalog position";
+      const serverPrediction = predictionPosition(row, predictionTimeUtc);
+      const at = serverPrediction ?? neighbour?.predicted ?? position;
+      const epoch = serverPrediction || neighbour?.predicted ? `predicted for ${predictionTimeUtc?.slice(0, 10)}` : "published catalog position";
       const key = `${check.catalog}:${name}:${position.ra}:${position.dec}`;
       result.set(key, { key, catalog: check.catalog, name, ...at, gaia: neighbour,
         label: `${check.catalog} ${name} (${epoch})`, separationArcsec: angularSeparationArcsec(point, at),

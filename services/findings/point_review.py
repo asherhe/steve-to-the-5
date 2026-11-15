@@ -1,7 +1,7 @@
 """Server-calculated points for a marked sky point (point-check-v3). No saved comparison needed.
 
 - 10 points: a known object. Any of the six catalogs lists a source in the cone.
-- 20 points: all six catalogs searched and none lists a source, and the point is bright
+- 20 points: no returned catalog matches, at most two catalogs unavailable, and the point is bright
   (brightness.BRIGHT_SNR) in at least MIN_BRIGHT_SURVEYS of SPHEREx, WISE, DSS and NEOSSat,
   measured here on cutouts this service fetches itself (cutouts.py).
 - 0 points otherwise; the point can still be posted for discussion.
@@ -77,7 +77,7 @@ def known_identity(checks: list[dict], ra: float, dec: float) -> CatalogIdentity
         best = None
         for row in check.get("rows") or []:
             name = next((str(row[k]).strip() for k in name_keys if row.get(k) not in (None, "")), None)
-            position = row_position(row, position_keys)
+            position = row_position(row, (("predictedRa", "predictedDec"), *position_keys))
             if not name or position is None:
                 continue
             distance = separation_arcsec(ra, dec, *position)
@@ -145,10 +145,14 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
         raise ApiError(503, "catalog_review_invalid", "The catalog review is incomplete or invalid.")
 
     radius = f"{data.radiusArcsec:g}″"
-    listed = [c["catalog"] for c in checks if c.get("status") in ("candidates", "partial")]
+    listed = [c["catalog"] for c in checks if c.get("status") in ("candidates", "partial") and c.get("rows")]
     # SkyBoT is skipped only when there is no observation time; see the module docstring.
-    unchecked = [c["catalog"] for c in checks if c.get("status") not in ("candidates", "partial", "no_candidates")
+    unavailable = [c["catalog"] for c in checks if c.get("status") == "unavailable"]
+    unchecked = [c["catalog"] for c in checks if c.get("status") != "no_candidates"
+                 and c.get("status") != "unavailable"
                  and not (c["catalog"] == "SkyBoT" and c.get("status") == "skipped" and observed is None)]
+    if len(unavailable) > 2:
+        unchecked += unavailable
     identity, measurements = None, []
     if listed:
         classification, score = "known", 10
@@ -177,6 +181,9 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
             reasons.append("SkyBoT (known asteroids) needs an observation time and was not run; "
                            "brightness across surveys does not verify identity or rule out chance alignments.")
 
+    if unavailable:
+        reasons.append(f"Unavailable: {', '.join(unavailable)}. Up to two unavailable catalogs are allowed only when no returned rows list a source; these missing checks do not establish novelty.")
+
     key = object_key(identity)
     response = PointReviewResponse(
         **data.model_dump(), id=uuid4(), observedAtUtc=observed,
@@ -185,9 +192,10 @@ async def prepare_point_review(data: PointReviewInput, catalog_loader, cutout_lo
         identity=identity, catalogReview=report, brightness=measurements,
         limitations=[
             "Points sort submitted points for discussion. They are not a measure of scientific significance, and 20 points is not a discovery.",
-            "Uncatalogued means none of the applicable catalog searches listed a source; catalogs have depth, epoch and coverage limits.",
+            "Uncatalogued candidate means no returned catalog matches, with at most two unavailable catalogs; missing checks, depth, epoch and coverage limit this classification.",
             f"Bright means a local peak at least {brightness.BRIGHT_SNR:g}σ above the surrounding pixels in a cutout's FITS. "
             "It is not a photometric detection, a flux, a temperature or evidence of variability.",
+            "Survey measurements use the marked sky coordinate; source motion between survey dates is not tracked.",
             "A cold brown dwarf is usually invisible in optical DSS and NEOSSat images; SPHEREx and WISE are the infrared surveys.",
         ])
     return response, key or position_key(data.ra, data.dec), key

@@ -131,7 +131,7 @@ export function PointCheck({ point, check, onClear, onReview, predictionTimeUtc 
             <ul>{state.review.limitations.map(text => <li key={text}>{text}</li>)}</ul>
           </details>
           <p className="point-check__footnote">
-            Positions are published catalog positions unless explicitly labeled as Gaia predictions. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
+            Positions are published catalog coordinates unless explicitly labeled as frame-time predictions. Checked {state.review.checks.find(c => c.retrievedAtUtc)?.retrievedAtUtc ?? "just now"}.
           </p>
         </>
       )}
@@ -151,7 +151,7 @@ function SourceLists({ sources, shownSourceId, onShowSource }: {
   const catalogs = [...new Set(sources.map(source => source.catalog))];
   return <section className="point-check__gaia" aria-label="Catalog sources near the marked point">
     <p className="point-check__subhead">Show catalog sources on the map</p>
-    <p className="point-check__footnote">Gaia positions can be predicted for the displayed date. Other catalogs retain their published coordinates; these markers are not verified detections.</p>
+    <p className="point-check__footnote">Catalogs with supported proper motions are checked at the selected frame date. Predictions are labeled; missing motions and unsupported catalogs retain published coordinates. These markers are not verified detections.</p>
     {catalogs.map(catalog => <details key={catalog} open>
       <summary>{catalog} sources ({sources.filter(source => source.catalog === catalog).length})</summary>
       <ul>{sources.filter(source => source.catalog === catalog).map(source => {

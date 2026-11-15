@@ -16,6 +16,8 @@ from urllib.parse import urlencode
 
 import httpx
 from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.time import Time
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
@@ -31,6 +33,9 @@ CATALOGS = ("Gaia DR3", "SIMBAD", "CatWISE2020", "UltracoolSheet", "SkyBoT", "Vi
 ULTRACOOL_URL = "https://zenodo.org/records/15802304/files/UltracoolSheet%20-%20Main.csv?download=1"
 _sheet_cache = BoundedCache(1)
 MAX_ROWS = 50
+MOTION_ROWS = 2000
+# Bounded quick-look search, not a completeness claim for arbitrary stellar motion.
+MOTION_ARCSEC_PER_YEAR = 15.0
 
 
 class CatalogCheck(BaseModel):
@@ -76,7 +81,7 @@ def cell(value):
     return value if isinstance(value, (str, int, float, bool)) else str(value)
 
 
-def table_result(content, media_type, required=()):
+def table_result(content, media_type, required=(), max_rows=MAX_ROWS):
     infos = [node for node in ET.fromstring(content).iter() if node.tag.rsplit("}", 1)[-1] == "INFO"]
     if any(node.get("name", "").lower() == "error" or node.get("value", "").upper() == "ERROR" for node in infos):
         raise EndpointDown("Catalog returned an error document")
@@ -84,27 +89,82 @@ def table_result(content, media_type, required=()):
     table = parse_votable(content, required, media_type)
     columns = [{"name": name, "unit": str(table[name].unit) if table[name].unit else None,
                 "description": table[name].description} for name in table.colnames]
-    rows = [{name: cell(row[name]) for name in table.colnames} for row in table[:MAX_ROWS]]
-    return columns, rows, overflow or len(table) >= MAX_ROWS
+    rows = [{name: cell(row[name]) for name in table.colnames} for row in table[:max_rows]]
+    return columns, rows, overflow or len(table) >= max_rows
 
 
 def cone(ra, dec, radius, ra_column="ra", dec_column="dec"):
     return f"1=CONTAINS(POINT('ICRS',{ra_column},{dec_column}),CIRCLE('ICRS',{ra},{dec},{radius / 3600}))"
 
 
-def tap_check(name, scope, endpoints, query, required, settings):
+def motion_radius(radius, observed, epoch):
+    if not observed:
+        return radius
+    years = abs(float(Time(observed).jyear) - epoch)
+    if years > 150:
+        raise EndpointDown("Observation outside the bounded proper-motion search interval")
+    return radius + MOTION_ARCSEC_PER_YEAR * years
+
+
+def at_observation(rows, ra, dec, radius, observed, epoch, ra_key="ra", dec_key="dec",
+                   pmra_key="pmra", pmdec_key="pmdec", motion_scale=1):
+    """Keep native columns; filter on predicted positions only when both motions are known.
+
+    Tangent-vector space motion at infinite distance (no parallax or radial velocity).
+    The spherical offset handles RA wrap and polar crossings without dividing by cos(dec).
+    Missing astrometry stays at its published position, explicitly labelled as such.
+    """
+    point = SkyCoord(ra, dec, unit="deg")
+    selected = []
+    for row in rows:
+        def number(key):
+            try:
+                value = float(row.get(key))
+                return value if math.isfinite(value) else None
+            except (TypeError, ValueError):
+                return None
+        x, y = number(ra_key), number(dec_key)
+        if x is None or y is None or not 0 <= x < 360 or abs(y) > 90:
+            raise EndpointDown("Invalid catalog coordinates")
+        position = SkyCoord(x, y, unit="deg")
+        item = {**row, "positionBasis": "published catalog position"}
+        pmra, pmdec = number(pmra_key), number(pmdec_key)
+        ref = number("refEpoch") if "refEpoch" in row else epoch
+        if observed and ref is not None and pmra is not None and pmdec is not None:
+            years = float(Time(observed).jyear) - ref
+            east, north = pmra * motion_scale * years, pmdec * motion_scale * years
+            radians = math.hypot(east, north) * math.pi / (180 * 3_600_000)
+            position = position.directional_offset_by(math.atan2(east, north) * u.rad, math.atan(radians) * u.rad)
+            item.update(predictedRa=float(position.ra.deg), predictedDec=float(position.dec.deg),
+                        positionAtUtc=observed, positionBasis="proper-motion prediction")
+        distance = float(point.separation(position).arcsec)
+        if distance <= radius:
+            item["separationArcsec"] = distance
+            selected.append(item)
+    return sorted(selected, key=lambda row: row["separationArcsec"])
+
+
+def tap_check(name, scope, endpoints, query, required, settings, *, motion=None):
     policy = failover_for(settings)
 
     def fetch(endpoint, deadline):
         response = tap_sync(endpoint.url, query, deadline, "votable", policy.connect_timeout_s)
-        columns, rows, limited = table_result(response.content, response.media_type, required)
+        columns, rows, limited = table_result(response.content, response.media_type, required, MOTION_ROWS if motion else MAX_ROWS)
         return columns, rows, limited, hashlib.sha256(response.content).hexdigest()
 
     endpoint, (columns, rows, limited, digest) = policy.run(endpoints, fetch)
+    notes = ["Rows are nearby catalog entries, not confirmed counterparts."]
+    if motion:
+        rows = at_observation(rows, **motion)
+        notes += ["Positions with both proper-motion components are predicted for the selected frame time; published columns are retained.",
+                  "The search allows 15 arcsec/year of motion. Missing motions retain published positions; faster motion, parallax and perspective effects can cause missed associations."]
+    else:
+        notes.append("Positions are published catalog coordinates, not propagated to the selected frame time.")
+    limited = limited or len(rows) > MAX_ROWS
     return CatalogCheck(catalog=name, status="partial" if limited else "candidates" if rows else "no_candidates",
         scope=scope, sourceUrl=endpoint.url + "/sync?" + urlencode({"REQUEST": "doQuery", "LANG": "ADQL", "FORMAT": "votable", "QUERY": query}),
-        servedBy=endpoint.name, retrievedAtUtc=now(), responseSha256=digest, columns=columns, rows=rows,
-        limitations=["Rows are nearby catalog entries, not confirmed counterparts. Positions are not propagated."] +
+        servedBy=endpoint.name, retrievedAtUtc=now(), responseSha256=digest, columns=columns, rows=rows[:MAX_ROWS],
+        limitations=notes +
         (["Result limit reached; the search is incomplete."] if limited else []))
 
 
@@ -203,24 +263,32 @@ def run_review(ra, dec, radius, observed, settings=None):
         return CatalogReview(mode="offline", ra=ra, dec=dec, radiusArcsec=radius, observedAtUtc=observed, checks=checks, limitations=limitations)
 
     def gaia():
-        result = get_provider(settings).nearby(ra, dec, radius, MAX_ROWS + 1)
+        limit = MOTION_ROWS if observed else MAX_ROWS + 1
+        result = get_provider(settings).nearby(ra, dec, motion_radius(radius, observed, 2016.0), limit)
         provenance = getattr(result, "provenance", None)
-        rows = [row.model_dump(by_alias=True) for row in result[:MAX_ROWS]]
-        return CatalogCheck(catalog="Gaia DR3", status="partial" if len(result) > MAX_ROWS else "candidates" if rows else "no_candidates",
+        rows = at_observation([row.model_dump(by_alias=True) for row in result], ra, dec, radius, observed, 2016.0,
+                              pmra_key="pmRaCosDecMasYr", pmdec_key="pmDecMasYr")
+        return CatalogCheck(catalog="Gaia DR3", status="partial" if len(result) >= limit or len(rows) > MAX_ROWS else "candidates" if rows else "no_candidates",
             scope="Gaia DR3, reference epoch 2016.0; positions in degrees, motions mas/yr, parallax mas, G magnitude",
             sourceUrl=provenance.source_table_url if provenance else "https://www.cosmos.esa.int/web/gaia/dr3",
             servedBy=provenance.served_by if provenance else None,
-            retrievedAtUtc=provenance.retrieved_at_utc if provenance else now(), rows=rows,
+            retrievedAtUtc=provenance.retrieved_at_utc if provenance else now(), rows=rows[:MAX_ROWS],
             limitations=["Uses the existing Gaia failover and cache. Inspect a source for its full astrometry and frame-time prediction.",
-                          "The cone is centered on the selected image point; high proper motion can cause missed associations."])
+                          "Dated searches include a 15 arcsec/year motion margin, then filter proper-motion predictions at the frame time. Missing motions retain published coordinates; parallax and perspective effects are not modeled.",
+                          *(["Result limit reached; the motion search is incomplete."] if len(result) >= limit or len(rows) > MAX_ROWS else [])])
 
     tasks = [gaia,
         lambda: tap_check("SIMBAD", "SIMBAD basic object records in the selected cone",
             parse_endpoints(settings.simbad_tap_urls, DEFAULT_SIMBAD_ENDPOINTS),
-            f"SELECT TOP 51 * FROM basic WHERE {cone(ra, dec, radius)}", ("main_id", "ra", "dec"), settings),
+            f"SELECT TOP {MOTION_ROWS + 1 if observed else 51} * FROM basic WHERE {cone(ra, dec, motion_radius(radius, observed, 2000.0))}",
+            ("main_id", "ra", "dec"), settings,
+            motion=dict(ra=ra, dec=dec, radius=radius, observed=observed, epoch=2000.0) if observed else None),
         lambda: tap_check("CatWISE2020", "CatWISE2020 catalog; consult epoch and quality columns",
             (Endpoint("IRSA", "https://irsa.ipac.caltech.edu/TAP"),),
-            f"SELECT TOP 51 * FROM catwise_2020 WHERE {cone(ra, dec, radius)}", ("ra", "dec"), settings),
+            f"SELECT TOP {MOTION_ROWS + 1 if observed else 51} * FROM catwise_2020 WHERE {cone(ra, dec, motion_radius(radius, observed, float(Time(57170, format='mjd').jyear)), 'ra_pm', 'dec_pm') if observed else cone(ra, dec, radius)}",
+            ("ra_pm", "dec_pm", "pmra", "pmdec") if observed else ("ra", "dec"), settings,
+            motion=dict(ra=ra, dec=dec, radius=radius, observed=observed, epoch=float(Time(57170, format='mjd').jyear),
+                        ra_key="ra_pm", dec_key="dec_pm", motion_scale=1000) if observed else None),
         lambda: ultracool(ra, dec, radius),
         (lambda: skybot(ra, dec, radius, observed)) if observed else skybot_undated,
         lambda: tap_check("VizieR", "VizieR II/328/allwise only (AllWISE); other VizieR catalogs are not searched",
@@ -236,7 +304,7 @@ def run_review(ra, dec, radius, observed, settings=None):
         except Exception:
             # Never turn a failed/malformed query into a successful zero-row result.
             return CatalogCheck(catalog=name, status="unavailable", scope="Search did not complete", sourceUrl="",
-                limitations=["The catalog could not be checked. Retry later; no absence or points are inferred."])
+                limitations=["The catalog could not be checked. No absence was established; up to two unavailable catalogs are allowed by the candidate-scoring policy."])
 
     with ThreadPoolExecutor(max_workers=6) as pool:
         checks = list(pool.map(attempt, zip(CATALOGS, tasks)))

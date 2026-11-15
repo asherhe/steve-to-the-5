@@ -150,19 +150,19 @@ This complements browser contract tests and is not hosted Auth/PostgREST verific
 ## Point scoring — point-check-v3 (2026-11-15)
 
 `POST /api/findings/points/review` takes `{ra, dec, radiusArcsec=30, frame?}`. `frame`, when
-present, is `{survey, comparisonId, frameId}` and supplies only the saved observation time for
-SkyBoT after the server verifies the real frame and point. No loaded frames are required for
+present, is `{survey, comparisonId, frameId}` and supplies the saved observation time for
+SkyBoT and supported stellar proper-motion checks after the server verifies the real frame and point. No loaded frames are required for
 reference-map submissions. Catalog results are recomputed by the server; clients never send
 scores, identities, image bytes or brightness measurements.
 
 | Result | Points |
 |---|---|
-| Any catalog lists a source (`candidates` or `partial`) | 10 (`known`), immediately; no image download or brightness step |
-| No catalog lists a source, all applicable checks complete, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
+| Any catalog returns a source row (`candidates` or `partial`) | 10 (`known`), immediately; no image download or brightness step |
+| No returned matches, at most two catalogs unavailable, no other incomplete searches, bright in any two of SPHEREx/WISE/DSS/NEOSSat | 20 (`uncatalogued`) |
 | Fewer than two bright surveys or incomplete catalog checks | 0 (`uncatalogued` / `incomplete`), still postable |
 
 Undated reference points skip SkyBoT explicitly; that expected skip does not prevent the
-20-point rule. Other unavailable/skipped catalogs remain incomplete. A catalog source in a
+20-point rule. Up to two `unavailable` catalogs are tolerated when no catalog returns a match; their failures remain visible. More than two unavailable catalogs, unexpected skips, and empty `partial` searches stay incomplete. A catalog source in a
 cone is not automatically the source in a selected pixel. Likewise brightness across surveys
 does not establish identity, novelty, motion or scientific significance.
 
@@ -174,7 +174,7 @@ states remain distinct. Published raw NEOSSat previews do not supply calibrated 
 `brightness.py` uses the image's own WCS: peak within 1.5 px against a median/MAD background
 annulus (at least 8–25 arcsec), with SPHEREx variance and flag masks. At least 5 sigma counts
 as bright. Multiple frames from one survey count once. This is a local contrast rule, not
-photometry or a validated detection.
+photometry or a validated detection. Measurements use the same sky coordinate in every cutout; they do not track a moving object between survey dates.
 
 The response includes `scoreVersion`, classification, reasons, optional catalog `identity`,
 per-source `brightness`, the six `catalogReview` checks and an optional `duplicate`. The UI
@@ -209,3 +209,15 @@ The server-produced `fixtures/point-flow.json` is synthetic. Browser auth/catalo
 responses are intercepted; SQL checks use isolated PGlite. Neither proves hosted Supabase or
 live archive end-to-end behavior. See `docs/verification/point-check-v3-completion.md` for this
 run's source checks, remaining archive failures and activation requirements.
+
+Dated catalog review now expands Gaia, SIMBAD and CatWISE search cones by 15 arcsec/year
+from their reference epochs, retrieves at most 2,000 rows, then filters predicted positions
+at the selected frame time. A reached row cap is `partial`, even if filtering leaves no rows.
+Gaia uses epoch 2016.0; SIMBAD uses J2000; CatWISE uses the motion-fit `ra_pm`/`dec_pm` at
+MJD 57170 with arcsec/year motions converted to mas/year. Published coordinates remain
+in the report; `predictedRa`, `predictedDec`, `positionAtUtc`, `positionBasis` and
+`separationArcsec` annotate rows. Predictions exclude parallax/perspective acceleration.
+Missing motion components, UltracoolSheet and VizieR AllWISE retain published coordinates;
+this is a bounded review aid, not a complete epoch-correct cross-identification.
+Historical saved reports remain unchanged; the updated tolerance is recorded in new report
+reasons under the existing point-check-v3 participation score contract.
